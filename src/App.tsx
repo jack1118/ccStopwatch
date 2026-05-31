@@ -1,9 +1,52 @@
-// 骨架佔位元件 — 由實作計畫 Task 14 覆寫為真正的 App。
+import { useState } from 'react'
+import type { Session } from './types'
+import { loadSession, saveSession } from './storage/storage'
+import { SessionList } from './screens/SessionList'
+import { SessionSetup } from './screens/SessionSetup'
+import { Timer } from './screens/Timer'
+import { Results } from './screens/Results'
+
+type Screen = 'list' | 'setup' | 'timer' | 'results'
+
 export default function App() {
+  const [screen, setScreen] = useState<Screen>('list')
+  const [session, setSession] = useState<Session | null>(null)
+
+  const openExisting = (id: string) => {
+    const s = loadSession(id)
+    if (!s) return
+    setSession(s)
+    setScreen(s.status === 'done' ? 'results' : 'timer')
+  }
+
+  const startSession = (s: Session) => {
+    saveSession(s)
+    setSession(s)
+    setScreen('timer')
+  }
+
   return (
-    <div style={{ padding: 24, fontFamily: 'system-ui' }}>
-      <h1>跑班碼表</h1>
-      <p>骨架部署成功，等待功能實作。</p>
-    </div>
+    <>
+      {screen === 'list' && (
+        <SessionList onNew={() => setScreen('setup')} onOpen={openExisting} />
+      )}
+      {screen === 'setup' && (
+        <SessionSetup onStart={startSession} onCancel={() => setScreen('list')} />
+      )}
+      {screen === 'timer' && session && (
+        <Timer
+          session={session}
+          onExit={() => setScreen('list')}
+          onFinish={(s) => { setSession(s); setScreen('results') }}
+        />
+      )}
+      {screen === 'results' && session && (
+        <Results
+          session={session}
+          onExit={() => setScreen('list')}
+          onUpdate={(s) => { saveSession(s); setSession(s) }}
+        />
+      )}
+    </>
   )
 }
