@@ -1,5 +1,7 @@
 node_modules/
 dist/
 .superpowers/
+.playwright-mcp/
 *.log
+*.stackdump
 .DS_Store
