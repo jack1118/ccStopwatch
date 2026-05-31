@@ -1,0 +1,36 @@
+- generic [ref=e88]:
+  - generic [ref=e89]:
+    - button "←" [ref=e90]
+    - heading "分段成績 — 2026/6/1" [level=1] [ref=e91]
+  - generic [ref=e92]:
+    - generic [ref=e93]:
+      - button "黃·1 均8s" [ref=e94]: 黃·1 均8s
+      - button "黑·2 均0s" [ref=e96]: 黑·2 均0s
+    - img "各組分段折線圖" [ref=e98]:
+      - generic [ref=e100]: 20s
+      - generic [ref=e102]: 15s
+      - generic [ref=e104]: 10s
+      - generic [ref=e106]: 5s
+      - generic [ref=e108]: 0s
+  - generic [ref=e109]:
+    - table [ref=e110]:
+      - rowgroup [ref=e111]:
+        - row "組別 1 均 休" [ref=e112]:
+          - columnheader "組別" [ref=e113]
+          - columnheader "1" [ref=e114]
+          - columnheader "均" [ref=e115]
+          - columnheader "休" [ref=e116]
+      - rowgroup [ref=e117]:
+        - row "黃·1 8 8 0s" [ref=e118] [cursor=pointer]:
+          - cell "黃·1" [ref=e119]
+          - cell "8" [ref=e120]
+          - cell "8" [ref=e121]
+          - cell "0s" [ref=e122]
+        - row "黑·2 0 0s" [ref=e123] [cursor=pointer]:
+          - cell "黑·2" [ref=e124]
+          - cell "0" [ref=e125]
+          - cell "0s" [ref=e126]
+    - paragraph [ref=e127]: 點一列看單組詳細
+  - generic [ref=e128]:
+    - button "匯出 CSV" [ref=e129]
+    - button "截圖分享" [ref=e130]

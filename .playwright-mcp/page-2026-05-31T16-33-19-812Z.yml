@@ -1,0 +1,18 @@
+- generic [ref=e52]:
+  - generic [ref=e53]:
+    - button "←" [ref=e54]
+    - heading "2026/6/1" [level=1] [ref=e55]
+    - button "結果" [ref=e56]
+  - generic [ref=e57]:
+    - generic [ref=e58]:
+      - generic [ref=e59]:
+        - generic [ref=e60]: 黃·1組
+        - generic [ref=e61]: 未開始
+      - button "▶ 開始" [ref=e62]
+      - generic [ref=e63]: 400m
+    - generic [ref=e64]:
+      - generic [ref=e65]:
+        - generic [ref=e66]: 黑·2組
+        - generic [ref=e67]: 未開始
+      - button "▶ 開始" [ref=e68]
+      - generic [ref=e69]: 400m

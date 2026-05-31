@@ -1,0 +1,25 @@
+- generic [ref=e52]:
+  - generic [ref=e53]:
+    - button "←" [ref=e54]
+    - heading "2026/6/1" [level=1] [ref=e55]
+    - button "結果" [ref=e56]
+  - generic [ref=e57]:
+    - generic [ref=e58]:
+      - generic [ref=e59]:
+        - generic [ref=e60]: 黃·1組
+        - generic [ref=e61]: 休息
+      - generic [ref=e70]:
+        - button "撤銷" [ref=e71]: ↶
+        - button "結束" [ref=e72]: ⏹
+      - generic [ref=e80]:
+        - generic [ref=e81]:
+          - generic [ref=e82]: "0:"
+          - generic [ref=e83]: "00"
+        - button "▶ 出發" [ref=e85]
+      - generic [ref=e77]: 剛跑 0:08 · 目標休 90s
+    - generic [ref=e64]:
+      - generic [ref=e65]:
+        - generic [ref=e66]: 黑·2組
+        - generic [ref=e67]: 未開始
+      - button "▶ 開始" [ref=e68]
+      - generic [ref=e69]: 400m

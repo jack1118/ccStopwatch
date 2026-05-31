@@ -1,0 +1,34 @@
+- generic [ref=e88]:
+  - generic [ref=e89]:
+    - button "←" [ref=e90]
+    - heading "分段成績 — 2026/6/1" [level=1] [ref=e91]
+  - generic [ref=e92]:
+    - generic [ref=e93]:
+      - button "黃·1 均8s" [ref=e94]: 黃·1 均8s
+      - button "黑·2 均0s" [ref=e96]: 黑·2 均0s
+    - img "各組分段折線圖" [ref=e98]:
+      - generic [ref=e100]: 20s
+      - generic [ref=e102]: 15s
+      - generic [ref=e104]: 10s
+      - generic [ref=e106]: 5s
+      - generic [ref=e108]: 0s
+  - generic [ref=e131]:
+    - button "← 返回總表" [ref=e132]
+    - heading "黃·1組" [level=3] [ref=e133]
+    - generic [ref=e134]:
+      - generic [ref=e135]: 學員名單（逗號分隔，可事後補）
+      - textbox "例：小明、小華、阿德" [ref=e136]
+    - table [ref=e137]:
+      - rowgroup [ref=e138]:
+        - row "趟 跑步 休息" [ref=e139]:
+          - columnheader "趟" [ref=e140]
+          - columnheader "跑步" [ref=e141]
+          - columnheader "休息" [ref=e142]
+      - rowgroup [ref=e143]:
+        - row "1 0:08 0s" [ref=e144]:
+          - cell "1" [ref=e145]
+          - cell "0:08" [ref=e146]
+          - cell "0s" [ref=e147]
+  - generic [ref=e128]:
+    - button "匯出 CSV" [ref=e129]
+    - button "截圖分享" [ref=e130]

@@ -1,0 +1,5 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - heading "跑班碼表" [level=1] [ref=e5]
+    - button "＋ 新課程" [ref=e6]
+  - paragraph [ref=e8]: 還沒有課程，點右上「＋ 新課程」開始
