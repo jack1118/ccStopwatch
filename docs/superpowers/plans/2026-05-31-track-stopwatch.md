@@ -48,102 +48,23 @@ src/
 
 ---
 
-## Task 0：專案 scaffold 與工具
+## Task 0：專案 scaffold 與工具 — ✅ 已完成（請略過）
 
-**Files:**
-- Create: 整個 Vite 專案骨架、`vite.config.ts`、`src/setupTests.ts`
+> **此 Task 已由前置作業完成並推上 GitHub，`/goal` 請直接從 Task 1 開始。**
 
-- [ ] **Step 1：建立 Vite React-TS 專案（於現有空目錄）**
+已完成內容（commit `c546934`）：
+- [x] Vite React-TS 專案骨架建立（React 19 / Vite 8 / TypeScript 6 / Vitest 4）
+- [x] 安裝相依：vitest、@testing-library/*、jsdom、vite-plugin-pwa、@vite-pwa/assets-generator、html-to-image
+- [x] `vite.config.ts` 設定完成 —— **PWA plugin + 條件式 base**：`command === 'build' ? '/ccStopwatch/' : '/'`（GitHub Pages 子路徑），含 vitest test 設定
+- [x] `src/setupTests.ts`（import jest-dom）
+- [x] `package.json` scripts 加入 `test`、`test:watch`，name 改 `ccstopwatch`
+- [x] `tsconfig.app.json` 已 `exclude` 測試檔（`*.test.ts(x)`、`setupTests.ts`），讓 `npm run build` 不會因測試檔型別而失敗
+- [x] 清掉 Vite 範本雜物（App.css、assets/、index.css 清空）；`src/App.tsx` 暫為骨架佔位（Task 14 覆寫）
+- [x] `index.html` 已設繁中、PWA / apple-mobile-web-app meta、theme-color、apple-touch-icon
+- [x] `.github/workflows/deploy.yml`（push 到 main 自動建置部署到 GitHub Pages）
+- [x] `npm run build` 通過，已建立 GitHub repo、開啟 Pages、**實測部署成功**：https://jack1118.github.io/ccStopwatch/
 
-Run:
-```bash
-cd "C:\Users\JackCHLin\Downloads\ccStopwatch"
-npm create vite@latest . -- --template react-ts
-```
-若提示目錄非空，選擇忽略並繼續（保留 `.git`、`docs/`、`.gitignore`）。
-
-- [ ] **Step 2：安裝相依套件**
-
-Run:
-```bash
-npm install
-npm install -D vitest @testing-library/react @testing-library/jest-dom jsdom @testing-library/user-event vite-plugin-pwa @vite-pwa/assets-generator
-npm install html-to-image
-```
-
-- [ ] **Step 3：設定 `vite.config.ts`**
-
-```ts
-/// <reference types="vitest" />
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { VitePWA } from 'vite-plugin-pwa'
-
-export default defineConfig({
-  base: './',
-  plugins: [
-    react(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['icon.svg', 'apple-touch-icon-180x180.png'],
-      manifest: {
-        name: '跑班碼表',
-        short_name: '跑班碼表',
-        description: '田徑場跑班多組計時碼表',
-        theme_color: '#0b0b0d',
-        background_color: '#0b0b0d',
-        display: 'standalone',
-        orientation: 'portrait',
-        icons: [
-          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
-          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-        ],
-      },
-    }),
-  ],
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/setupTests.ts',
-  },
-})
-```
-
-- [ ] **Step 4：建立 `src/setupTests.ts`**
-
-```ts
-import '@testing-library/jest-dom'
-```
-
-- [ ] **Step 5：在 `package.json` 的 `scripts` 加入 test**
-
-確認/加入：
-```json
-"scripts": {
-  "dev": "vite",
-  "build": "tsc -b && vite build",
-  "preview": "vite preview",
-  "test": "vitest run",
-  "test:watch": "vitest"
-}
-```
-
-- [ ] **Step 6：清掉 Vite 範本雜物**
-
-刪除 `src/App.css`、`src/assets/react.svg`，清空 `src/index.css` 內容（保留檔案）。
-
-- [ ] **Step 7：驗證骨架可跑**
-
-Run: `npm run build`
-Expected: 編譯成功（範本 App 仍在，稍後覆寫）。
-
-- [ ] **Step 8：Commit**
-
-```bash
-git add -A
-git commit -m "chore: 初始化 Vite React-TS + PWA + vitest 骨架"
-```
+> 注意：實際版本比原計畫新（React 19、Vite 8 用 rolldown、TS 6）。後續 Task 程式碼皆相容；若 `tsc -b` 對未使用變數較嚴格（`noUnusedLocals`/`noUnusedParameters`），保留各檔案既有的 `void x` 等寫法即可。
 
 ---
 
@@ -2072,34 +1993,42 @@ git commit -m "feat: PWA 圖示與離線安裝設定"
 
 ---
 
-## Task 16：部署到 HTTPS 並裝上 iPhone（交付）
+## Task 16：部署（GitHub Pages 自動部署，零互動）
 
-> 需在 HTTPS 主機才能於 iPhone 安裝 PWA。以下任一即可；預設用 Netlify drop（免帳號設定最少）或 GitHub Pages。
+> **部署基礎建設已在前置作業完成：** GitHub repo `jack1118/ccStopwatch`（public）、GitHub Pages 已啟用（source = GitHub Actions）、`.github/workflows/deploy.yml` 已就緒。**每次 push 到 `main` 會自動建置並部署**，無需任何帳號互動或手動上傳。前置作業已實測部署成功一次。
+>
+> 正式網址：**https://jack1118.github.io/ccStopwatch/**
 
-- [ ] **Step 1：產生正式建置**
+- [ ] **Step 1：把實作成果推上 main（觸發自動部署）**
 
-Run: `npm run build`
-產出 `dist/`。
-
-- [ ] **Step 2A：Netlify（拖放，最快）**
-
-開 https://app.netlify.com/drop ，把 `dist/` 整個資料夾拖進去，得到一個 HTTPS 網址。
-
-- [ ] **Step 2B：或 GitHub Pages**
-
+Run:
 ```bash
-git add -A && git commit -m "build: dist"
-# 建 GitHub repo 後：
-# 安裝 gh-pages：npm i -D gh-pages，package.json 加 "deploy": "gh-pages -d dist"
-npm run build && npx gh-pages -d dist
+git push origin main
 ```
-（`vite.config.ts` 已設 `base: './'`，相容子路徑。）
+（前面每個 Task 都已逐步 commit；此處確保全部推上。push 後 GitHub Actions 會自動 `npm install && npm run build` 並部署。）
 
-- [ ] **Step 3：iPhone 安裝**
+- [ ] **Step 2：確認部署成功（CI）**
 
-iPhone Safari 開該 HTTPS 網址 → 分享 → 「加入主畫面」→ 從主畫面全螢幕開啟、可離線使用。
+Run:
+```bash
+gh run list --limit 1
+gh run watch
+```
+Expected: 最新一筆 "Deploy to GitHub Pages" 為 `completed / success`。
 
-- [ ] **Step 4：iPhone 實機驗證清單**
+- [ ] **Step 3：驗證正式網址**
+
+Run:
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" https://jack1118.github.io/ccStopwatch/
+```
+Expected: `200`。瀏覽器開該網址應看到實際 App（非骨架佔位）。
+
+- [ ] **Step 4：iPhone 安裝**
+
+iPhone Safari 開 https://jack1118.github.io/ccStopwatch/ → 分享 → 「加入主畫面」→ 從主畫面全螢幕開啟、可離線使用。
+
+- [ ] **Step 5：iPhone 實機驗證清單**
 
 - 直向 portrait 鎖定、多組同畫面
 - 螢幕計時中不自動變暗（Wake Lock）
@@ -2107,12 +2036,7 @@ iPhone Safari 開該 HTTPS 網址 → 分享 → 「加入主畫面」→ 從主
 - 離線（飛航模式）仍可開啟與操作、存檔
 - 截圖匯出可存到相簿、CSV 可分享
 
-- [ ] **Step 5：Commit（若有 deploy 設定變更）**
-
-```bash
-git add -A
-git commit -m "docs: 部署設定與交付"
-```
+> 完成標準：上述全部 ✅。若任一項不過，回對應 Task 修正、commit、再 `git push`（會自動重新部署）。
 
 ---
 
