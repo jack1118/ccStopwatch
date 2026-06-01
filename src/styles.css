@@ -88,12 +88,13 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .gobtn { font-size: 14px; font-weight: 800; background: rgba(255,255,255,.22);
   border: 0; border-radius: 9px; padding: 6px 18px; }
 .resting { outline: 2px dashed rgba(255,255,255,.5); outline-offset: -2px; }
-/* 下一個該起跑的組：外框閃燈提示 */
+/* 該按的組：外框閃燈提示（更亮更快） */
 @keyframes blinkborder {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(48,209,88,0); border-color: rgba(255,255,255,.14); }
-  50% { box-shadow: 0 0 14px 3px rgba(48,209,88,.85); border-color: #30D158; }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(48,255,120,0); border-color: rgba(255,255,255,.14); }
+  50% { box-shadow: 0 0 24px 7px rgba(48,255,120,.95), inset 0 0 0 3px #4cff78;
+        border-color: #4cff78; }
 }
-.card.blink { animation: blinkborder 1s ease-in-out infinite; }
+.card.blink { animation: blinkborder .55s ease-in-out infinite; }
 
 /* ── 讀秒時鐘 ── */
 /* 所有組別一致：白字 + 深色描邊 + 暈邊陰影（各色背景都看得到立體感） */

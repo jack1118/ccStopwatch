@@ -95,8 +95,9 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
   const tone = paceTone(restSec, target > 0 ? target : null, 5)
   const overTxt = fmtOverflow(restSec, target)
   const pct = target > 0 ? Math.min(100, (restSec / target) * 100) : 0
+  const readyToGo = target > 0 && restSec >= target   // 休息到點 → 提示出發
   return (
-    <div className={`card resting${big ? ' big' : ''}`} data-testid="card" style={cardStyle}>
+    <div className={`card resting${big ? ' big' : ''}${readyToGo ? ' blink' : ''}`} data-testid="card" style={cardStyle}>
       <div className="ctop">
         <span>{title}</span>
         <span className={`reptag${tone === 'warn' ? ' warn-text' : ''}`}>
