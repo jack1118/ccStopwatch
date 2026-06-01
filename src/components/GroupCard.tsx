@@ -17,8 +17,8 @@ interface Props {
 }
 
 export function GroupCard({ group: g, plan, now, big, onStart, onLap, onNext, onUndo, onStop }: Props) {
-  const secSize = big ? 132 : 64
-  const minSize = big ? 52 : 30
+  const secSize = big ? 140 : 70
+  const minSize = big ? 54 : 32
   const title = `${NRC_LABEL[g.color]} 第${g.number}組`
   const cardStyle = { background: NRC_HEX[g.color], color: NRC_TEXT[g.color] }
   const lapPlan = buildLapPlan(plan, g)
@@ -72,17 +72,12 @@ export function GroupCard({ group: g, plan, now, big, onStart, onLap, onNext, on
       <div className={`card${big ? ' big' : ''}`} data-testid="card" style={cardStyle}>
         <div className="ctop"><span>{title}</span><span className="tag">{tag}</span></div>
         {Corner}
-        <button className="hero row" data-testid="lap-body"
+        <button className="lapface" data-testid="lap-body"
           onClick={() => onLap(g.id)}
-          style={{ background: 'transparent', border: 0, cursor: 'pointer', color: 'inherit',
-                   paddingLeft: big ? 10 : 4 }}>
+          style={{ paddingLeft: big ? 12 : 6 }}>
+          {cur?.target != null && <div className="targetline">目標 {fmtClockStr(cur.target)}</div>}
           <Clock totalSec={runSec} secSize={secSize} minSize={minSize} tone={tone} />
-          {(ref != null || pastTxt) && (
-            <div className="runinfo">
-              {cur?.target != null && <div className="targetline">目標 {fmtClockStr(cur.target)}</div>}
-              {pastTxt && <div className="cmeta">{pastTxt}</div>}
-            </div>
-          )}
+          {pastTxt && <div className="cmeta">{pastTxt}</div>}
         </button>
       </div>
     )
