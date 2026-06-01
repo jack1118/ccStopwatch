@@ -1,8 +1,11 @@
 import { useState } from 'react'
-import type { Group, NRCColor, Segment, Session } from '../types'
-import { NRC_ORDER, NRC_HEX, NRC_TEXT, NRC_LABEL } from '../constants'
+import type { NRCColor, Segment, Session } from '../types'
+import { NRC_ORDER, NRC_NUM, NRC_HEX, NRC_TEXT, NRC_LABEL } from '../constants'
 
 const uid = () => crypto.randomUUID()
+
+// 預設啟用的組別：黃～綠共 5 組（紅預設關閉，可開）
+const DEFAULT_ON: NRCColor[] = ['yellow', 'black', 'purple', 'blue', 'green']
 
 interface Props {
   initial?: Session
@@ -10,45 +13,58 @@ interface Props {
   onCancel: () => void
 }
 
+interface GroupCfg { on: boolean; repsOverride: number | null }
+
+function initGroupCfg(initial?: Session): Record<NRCColor, GroupCfg> {
+  const cfg = {} as Record<NRCColor, GroupCfg>
+  for (const c of NRC_ORDER) {
+    const existing = initial?.groups.find((g) => g.color === c)
+    cfg[c] = existing
+      ? { on: true, repsOverride: existing.repsOverride }
+      : { on: !initial && DEFAULT_ON.includes(c), repsOverride: null }
+  }
+  return cfg
+}
+
 export function SessionSetup({ initial, onStart, onCancel }: Props) {
   const [name, setName] = useState(initial?.name ?? new Date().toLocaleDateString('zh-TW'))
   const [segments, setSegments] = useState<Segment[]>(
     initial?.plan.segments ?? [{ id: uid(), label: '400m', reps: 10, restSec: 90 }],
   )
-  const [groups, setGroups] = useState<Group[]>(initial?.groups ?? [])
-
-  const addSegment = () =>
-    setSegments((s) => [...s, { id: uid(), label: '200m', reps: 4, restSec: 60 }])
-  const updateSegment = (id: string, patch: Partial<Segment>) =>
-    setSegments((s) => s.map((seg) => (seg.id === id ? { ...seg, ...patch } : seg)))
-  const removeSegment = (id: string) => setSegments((s) => s.filter((seg) => seg.id !== id))
-
-  const addGroup = (color: NRCColor) => {
-    const sameColor = groups.filter((g) => g.color === color)
-    const nextNum = sameColor.length
-      ? Math.max(...sameColor.map((g) => g.number)) + 1
-      : groups.length + 1
-    setGroups((gs) => [...gs, {
-      id: uid(), color, number: nextNum, repsOverride: null, targetPaceSec: null,
-      athletes: [], state: 'idle', runStartTs: null, restStartTs: null, reps: [],
-    }])
-  }
-  const updateGroup = (id: string, patch: Partial<Group>) =>
-    setGroups((gs) => gs.map((g) => (g.id === id ? { ...g, ...patch } : g)))
-  const removeGroup = (id: string) => setGroups((gs) => gs.filter((g) => g.id !== id))
+  const [cfg, setCfg] = useState<Record<NRCColor, GroupCfg>>(() => initGroupCfg(initial))
 
   const planTotal = segments.reduce((s, seg) => s + seg.reps, 0)
 
+  const addSegment = () =>
+    setSegments((s) => [...s, { id: uid(), label: '200m', reps: 4, restSec: 60 }])
+  const patchSegment = (id: string, patch: Partial<Segment>) =>
+    setSegments((s) => s.map((seg) => (seg.id === id ? { ...seg, ...patch } : seg)))
+  const removeSegment = (id: string) => setSegments((s) => s.filter((seg) => seg.id !== id))
+
+  const toggleColor = (c: NRCColor) =>
+    setCfg((p) => ({ ...p, [c]: { ...p[c], on: !p[c].on } }))
+  const bumpReps = (c: NRCColor, delta: number) =>
+    setCfg((p) => {
+      const cur = p[c].repsOverride ?? (planTotal || 1)
+      return { ...p, [c]: { ...p[c], repsOverride: Math.max(1, cur + delta) } }
+    })
+
+  const activeCount = NRC_ORDER.filter((c) => cfg[c].on).length
+
   const start = () => {
-    const sessionOut: Session = {
+    const groups = NRC_ORDER.filter((c) => cfg[c].on).map((c) => ({
+      id: uid(), color: c, number: NRC_NUM[c],
+      repsOverride: cfg[c].repsOverride, targetPaceSec: null,
+      athletes: [], state: 'idle' as const, runStartTs: null, restStartTs: null, reps: [],
+    }))
+    onStart({
       id: initial?.id ?? uid(),
       name: name.trim() || '未命名課程',
       createdAt: initial?.createdAt ?? Date.now(),
       status: 'active',
       plan: { segments },
       groups,
-    }
-    onStart(sessionOut)
+    })
   }
 
   return (
@@ -64,59 +80,67 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
       </div>
 
       <div className="sec-block">
-        <div className="label">共用課表（可留空＝純碼表）</div>
+        <div className="label">共用課表（可留空＝純碼表，不需課表也能開始）</div>
         {segments.map((seg) => (
           <div className="seg-row" key={seg.id}>
-            <input className="field" style={{ width: 80 }} value={seg.label}
-              onChange={(e) => updateSegment(seg.id, { label: e.target.value })} />
+            <input className="field seg-label" value={seg.label}
+              onChange={(e) => patchSegment(seg.id, { label: e.target.value })} />
             <span>×</span>
-            <input className="field" type="number" inputMode="numeric" value={seg.reps}
-              onChange={(e) => updateSegment(seg.id, { reps: Math.max(1, Number(e.target.value) || 1) })} />
-            <span>趟 休</span>
-            <input className="field" type="number" inputMode="numeric" value={seg.restSec}
-              onChange={(e) => updateSegment(seg.id, { restSec: Math.max(0, Number(e.target.value) || 0) })} />
-            <span>s</span>
+            <div className="stepper">
+              <button onClick={() => patchSegment(seg.id, { reps: Math.max(1, seg.reps - 1) })}>−</button>
+              <span className="val">{seg.reps}</span>
+              <button onClick={() => patchSegment(seg.id, { reps: seg.reps + 1 })}>＋</button>
+            </div>
+            <span>趟</span>
             <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeSegment(seg.id)}>✕</button>
+          </div>
+        ))}
+        {segments.map((seg) => (
+          <div className="seg-row" key={`rest-${seg.id}`} style={{ background: 'transparent', padding: '0 12px 6px', fontSize: 14, opacity: .85 }}>
+            <span>{seg.label} 間休</span>
+            <div className="stepper">
+              <button onClick={() => patchSegment(seg.id, { restSec: Math.max(0, seg.restSec - 5) })}>−</button>
+              <span className="val">{seg.restSec}s</span>
+              <button onClick={() => patchSegment(seg.id, { restSec: seg.restSec + 5 })}>＋</button>
+            </div>
           </div>
         ))}
         <button className="btn" onClick={addSegment}>＋ 新增段落</button>
       </div>
 
       <div className="sec-block">
-        <div className="label">新增組別（點顏色）</div>
-        <div className="swatches">
-          {NRC_ORDER.map((c) => (
-            <button key={c} className="sw" style={{ background: NRC_HEX[c] }}
-              aria-label={NRC_LABEL[c]} onClick={() => addGroup(c)} />
-          ))}
-        </div>
+        <div className="label">組別（顏色固定對應組號，點右側開關啟用）</div>
+        {NRC_ORDER.map((c) => {
+          const on = cfg[c].on
+          const reps = cfg[c].repsOverride ?? planTotal
+          return (
+            <div className={`grp-row${on ? '' : ' off'}`} key={c}>
+              <span className="pill" style={{ background: NRC_HEX[c], color: NRC_TEXT[c] }}>
+                {NRC_LABEL[c]} 第{NRC_NUM[c]}組
+              </span>
+              {on && (
+                <>
+                  <span style={{ fontSize: 14 }}>趟數</span>
+                  <div className="stepper">
+                    <button onClick={() => bumpReps(c, -1)}>−</button>
+                    <span className="val">{reps || '—'}</span>
+                    <button onClick={() => bumpReps(c, +1)}>＋</button>
+                  </div>
+                </>
+              )}
+              <button className={`grp-toggle${on ? ' on' : ''}`} onClick={() => toggleColor(c)}>
+                {on ? '啟用中' : '未用'}
+              </button>
+            </div>
+          )
+        })}
       </div>
 
-      <div className="sec-block">
-        <div className="label">已加入的組別（{groups.length}）</div>
-        {groups.map((g) => (
-          <div className="grp-row" key={g.id}>
-            <span className="pill" style={{ background: NRC_HEX[g.color], color: NRC_TEXT[g.color] }}>
-              {NRC_LABEL[g.color]}·{g.number}
-            </span>
-            <span>趟數</span>
-            <input className="field" type="number" inputMode="numeric"
-              placeholder={String(planTotal)}
-              value={g.repsOverride ?? ''}
-              onChange={(e) => updateGroup(g.id, {
-                repsOverride: e.target.value === '' ? null : Math.max(1, Number(e.target.value)),
-              })} />
-            <span className="sub" style={{ fontSize: 11, opacity: .6 }}>
-              {g.repsOverride == null ? `依課表(${planTotal})` : '覆寫'}
-            </span>
-            <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeGroup(g.id)}>✕</button>
-          </div>
-        ))}
-      </div>
-
+      <div className="spacer" />
       <div className="bottombar">
-        <button className="btn primary" disabled={groups.length === 0} onClick={start}>
-          開始上課 ▶
+        <button className="btn primary" style={{ fontSize: 18, padding: 16 }}
+          disabled={activeCount === 0} onClick={start}>
+          開始上課 ▶（{activeCount} 組）
         </button>
       </div>
     </div>

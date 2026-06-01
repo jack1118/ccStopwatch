@@ -55,7 +55,7 @@ export function Results({ session, onExit, onUpdate }: Props) {
             <button key={g.id} className={`chip${visible.has(g.id) ? '' : ' off'}`}
               onClick={() => toggle(g.id)}>
               <span className="dot" style={{ background: NRC_CHART[g.color] }} />
-              {NRC_LABEL[g.color]}·{g.number}　均{avg(g)}s
+              {NRC_LABEL[g.color]} 第{g.number}組　均{avg(g)}s
             </button>
           ))}
         </div>
@@ -78,7 +78,7 @@ export function Results({ session, onExit, onUpdate }: Props) {
                 const restTotal = g.reps.reduce((s, r) => s + r.restSec, 0)
                 return (
                   <tr key={g.id} onClick={() => setDetailId(g.id)} style={{ cursor: 'pointer' }}>
-                    <td>{NRC_LABEL[g.color]}·{g.number}</td>
+                    <td>{NRC_LABEL[g.color]} 第{g.number}組</td>
                     {g.reps.map((r) => (
                       <td key={r.index} className={r.runSec === best ? 'bestcell' : ''}>{r.runSec}</td>
                     ))}
@@ -96,7 +96,7 @@ export function Results({ session, onExit, onUpdate }: Props) {
       {detail && (
         <div className="panel">
           <button className="btn" onClick={() => setDetailId(null)}>← 返回總表</button>
-          <h3>{NRC_LABEL[detail.color]}·{detail.number}組</h3>
+          <h3>{NRC_LABEL[detail.color]} 第{detail.number}組</h3>
           <div className="sec-block" style={{ padding: '4px 0' }}>
             <div className="label">學員名單（逗號分隔，可事後補）</div>
             <input className="field wide" defaultValue={detail.athletes.join('、')}

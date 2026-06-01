@@ -17,8 +17,9 @@ interface Props {
 }
 
 export function GroupCard({ group: g, plan, now, big, onStart, onLap, onNext, onUndo, onStop }: Props) {
-  const secSize = big ? 100 : 50
-  const title = `${NRC_LABEL[g.color]}·${g.number}組`
+  const secSize = big ? 140 : 60
+  const minSize = big ? 56 : 30
+  const title = `${NRC_LABEL[g.color]} 第${g.number}組`
   const cardStyle = { background: NRC_HEX[g.color], color: NRC_TEXT[g.color] }
   const lastRep = g.reps[g.reps.length - 1]
 
@@ -44,7 +45,9 @@ export function GroupCard({ group: g, plan, now, big, onStart, onLap, onNext, on
     return (
       <div className={`card${big ? ' big' : ''}`} data-testid="card" style={{ ...cardStyle, opacity: 0.72 }}>
         <div className="ctop"><span>{title}</span><span className="tag">✓完成</span></div>
-        <div className="hero"><span style={{ fontSize: big ? 30 : 22, fontWeight: 900 }}>總 {fmtClockStr(total)}</span></div>
+        <div className="hero" style={{ justifyContent: 'center' }}>
+          <span style={{ fontSize: big ? 34 : 24, fontWeight: 900 }}>總 {fmtClockStr(total)}</span>
+        </div>
         <div className="cmeta">{g.reps.length} 趟完成 · 點看圖表</div>
       </div>
     )
@@ -55,25 +58,19 @@ export function GroupCard({ group: g, plan, now, big, onStart, onLap, onNext, on
     const repNo = g.reps.length + 1
     // 上趟：跑步時間 ＋ 休息時間
     const pastTxt = lastRep
-      ? `上趟 ${fmtClockStr(lastRep.runSec)}${lastRep.restSec > 0 ? ` ·休 ${fmtClockStr(lastRep.restSec)}` : ''}`
+      ? `上趟 跑 ${fmtClockStr(lastRep.runSec)}${lastRep.restSec > 0 ? ` ·休 ${fmtClockStr(lastRep.restSec)}` : ''}`
       : ''
-    // Next：接下來的休息（或下一段距離）
-    const nextRest = restSecForRep(plan, g, g.reps.length)
-    const upcoming = upcomingLabel(plan, g)
-    const nextTxt = nextRest > 0 ? `Next 休 ${nextRest}s →` : upcoming ? `Next ${upcoming} →` : ''
     return (
       <div className={`card${big ? ' big' : ''}`} data-testid="card" style={cardStyle}>
         <div className="ctop"><span>{title}</span><span className="tag">第{repNo}趟</span></div>
         {Corner}
         <button className="hero" data-testid="lap-body"
           onClick={() => onLap(g.id)}
-          style={{ background: 'transparent', border: 0, cursor: 'pointer', color: 'inherit' }}>
-          <Clock totalSec={runSec} secSize={secSize} />
+          style={{ background: 'transparent', border: 0, cursor: 'pointer', color: 'inherit',
+                   justifyContent: 'flex-start', paddingLeft: big ? 14 : 8 }}>
+          <Clock totalSec={runSec} secSize={secSize} minSize={minSize} />
         </button>
-        <div className="metarow">
-          {pastTxt ? <span className="metachip past">{pastTxt}</span> : <span />}
-          {nextTxt ? <span className="metachip next">{nextTxt}</span> : <span />}
-        </div>
+        {pastTxt && <div className="cmeta" style={{ textAlign: 'left' }}>{pastTxt}</div>}
       </div>
     )
   }
@@ -92,7 +89,7 @@ export function GroupCard({ group: g, plan, now, big, onStart, onLap, onNext, on
       </div>
       {Corner}
       <button className="restwrap" data-testid="next-body" onClick={() => onNext(g.id)}>
-        <Clock totalSec={restSec} secSize={big ? 56 : 36} over={over} />
+        <Clock totalSec={restSec} secSize={big ? 72 : 44} minSize={big ? 34 : 22} over={over} />
         <span className={`restbar${over ? ' over' : ''}`}><i style={{ width: `${pct}%` }} /></span>
         <span className="gobtn">▶ 出發 下一趟</span>
       </button>
