@@ -108,10 +108,10 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
     const runSec = ticking ? elapsedSec(g.runStartTs as number, now) : 0
     const ref = cur?.target ?? g.targetPaceSec ?? (lastRep ? lastRep.runSec : null)
     const tone = paceTone(runSec, ref, 3)
-    const repNo = cur?.repNo ?? idx + 1
+    const setNo = cur?.setNo ?? idx + 1
     const tagSuffix = cur
-      ? `${cur.lapsInRep > 1 ? ` ${cur.lapInRep}/${cur.lapsInRep}圈` : ''}　${cur.meters}m`
-      : '圈'
+      ? `${cur.lapsInItem > 1 ? ` ${cur.lapInItem}/${cur.lapsInItem}圈` : ''}　${cur.meters}m`
+      : ''
     const pastTxt = lastRep
       ? `上圈 ${fmtClockStr(lastRep.runSec)}${lastRep.restSec > 0 ? `　休 ${fmtClockStr(lastRep.restSec)}` : ''}`
       : ''
@@ -119,7 +119,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
       <div className={`card${big ? ' big' : ''}${hint ? ' blink' : ''}`} data-testid="card" style={cardStyle}>
         <div className="ctop">
           {Title}
-          <span className="reptag">第<b className="bignum">{repNo}</b>{cur ? '趟' : ''}{tagSuffix}</span>
+          <span className="reptag">第<b className="bignum">{setNo}</b>{cur ? cur.unit : '圈'}{tagSuffix}</span>
         </div>
         {Corner}
         <button className="lapface" data-testid="lap-body"
@@ -128,7 +128,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
           {cur?.target != null && <div className="targetline">目標 {fmtClockStr(cur.target)}</div>}
           {ticking
             ? <Clock totalSec={runSec} secSize={secSize} minSize={minSize} tone={tone} />
-            : <span className="resume-hint">▶ 點一下開始<br />第{repNo}趟</span>}
+            : <span className="resume-hint">▶ 點一下開始<br />第{setNo}{cur ? cur.unit : '趟'}</span>}
           {pastTxt && <div className="cmeta">{pastTxt}</div>}
         </button>
         {HoldRing}{UndoRing}
@@ -138,8 +138,13 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
 
   // resting：整個休息區即為「準備出發」按鈕（長按＝停止）
   const doneIdx = g.reps.length - 1
-  const justRep = lapPlan[doneIdx]?.repNo ?? g.reps.length
-  const nextRep = lapPlan[g.reps.length]?.repNo ?? justRep + 1
+  const justLap = lapPlan[doneIdx]
+  const justSetNo = justLap?.setNo ?? g.reps.length
+  const justUnit = justLap?.unit ?? '趟'
+  const nextLap = lapPlan[g.reps.length]
+  const nextSetNo = nextLap?.setNo ?? justSetNo + 1
+  const nextUnit = nextLap?.unit ?? '趟'
+  const nextMeters = nextLap?.meters
   const restSec = g.restStartTs != null ? elapsedSec(g.restStartTs, now) : 0
   const target = lapPlan[doneIdx]?.restAfter ?? 0
   const tone = paceTone(restSec, target > 0 ? target : null, 5)
@@ -151,7 +156,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
       <div className="ctop">
         {Title}
         <span className="reptag">
-          第<b className="bignum">{justRep}</b>趟 休息
+          第<b className="bignum">{justSetNo}</b>{justUnit} 休息
           {tone === 'over' && <b className="over-text" style={{ marginLeft: 4 }}>{overTxt}</b>}
         </span>
       </div>
@@ -159,7 +164,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
       <button className="restwrap" data-testid="next-body" {...pressProps(() => onNext(g.id))}>
         <Clock totalSec={restSec} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone={tone} />
         <span className={`restbar${tone === 'over' ? ' over' : ''}`}><i style={{ width: `${pct}%` }} /></span>
-        <span className="gobtn">▶ 準備出發 第<b className="bignum">{nextRep}</b>趟</span>
+        <span className="gobtn">▶ 準備出發 第<b className="bignum">{nextSetNo}</b>{nextUnit}{nextMeters ? ` · ${nextMeters}m` : ''}</span>
       </button>
       <div className="cmeta restmeta">{lastRep ? `剛跑 ${fmtClockStr(lastRep.runSec)}` : ''}{target > 0 ? `　目標休 ${target}s` : ''}</div>
       {HoldRing}{UndoRing}

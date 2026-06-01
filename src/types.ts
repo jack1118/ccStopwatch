@@ -1,12 +1,25 @@
 export type NRCColor = 'yellow' | 'black' | 'purple' | 'blue' | 'green' | 'red'
 
+// 組合段落中的一個距離效能（effort）
+export interface Item {
+  id: string
+  meters: number      // 距離（公尺）
+  restSec: number     // 跑完此距離後的間休秒數（0 = 不休息，直接接下一個）
+  targetSec?: number  // 第1組（黃）此距離的「每圈目標秒」；0/未設 = 不設目標
+  gapSec?: number     // 各組依序累加的秒差（黑=+gap、紫=+2gap…）
+}
+
+// 段落＝一個（可由多個距離組成的）組合，重複 reps 組/趟
+// 例：items=[400m,200m], reps=8 → (400m+200m)×8
 export interface Segment {
   id: string
-  meters: number     // 距離（公尺）；顯示時固定加上 "m"
   reps: number
-  restSec: number    // 0 = 此段無休息（連續按圈）
-  targetSec?: number // 第1組（黃）此距離的目標秒數；0/未設 = 不設目標
-  gapSec?: number    // 各組依序累加的秒差（黑=+gap、紫=+2gap…）
+  items?: Item[]      // 組合內的距離清單（新版）
+  // ─ 舊版相容欄位（單一距離；無 items 時採用）─
+  meters?: number
+  restSec?: number
+  targetSec?: number
+  gapSec?: number
 }
 
 export interface Plan {

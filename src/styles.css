@@ -173,6 +173,7 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 
 /* 課程設定：段落卡片與標籤列 */
 .seg-card { background: #1c1c22; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+.item-box { border-left: 3px solid #34343e; padding-left: 10px; margin: 8px 0; }
 .field-row { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
 .field-row:last-child { margin-bottom: 0; }
 .field-row .rl { width: 92px; font-size: 14px; color: #cfcfd4; }
