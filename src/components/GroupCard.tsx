@@ -133,7 +133,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
     <div className={`card resting${big ? ' big' : ''}${readyToGo ? ' blink' : ''}`} data-testid="card" style={cardStyle}>
       <div className="ctop">
         {Title}
-        <span className={`reptag${tone === 'warn' ? ' warn-text' : ''}`}>
+        <span className="reptag">
           第<b className="bignum">{justRep}</b>趟 休息
           {tone === 'over' && <b className="over-text" style={{ marginLeft: 4 }}>{overTxt}</b>}
         </span>
