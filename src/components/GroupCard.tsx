@@ -9,6 +9,7 @@ interface Props {
   plan: Plan
   now: number
   big: boolean
+  hint?: boolean        // 下一個該起跑的組 → 外框閃燈提示
   onStart: (id: string) => void
   onLap: (id: string) => void
   onNext: (id: string) => void
@@ -16,7 +17,7 @@ interface Props {
   onStop: (id: string) => void
 }
 
-export function GroupCard({ group: g, plan, now, big, onStart, onLap, onNext, onUndo, onStop }: Props) {
+export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNext, onUndo, onStop }: Props) {
   const secSize = big ? 140 : 70
   const minSize = big ? 54 : 32
   const title = `${NRC_LABEL[g.color]} 第${g.number}組`
@@ -33,8 +34,8 @@ export function GroupCard({ group: g, plan, now, big, onStart, onLap, onNext, on
 
   if (g.state === 'idle') {
     return (
-      <div className={`card${big ? ' big' : ''}`} data-testid="card" style={cardStyle}>
-        <div className="ctop"><span>{title}</span><span className="tag">未開始</span></div>
+      <div className={`card${big ? ' big' : ''}${hint ? ' blink' : ''}`} data-testid="card" style={cardStyle}>
+        <div className="ctop"><span>{title}</span><span className="tag">{hint ? '👉 換這組' : '未開始'}</span></div>
         <button className="startbtn" onClick={() => onStart(g.id)}>▶ 開始</button>
         <div className="cmeta">{lapPlan.length > 0 ? `共 ${lapPlan.length} 圈` : '純碼表'}</div>
       </div>

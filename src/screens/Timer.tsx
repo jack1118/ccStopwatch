@@ -43,6 +43,8 @@ export function Timer({ session, onExit, onFinish }: Props) {
   const cols = count <= 4 ? 1 : 2
   const big = count <= 4
   const allDone = count > 0 && state.session.groups.every((g) => g.state === 'done')
+  // 依組序提示下一個該起跑的組（第一個還沒開始的）
+  const nextStartId = state.session.groups.find((g) => g.state === 'idle')?.id
 
   return (
     <div className="app">
@@ -55,6 +57,7 @@ export function Timer({ session, onExit, onFinish }: Props) {
         {state.session.groups.map((g) => (
           <GroupCard
             key={g.id} group={g} plan={state.session.plan} now={now} big={big}
+            hint={g.id === nextStartId}
             onStart={(id) => dispatch({ type: 'START', groupId: id, now: Date.now() })}
             onLap={(id) => dispatch({ type: 'LAP', groupId: id, now: Date.now() })}
             onNext={(id) => dispatch({ type: 'NEXT', groupId: id, now: Date.now() })}

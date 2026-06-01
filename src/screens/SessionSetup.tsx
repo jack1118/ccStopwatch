@@ -72,7 +72,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
   const [name, setName] = useState(initial?.name ?? today)
   const [nameTouched, setNameTouched] = useState(!!initial)
   const [segments, setSegments] = useState<Segment[]>(
-    initial?.plan.segments ?? [{ id: uid(), meters: 400, reps: 1, restSec: 90, targetSec: 0, gapSec: 0 }],
+    initial?.plan.segments ?? [{ id: uid(), meters: 400, reps: 10, restSec: 90, targetSec: 0, gapSec: 0 }],
   )
   const [cfg, setCfg] = useState<Record<NRCColor, GroupCfg>>(() => initGroupCfg(initial))
   const [lapMeters, setLapMeters] = useState(initial?.plan.lapMeters ?? 400)
