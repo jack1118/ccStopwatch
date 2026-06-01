@@ -45,6 +45,16 @@ export function Timer({ session, onExit, onFinish }: Props) {
   const allDone = count > 0 && state.session.groups.every((g) => g.state === 'done')
   // 依組序提示下一個該起跑的組（第一個還沒開始的）
   const nextStartId = state.session.groups.find((g) => g.state === 'idle')?.id
+  // 跑步中：依目標配速預測最快跑完當圈的組（目標−已跑 最小者），提示準備按它
+  let nextRunId: string | undefined
+  let bestRemaining = Infinity
+  for (const g of state.session.groups) {
+    if (g.state !== 'running' || g.runStartTs == null) continue
+    const t = buildLapPlan(state.session.plan, g)[g.reps.length]?.target
+    if (t == null) continue
+    const remaining = t - elapsedSec(g.runStartTs, now)
+    if (remaining < bestRemaining) { bestRemaining = remaining; nextRunId = g.id }
+  }
 
   return (
     <div className="app">
@@ -57,7 +67,7 @@ export function Timer({ session, onExit, onFinish }: Props) {
         {state.session.groups.map((g) => (
           <GroupCard
             key={g.id} group={g} plan={state.session.plan} now={now} big={big}
-            hint={g.id === nextStartId}
+            hint={g.id === nextStartId || g.id === nextRunId}
             onStart={(id) => { vibrateTap(); dispatch({ type: 'START', groupId: id, now: Date.now() }) }}
             onLap={(id) => { vibrateTap(); dispatch({ type: 'LAP', groupId: id, now: Date.now() }) }}
             onNext={(id) => { vibrateTap(); dispatch({ type: 'NEXT', groupId: id, now: Date.now() }) }}

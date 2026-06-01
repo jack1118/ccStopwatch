@@ -91,10 +91,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
     setSegments((s) => [...s, { id: uid(), meters: 200, reps: 1, restSec: 60, targetSec: 96, gapSec: 4 }])
   const patchSegment = (id: string, patch: Partial<Segment>) =>
     setSegments((s) => s.map((seg) => (seg.id === id ? { ...seg, ...patch } : seg)))
-  const removeSegment = (id: string) => {
-    if (!window.confirm('確定要刪除這個段落嗎？')) return
-    setSegments((s) => s.filter((seg) => seg.id !== id))
-  }
+  const removeSegment = (id: string) => setSegments((s) => s.filter((seg) => seg.id !== id))
 
   const toggleColor = (c: NRCColor) =>
     setCfg((p) => ({ ...p, [c]: { ...p[c], on: !p[c].on } }))

@@ -11,7 +11,8 @@ export function SessionList({ onNew, onOpen }: Props) {
   const [items, setItems] = useState<SessionMeta[]>([])
   useEffect(() => setItems(listSessions()), [])
 
-  const remove = (id: string) => {
+  const remove = (id: string, name: string) => {
+    if (!window.confirm(`確定要刪除課程「${name}」嗎？此動作無法復原。`)) return
     deleteSession(id)
     setItems(listSessions())
   }
@@ -39,7 +40,7 @@ export function SessionList({ onNew, onOpen }: Props) {
                 {m.status === 'done' ? ' 已完成' : ' 點擊繼續計時'}
               </div>
             </div>
-            <button className="btn danger" onClick={() => remove(m.id)}>刪除</button>
+            <button className="btn danger" onClick={() => remove(m.id, m.name)}>刪除</button>
           </div>
         ))}
       </div>

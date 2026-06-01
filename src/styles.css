@@ -43,8 +43,11 @@ button { font-family: inherit; color: inherit; }
 .tag.warn { background: #FF8A1A; color: #fff; }
 .cmeta { font-size: 10px; opacity: .82; text-align: center; margin-top: auto; }
 .card.big .cmeta { font-size: 12px; }
-.corner { position: absolute; top: 28px; right: 6px; z-index: 3; display: flex;
-  flex-direction: column; gap: 12px; }
+/* 休息卡底部「剛跑　目標休」放大更清楚 */
+.restmeta { font-size: 14px; font-weight: 600; opacity: .95; }
+.card.big .restmeta { font-size: 18px; }
+.corner { position: absolute; top: 44px; right: 6px; z-index: 3; display: flex;
+  flex-direction: column; gap: 10px; }
 .corner button { background: rgba(0,0,0,.18); border: 0; color: inherit;
   font-size: 16px; line-height: 1; width: 30px; height: 30px; border-radius: 8px; }
 
@@ -62,9 +65,9 @@ button { font-family: inherit; color: inherit; }
   align-items: flex-start; justify-content: center; gap: 2px;
   background: transparent; border: 0; color: inherit; cursor: pointer; }
 .lapface .targetline { margin: 0 0 2px; padding-left: 0; text-align: left; }
-/* 上圈資訊：至少跟目標一樣清楚 */
-.lapface .cmeta { margin: 2px 0 0; text-align: left; font-size: 13px; font-weight: 600; opacity: .95; }
-.card.big .lapface .cmeta { font-size: 18px; }
+/* 上圈資訊：至少跟目標一樣清楚，並與計時拉開距離 */
+.lapface .cmeta { margin: 8px 0 0; text-align: left; font-size: 15px; font-weight: 600; opacity: .95; }
+.card.big .lapface .cmeta { margin-top: 12px; font-size: 20px; }
 
 /* 右上角「第 N 趟」— N 放大強調 */
 .reptag { font-size: 12px; font-weight: 700; display: inline-flex; align-items: baseline; gap: 1px; }

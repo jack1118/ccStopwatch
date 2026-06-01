@@ -69,5 +69,5 @@ it('跑步中「上圈」顯示跑步＋休息時間', () => {
   }
   render(<GroupCard group={g} plan={plan} now={10000} big
     onStart={vi.fn()} onLap={vi.fn()} onNext={vi.fn()} onUndo={vi.fn()} onStop={vi.fn()} />)
-  expect(screen.getByText(/上圈 1:28 ·休 1:32/)).toBeInTheDocument()
+  expect(screen.getByText(/上圈 1:28\s+休 1:32/)).toBeInTheDocument()
 })

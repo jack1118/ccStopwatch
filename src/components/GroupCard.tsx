@@ -68,10 +68,10 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
       ? `${cur.lapsInRep > 1 ? ` ${cur.lapInRep}/${cur.lapsInRep}圈` : ''}　${cur.meters}m`
       : '圈'
     const pastTxt = lastRep
-      ? `上圈 ${fmtClockStr(lastRep.runSec)}${lastRep.restSec > 0 ? ` ·休 ${fmtClockStr(lastRep.restSec)}` : ''}`
+      ? `上圈 ${fmtClockStr(lastRep.runSec)}${lastRep.restSec > 0 ? `　休 ${fmtClockStr(lastRep.restSec)}` : ''}`
       : ''
     return (
-      <div className={`card${big ? ' big' : ''}`} data-testid="card" style={cardStyle}>
+      <div className={`card${big ? ' big' : ''}${hint ? ' blink' : ''}`} data-testid="card" style={cardStyle}>
         <div className="ctop">
           {Title}
           <span className="reptag">第<b className="bignum">{repNo}</b>{cur ? '趟' : ''}{tagSuffix}</span>
@@ -113,7 +113,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
         <span className={`restbar${tone === 'over' ? ' over' : ''}`}><i style={{ width: `${pct}%` }} /></span>
         <span className="gobtn">▶ 準備出發 第<b className="bignum">{nextRep}</b>趟</span>
       </button>
-      <div className="cmeta">{lastRep ? `剛跑 ${fmtClockStr(lastRep.runSec)}` : ''}{target > 0 ? ` · 目標休 ${target}s` : ''}</div>
+      <div className="cmeta restmeta">{lastRep ? `剛跑 ${fmtClockStr(lastRep.runSec)}` : ''}{target > 0 ? `　目標休 ${target}s` : ''}</div>
     </div>
   )
 }
