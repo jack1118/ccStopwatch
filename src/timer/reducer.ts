@@ -45,7 +45,9 @@ export function timerReducer(state: TimerState, action: TimerAction): TimerState
   if (action.type === 'UNDO') {
     const stack = state.undo[action.groupId] ?? []
     if (stack.length === 0) return state
-    const prev = stack[stack.length - 1]
+    let prev = stack[stack.length - 1]
+    // 復原後：該圈計時歸 0、需點一下才開始（不自動繼續跑）
+    if (prev.state === 'running') prev = { ...prev, runStartTs: null }
     const undo = { ...state.undo, [action.groupId]: stack.slice(0, -1) }
     const groups = state.session.groups.map((g) => (g.id === prev.id ? prev : g))
     const session = { ...state.session, groups }

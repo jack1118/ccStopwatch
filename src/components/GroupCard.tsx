@@ -87,7 +87,8 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
   if (g.state === 'running') {
     const idx = g.reps.length
     const cur = lapPlan[idx]
-    const runSec = g.runStartTs != null ? elapsedSec(g.runStartTs, now) : 0
+    const ticking = g.runStartTs != null            // false = 復原後暫停，需點一下才開始
+    const runSec = ticking ? elapsedSec(g.runStartTs as number, now) : 0
     const ref = cur?.target ?? g.targetPaceSec ?? (lastRep ? lastRep.runSec : null)
     const tone = paceTone(runSec, ref, 3)
     const repNo = cur?.repNo ?? idx + 1
@@ -104,10 +105,13 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
           <span className="reptag">第<b className="bignum">{repNo}</b>{cur ? '趟' : ''}{tagSuffix}</span>
         </div>
         {Corner}
-        <button className="lapface" data-testid="lap-body" {...pressProps(() => onLap(g.id))}
+        <button className="lapface" data-testid="lap-body"
+          {...pressProps(() => (ticking ? onLap(g.id) : onStart(g.id)))}
           style={{ paddingLeft: big ? 12 : 6 }}>
           {cur?.target != null && <div className="targetline">目標 {fmtClockStr(cur.target)}</div>}
-          <Clock totalSec={runSec} secSize={secSize} minSize={minSize} tone={tone} />
+          {ticking
+            ? <Clock totalSec={runSec} secSize={secSize} minSize={minSize} tone={tone} />
+            : <span className="resume-hint">▶ 點一下開始 第{repNo}趟</span>}
           {pastTxt && <div className="cmeta">{pastTxt}</div>}
         </button>
         {HoldRing}

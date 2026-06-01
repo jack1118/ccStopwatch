@@ -75,6 +75,7 @@ describe('timerReducer', () => {
     st = timerReducer(st, { type: 'UNDO', groupId: 'g1' })
     expect(g(st).state).toBe('running')      // 退回按圈前
     expect(g(st).reps).toHaveLength(0)
+    expect(g(st).runStartTs).toBeNull()      // 復原後計時歸0、需點一下才開始
   })
 
   it('STOP 任何狀態 → done', () => {

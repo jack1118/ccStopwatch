@@ -95,6 +95,8 @@ button { font-family: inherit; color: inherit; }
 .startbtn { flex: 1; display: flex; align-items: center; justify-content: center;
   font-size: 20px; font-weight: 800; background: rgba(255,255,255,.2);
   border: 0; border-radius: 12px; margin-top: 2px; }
+.resume-hint { font-size: 22px; font-weight: 800; opacity: .95; }
+.card.big .resume-hint { font-size: 30px; }
 .restwrap { flex: 1; display: flex; flex-direction: column; justify-content: center;
   align-items: center; gap: 5px; }
 /* 整個休息區即為「出發下一趟」按鈕（大面積好點） */
@@ -125,8 +127,10 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .clock .sec { transform-origin: center bottom; }
 .clock .sec.tick { animation: tick .9s ease-out; }
 @keyframes tick { 0% { transform: scale(1.16); } 18% { transform: scale(1); } 100% { transform: scale(1); } }
-.over-text { color: #FF453A !important; -webkit-text-stroke: 0; }
-.warn-text { color: #FF9F45 !important; -webkit-text-stroke: 0; }
+/* 橘/紅在淺色卡（黃組）也要看得清楚 → 保留深色描邊並加陰影 */
+.over-text { color: #FF3B30 !important; text-shadow: 0 1px 3px rgba(0,0,0,.7), 0 0 2px rgba(0,0,0,.6); }
+.warn-text { color: #FF7A00 !important; text-shadow: 0 1px 3px rgba(0,0,0,.7), 0 0 2px rgba(0,0,0,.6); }
+.reptag.warn-text, .reptag .over-text { -webkit-text-stroke: 0; }
 
 /* ── 清單 / 設定 ── */
 .list { padding: 8px 12px; display: flex; flex-direction: column; gap: 8px; }
