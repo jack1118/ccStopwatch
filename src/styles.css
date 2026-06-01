@@ -71,10 +71,11 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .resting { outline: 2px dashed rgba(255,255,255,.5); outline-offset: -2px; }
 
 /* ── 讀秒時鐘 ── */
+/* 所有組別一致：白字 + 深色描邊 + 暈邊陰影（各色背景都看得到立體感） */
 .clock { display: flex; align-items: baseline; font-variant-numeric: tabular-nums;
-  font-weight: 900; letter-spacing: -2px; line-height: .9;
-  text-shadow: 0 1px 3px rgba(0,0,0,.45), 0 0 2px rgba(0,0,0,.4);
-  -webkit-text-stroke: 1px rgba(0,0,0,.28); }
+  font-weight: 900; letter-spacing: -2px; line-height: .9; color: #fff;
+  text-shadow: 0 2px 5px rgba(0,0,0,.55), 0 0 3px rgba(0,0,0,.55);
+  -webkit-text-stroke: 1.2px rgba(0,0,0,.34); }
 .clock .min { opacity: .82; margin-right: 1px; }
 .clock .sec { transform-origin: center bottom; }
 .clock .sec.tick { animation: tick .9s ease-out; }
@@ -102,11 +103,13 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .field.seg-label { width: 92px; text-align: left; }
 .pill { padding: 4px 11px; border-radius: 8px; font-weight: 800; font-size: 15px; }
 
-/* 趟數 / 休息 ± 步進器 */
+/* 距離 / 趟數 / 休息 統一步進器：−、可直接輸入、＋ */
 .stepper { display: inline-flex; align-items: center; border-radius: 10px; overflow: hidden; }
 .stepper button { width: 40px; height: 40px; font-size: 24px; font-weight: 800;
   background: #2c2c2e; border: 0; color: #fff; line-height: 1; }
 .stepper button:active { background: #3a3a3e; }
+.stepper input { width: 62px; height: 40px; text-align: center; font-size: 19px;
+  font-weight: 800; background: #15151a; border: 0; color: #fff; }
 .stepper .val { min-width: 48px; text-align: center; font-size: 19px; font-weight: 800; }
 
 /* 課程設定：色塊開關 */

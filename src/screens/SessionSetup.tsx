@@ -7,6 +7,23 @@ const uid = () => crypto.randomUUID()
 // 預設啟用的組別：黃～綠共 5 組（紅預設關閉，可開）
 const DEFAULT_ON: NRCColor[] = ['yellow', 'black', 'purple', 'blue', 'green']
 
+/** 統一的步進器：−、可直接輸入數字、＋ */
+function Stepper({ value, step, min, onChange }: {
+  value: number; step: number; min: number; onChange: (v: number) => void
+}) {
+  return (
+    <div className="stepper">
+      <button onClick={() => onChange(Math.max(min, value - step))}>−</button>
+      <input type="number" inputMode="numeric" value={value}
+        onChange={(e) => {
+          const n = Number(e.target.value)
+          onChange(Number.isFinite(n) ? Math.max(min, n) : min)
+        }} />
+      <button onClick={() => onChange(value + step)}>＋</button>
+    </div>
+  )
+}
+
 interface Props {
   initial?: Session
   onStart: (session: Session) => void
@@ -43,11 +60,8 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
 
   const toggleColor = (c: NRCColor) =>
     setCfg((p) => ({ ...p, [c]: { ...p[c], on: !p[c].on } }))
-  const bumpReps = (c: NRCColor, delta: number) =>
-    setCfg((p) => {
-      const cur = p[c].repsOverride ?? (planTotal || 1)
-      return { ...p, [c]: { ...p[c], repsOverride: Math.max(1, cur + delta) } }
-    })
+  const setReps = (c: NRCColor, v: number) =>
+    setCfg((p) => ({ ...p, [c]: { ...p[c], repsOverride: Math.max(1, v) } }))
 
   const activeCount = NRC_ORDER.filter((c) => cfg[c].on).length
 
@@ -82,27 +96,21 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
       <div className="sec-block">
         <div className="label">共用課表（可留空＝純碼表，不需課表也能開始）</div>
         {segments.map((seg) => (
-          <div className="seg-row" key={seg.id}>
-            <input className="field" style={{ width: 84 }} type="number" inputMode="numeric"
-              value={seg.meters}
-              onChange={(e) => patchSegment(seg.id, { meters: Math.max(1, Number(e.target.value) || 0) })} />
-            <span>m ×</span>
-            <div className="stepper">
-              <button onClick={() => patchSegment(seg.id, { reps: Math.max(1, seg.reps - 1) })}>−</button>
-              <span className="val">{seg.reps}</span>
-              <button onClick={() => patchSegment(seg.id, { reps: seg.reps + 1 })}>＋</button>
-            </div>
+          <div className="seg-row" key={seg.id} style={{ flexWrap: 'wrap' }}>
+            <span style={{ width: 40 }}>距離</span>
+            <Stepper value={seg.meters} step={100} min={50}
+              onChange={(v) => patchSegment(seg.id, { meters: v })} />
+            <span>m</span>
+            <span style={{ width: 40, marginLeft: 6 }}>趟數</span>
+            <Stepper value={seg.reps} step={1} min={1}
+              onChange={(v) => patchSegment(seg.id, { reps: v })} />
             <span>趟</span>
             <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeSegment(seg.id)}>✕</button>
-          </div>
-        ))}
-        {segments.map((seg) => (
-          <div className="seg-row" key={`rest-${seg.id}`} style={{ background: 'transparent', padding: '0 12px 6px', fontSize: 14, opacity: .85 }}>
-            <span>{seg.meters}m 間休</span>
-            <div className="stepper">
-              <button onClick={() => patchSegment(seg.id, { restSec: Math.max(0, seg.restSec - 5) })}>−</button>
-              <span className="val">{seg.restSec}s</span>
-              <button onClick={() => patchSegment(seg.id, { restSec: seg.restSec + 5 })}>＋</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', marginTop: 8 }}>
+              <span style={{ width: 40 }}>間休</span>
+              <Stepper value={seg.restSec} step={5} min={0}
+                onChange={(v) => patchSegment(seg.id, { restSec: v })} />
+              <span>秒</span>
             </div>
           </div>
         ))}
@@ -122,11 +130,8 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
               {on && (
                 <>
                   <span style={{ fontSize: 14 }}>趟數</span>
-                  <div className="stepper">
-                    <button onClick={() => bumpReps(c, -1)}>−</button>
-                    <span className="val">{reps || '—'}</span>
-                    <button onClick={() => bumpReps(c, +1)}>＋</button>
-                  </div>
+                  <Stepper value={reps || 1} step={1} min={1}
+                    onChange={(v) => setReps(c, v)} />
                 </>
               )}
               <button className={`grp-toggle${on ? ' on' : ''}`} onClick={() => toggleColor(c)}>

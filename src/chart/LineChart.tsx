@@ -20,7 +20,8 @@ export function LineChart({ groups, visible }: Props) {
   const innerH = H - padT - padB
   const stepX = maxReps > 1 ? innerW / (maxReps - 1) : 0
   const xAt = (i: number) => padL + stepX * i
-  const yAt = (v: number) => padT + innerH * (1 - (v - min) / span)
+  // Y 軸反轉：秒數小（跑越快）靠上、秒數大（越慢）靠下
+  const yAt = (v: number) => padT + innerH * ((v - min) / span)
 
   const fracs = [0, 0.25, 0.5, 0.75, 1]
 
@@ -30,7 +31,7 @@ export function LineChart({ groups, visible }: Props) {
       {/* 橫格線 + y 軸秒數 */}
       {fracs.map((f, i) => {
         const y = padT + innerH * f
-        const labelSec = Math.round(max - (max - min) * f)
+        const labelSec = Math.round(min + (max - min) * f)
         return (
           <g key={`g${i}`}>
             <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="#2c2c34" strokeWidth="1" />
