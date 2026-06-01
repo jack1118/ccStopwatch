@@ -98,6 +98,15 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
   const patchItem = (segId: string, itemId: string, patch: Partial<Item>) =>
     setSegments((s) => s.map((seg) => seg.id === segId
       ? { ...seg, items: itemsOf(seg).map((it) => (it.id === itemId ? { ...it, ...patch } : it)) } : seg))
+  // 鏡像(金字塔)：把前半段(含高峰)對稱補到後面，如 1200,800,400 → 1200,800,400,800,1200
+  const mirrorSegment = (segId: string) =>
+    setSegments((s) => s.map((seg) => {
+      if (seg.id !== segId) return seg
+      const items = itemsOf(seg)
+      if (items.length < 2) return seg
+      const mirror = items.slice(0, -1).reverse().map((it) => ({ ...it, id: uid() }))
+      return { ...seg, items: [...items, ...mirror] }
+    }))
 
   // 組別設定
   const toggleColor = (c: NRCColor) => setCfg((p) => ({ ...p, [c]: { ...p[c], on: !p[c].on } }))
@@ -207,6 +216,9 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                 </div>
               ))}
               <button className="btn" onClick={() => addItem(seg.id)}>＋ 加一個距離（組合）</button>
+              {items.length >= 2 && (
+                <button className="btn" style={{ marginLeft: 8 }} onClick={() => mirrorSegment(seg.id)}>鏡像(金字塔)</button>
+              )}
             </div>
           )
         })}
