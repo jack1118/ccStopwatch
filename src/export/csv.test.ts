@@ -4,7 +4,7 @@ import type { Session } from '../types'
 
 const session: Session = {
   id: 's', name: '5/31 課', createdAt: 0, status: 'done',
-  plan: { segments: [{ id: '1', label: '400m', reps: 2, restSec: 90 }] },
+  plan: { segments: [{ id: '1', meters: 400, reps: 2, restSec: 90 }] },
   groups: [{
     id: 'g1', color: 'yellow', number: 1, repsOverride: null, targetPaceSec: null,
     athletes: ['小明'], state: 'done', runStartTs: null, restStartTs: null,

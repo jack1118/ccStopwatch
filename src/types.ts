@@ -2,7 +2,7 @@ export type NRCColor = 'yellow' | 'black' | 'purple' | 'blue' | 'green' | 'red'
 
 export interface Segment {
   id: string
-  label: string      // 例 "400m"
+  meters: number     // 距離（公尺）；顯示時固定加上 "m"
   reps: number
   restSec: number    // 0 = 此段無休息（連續按圈）
 }

@@ -7,9 +7,9 @@ export const NRC_NUM: Record<NRCColor, number> = {
   yellow: 1, black: 2, purple: 3, blue: 4, green: 5, red: 6,
 }
 
-// 卡片底色：黃加深、黑提亮（避免與深色背景混在一起），其餘維持鮮明
+// 卡片底色：黃維持明亮金黃（白字靠描邊+陰影保可讀）、黑提亮避免與背景混色，其餘鮮明
 export const NRC_HEX: Record<NRCColor, string> = {
-  yellow: '#C9920A',
+  yellow: '#EFB000',
   black: '#3A3A40',
   purple: '#7B3FE4',
   blue: '#0A6CFF',

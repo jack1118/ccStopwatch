@@ -29,14 +29,14 @@ function initGroupCfg(initial?: Session): Record<NRCColor, GroupCfg> {
 export function SessionSetup({ initial, onStart, onCancel }: Props) {
   const [name, setName] = useState(initial?.name ?? new Date().toLocaleDateString('zh-TW'))
   const [segments, setSegments] = useState<Segment[]>(
-    initial?.plan.segments ?? [{ id: uid(), label: '400m', reps: 10, restSec: 90 }],
+    initial?.plan.segments ?? [{ id: uid(), meters: 400, reps: 10, restSec: 90 }],
   )
   const [cfg, setCfg] = useState<Record<NRCColor, GroupCfg>>(() => initGroupCfg(initial))
 
   const planTotal = segments.reduce((s, seg) => s + seg.reps, 0)
 
   const addSegment = () =>
-    setSegments((s) => [...s, { id: uid(), label: '200m', reps: 4, restSec: 60 }])
+    setSegments((s) => [...s, { id: uid(), meters: 200, reps: 4, restSec: 60 }])
   const patchSegment = (id: string, patch: Partial<Segment>) =>
     setSegments((s) => s.map((seg) => (seg.id === id ? { ...seg, ...patch } : seg)))
   const removeSegment = (id: string) => setSegments((s) => s.filter((seg) => seg.id !== id))
@@ -83,9 +83,10 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
         <div className="label">共用課表（可留空＝純碼表，不需課表也能開始）</div>
         {segments.map((seg) => (
           <div className="seg-row" key={seg.id}>
-            <input className="field seg-label" value={seg.label}
-              onChange={(e) => patchSegment(seg.id, { label: e.target.value })} />
-            <span>×</span>
+            <input className="field" style={{ width: 84 }} type="number" inputMode="numeric"
+              value={seg.meters}
+              onChange={(e) => patchSegment(seg.id, { meters: Math.max(1, Number(e.target.value) || 0) })} />
+            <span>m ×</span>
             <div className="stepper">
               <button onClick={() => patchSegment(seg.id, { reps: Math.max(1, seg.reps - 1) })}>−</button>
               <span className="val">{seg.reps}</span>
@@ -97,7 +98,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
         ))}
         {segments.map((seg) => (
           <div className="seg-row" key={`rest-${seg.id}`} style={{ background: 'transparent', padding: '0 12px 6px', fontSize: 14, opacity: .85 }}>
-            <span>{seg.label} 間休</span>
+            <span>{seg.meters}m 間休</span>
             <div className="stepper">
               <button onClick={() => patchSegment(seg.id, { restSec: Math.max(0, seg.restSec - 5) })}>−</button>
               <span className="val">{seg.restSec}s</span>

@@ -37,6 +37,7 @@ button { font-family: inherit; color: inherit; }
 .tag { font-size: 10px; padding: 1px 7px; border-radius: 7px;
   background: rgba(255,255,255,.26); font-weight: 700; }
 .tag.over { background: #FF2D1A; color: #fff; }
+.tag.warn { background: #FF8A1A; color: #fff; }
 .cmeta { font-size: 10px; opacity: .82; text-align: center; margin-top: auto; }
 .card.big .cmeta { font-size: 12px; }
 .corner { position: absolute; top: 28px; right: 6px; z-index: 3; display: flex;
@@ -72,18 +73,24 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 /* ── 讀秒時鐘 ── */
 .clock { display: flex; align-items: baseline; font-variant-numeric: tabular-nums;
   font-weight: 900; letter-spacing: -2px; line-height: .9;
-  text-shadow: 0 1px 3px rgba(0,0,0,.38); }
+  text-shadow: 0 1px 3px rgba(0,0,0,.45), 0 0 2px rgba(0,0,0,.4);
+  -webkit-text-stroke: 1px rgba(0,0,0,.28); }
 .clock .min { opacity: .82; margin-right: 1px; }
 .clock .sec { transform-origin: center bottom; }
 .clock .sec.tick { animation: tick .9s ease-out; }
 @keyframes tick { 0% { transform: scale(1.16); } 18% { transform: scale(1); } 100% { transform: scale(1); } }
-.over-text { color: #FF453A !important; }
+.over-text { color: #FF453A !important; -webkit-text-stroke: 0; }
+.warn-text { color: #FF9F45 !important; -webkit-text-stroke: 0; }
 
 /* ── 清單 / 設定 ── */
 .list { padding: 8px 12px; display: flex; flex-direction: column; gap: 8px; }
 .list .item { background: #1c1c22; border-radius: 12px; padding: 12px 14px;
-  display: flex; align-items: center; gap: 10px; }
+  display: flex; align-items: center; gap: 10px; border: 1px solid transparent; }
+.list .item.active { border-color: #30D158; background: #14241a;
+  box-shadow: 0 0 0 1px rgba(48,209,88,.35); }
 .list .item .sub { font-size: 12px; opacity: .6; }
+.badge-live { color: #30D158; font-weight: 800; font-size: 12px; }
+.badge-live::before { content: '● '; }
 .sec-block { padding: 10px 14px; }
 .sec-block .label { font-size: 14px; color: #b3b3b9; font-weight: 700; margin-bottom: 8px; }
 .seg-row, .grp-row { background: #1c1c22; border-radius: 12px; padding: 11px 12px;

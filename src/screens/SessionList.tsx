@@ -28,12 +28,15 @@ export function SessionList({ onNew, onOpen }: Props) {
           </p>
         )}
         {items.map((m) => (
-          <div className="item" key={m.id}>
+          <div className={`item${m.status === 'active' ? ' active' : ''}`} key={m.id}>
             <div style={{ flex: 1 }} onClick={() => onOpen(m.id)}>
-              <div>{m.name}</div>
+              <div>
+                {m.name}
+                {m.status === 'active' && <span className="badge-live" style={{ marginLeft: 8 }}>進行中</span>}
+              </div>
               <div className="sub">
                 {new Date(m.createdAt).toLocaleDateString('zh-TW')} · {m.groupCount} 組 ·
-                {m.status === 'done' ? ' 已完成' : ' 進行中'}
+                {m.status === 'done' ? ' 已完成' : ' 點擊繼續計時'}
               </div>
             </div>
             <button className="btn danger" onClick={() => remove(m.id)}>刪除</button>

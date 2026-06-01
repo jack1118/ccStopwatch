@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { GroupCard } from './GroupCard'
 import type { Group, Plan } from '../types'
 
-const plan: Plan = { segments: [{ id: '1', label: '400m', reps: 10, restSec: 90 }] }
+const plan: Plan = { segments: [{ id: '1', meters: 400, reps: 10, restSec: 90 }] }
 const base: Group = {
   id: 'g1', color: 'green', number: 5, repsOverride: null, targetPaceSec: null,
   athletes: [], state: 'idle', runStartTs: null, restStartTs: null, reps: [],

@@ -6,7 +6,7 @@ function makeSession(): Session {
   return {
     id: 'sess1', name: '測試課', createdAt: 0, status: 'active',
     plan: { segments: [
-      { id: 's1', label: '400m', reps: 2, restSec: 90 },
+      { id: 's1', meters: 400, reps: 2, restSec: 90 },
     ] },
     groups: [{
       id: 'g1', color: 'yellow', number: 1, repsOverride: null, targetPaceSec: null,

@@ -43,7 +43,7 @@ export default function App() {
       {screen === 'results' && session && (
         <Results
           session={session}
-          onExit={() => setScreen('list')}
+          onExit={() => setScreen(session.status === 'active' ? 'timer' : 'list')}
           onUpdate={(s) => { saveSession(s); setSession(s) }}
         />
       )}

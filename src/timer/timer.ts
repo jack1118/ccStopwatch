@@ -26,9 +26,27 @@ export function restSecForRep(plan: Plan, group: Group, repIndex: number): numbe
   return seg ? seg.restSec : 0
 }
 
-/** 下一趟要跑什麼（給卡片「下一步」顯示）。 */
+/** 下一趟要跑什麼（給卡片顯示），例如 "400m"。 */
 export function upcomingLabel(plan: Plan, group: Group): string {
   const nextIndex = group.reps.length
   const seg = segmentOfRep(plan, nextIndex)
-  return seg ? seg.label : ''
+  return seg ? `${seg.meters}m` : ''
+}
+
+/**
+ * 依目前秒數與參考秒數判斷顏色狀態。
+ * - 超過參考 → 'over'（紅）
+ * - 接近參考（剩 warnWithin 秒內）→ 'warn'（橘紅）
+ * - 否則 undefined（正常）
+ * ref 為 null（無參考）時不變色。
+ */
+export function paceTone(
+  current: number,
+  ref: number | null,
+  warnWithin: number,
+): 'warn' | 'over' | undefined {
+  if (ref == null || ref <= 0) return undefined
+  if (current > ref) return 'over'
+  if (current >= ref - warnWithin) return 'warn'
+  return undefined
 }
