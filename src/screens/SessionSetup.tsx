@@ -72,7 +72,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
   const [name, setName] = useState(initial?.name ?? today)
   const [nameTouched, setNameTouched] = useState(!!initial)
   const [segments, setSegments] = useState<Segment[]>(
-    initial?.plan.segments ?? [{ id: uid(), meters: 400, reps: 10, restSec: 90, targetSec: 0, gapSec: 0 }],
+    initial?.plan.segments ?? [{ id: uid(), meters: 400, reps: 10, restSec: 90, targetSec: 96, gapSec: 4 }],
   )
   const [cfg, setCfg] = useState<Record<NRCColor, GroupCfg>>(() => initGroupCfg(initial))
   const [lapMeters, setLapMeters] = useState(initial?.plan.lapMeters ?? 400)
@@ -88,10 +88,13 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
   }, [planSummary, nameTouched, today])
 
   const addSegment = () =>
-    setSegments((s) => [...s, { id: uid(), meters: 200, reps: 1, restSec: 60, targetSec: 0, gapSec: 0 }])
+    setSegments((s) => [...s, { id: uid(), meters: 200, reps: 1, restSec: 60, targetSec: 96, gapSec: 4 }])
   const patchSegment = (id: string, patch: Partial<Segment>) =>
     setSegments((s) => s.map((seg) => (seg.id === id ? { ...seg, ...patch } : seg)))
-  const removeSegment = (id: string) => setSegments((s) => s.filter((seg) => seg.id !== id))
+  const removeSegment = (id: string) => {
+    if (!window.confirm('確定要刪除這個段落嗎？')) return
+    setSegments((s) => s.filter((seg) => seg.id !== id))
+  }
 
   const toggleColor = (c: NRCColor) =>
     setCfg((p) => ({ ...p, [c]: { ...p[c], on: !p[c].on } }))
@@ -166,7 +169,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
             <div className="field-row">
               <span className="rl">距離</span>
               <Stepper value={seg.meters} step={100} min={50} onChange={(v) => patchSegment(seg.id, { meters: v })} />
-              <span className="ru">m（＝ {lapsPerRep(seg, lapMeters)} 圈／趟）</span>
+              <span className="ru">m{lapsPerRep(seg, lapMeters) > 1 ? `（＝ ${lapsPerRep(seg, lapMeters)} 圈／趟）` : ''}</span>
             </div>
             <div className="field-row">
               <span className="rl">趟數</span>
@@ -216,7 +219,11 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                     <button className="grp-expand" onClick={() => toggleExpand(c)}>
                       {isOpen ? '▾ 趟數' : '▸ 趟數'}
                     </button>
-                    {!isOpen && <span className="grp-sum">{totalReps(c)}趟·{totalLaps(c)}圈</span>}
+                    {!isOpen && (
+                      <span className="grp-sum">
+                        {totalReps(c)}趟{totalLaps(c) !== totalReps(c) ? `·${totalLaps(c)}圈` : ''}
+                      </span>
+                    )}
                   </>
                 )}
                 <button className={`grp-toggle${on ? ' on' : ''}`} onClick={() => toggleColor(c)}>
@@ -233,7 +240,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                       <div className="field-row">
                         <span className="rl">趟數</span>
                         <Stepper value={repsFor(c, seg)} step={1} min={0} onChange={(v) => setSegReps(c, seg.id, v)} />
-                        <span className="ru">趟</span>
+                        <span className="ru">趟{lapsPerRep(seg, lapMeters) > 1 ? `（${lapsPerRep(seg, lapMeters)}圈/趟）` : ''}</span>
                       </div>
                       <div className="field-row">
                         <span className="rl">每圈目標</span>

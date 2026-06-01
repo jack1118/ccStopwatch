@@ -6,7 +6,7 @@ import { saveSession } from '../storage/storage'
 import { GroupCard } from '../components/GroupCard'
 import { useNow } from '../hooks/useNow'
 import { useWakeLock } from '../hooks/useWakeLock'
-import { beep } from '../sound'
+import { beep, vibrateTap } from '../sound'
 
 interface Props {
   session: Session
@@ -58,9 +58,9 @@ export function Timer({ session, onExit, onFinish }: Props) {
           <GroupCard
             key={g.id} group={g} plan={state.session.plan} now={now} big={big}
             hint={g.id === nextStartId}
-            onStart={(id) => dispatch({ type: 'START', groupId: id, now: Date.now() })}
-            onLap={(id) => dispatch({ type: 'LAP', groupId: id, now: Date.now() })}
-            onNext={(id) => dispatch({ type: 'NEXT', groupId: id, now: Date.now() })}
+            onStart={(id) => { vibrateTap(); dispatch({ type: 'START', groupId: id, now: Date.now() }) }}
+            onLap={(id) => { vibrateTap(); dispatch({ type: 'LAP', groupId: id, now: Date.now() }) }}
+            onNext={(id) => { vibrateTap(); dispatch({ type: 'NEXT', groupId: id, now: Date.now() }) }}
             onUndo={(id) => dispatch({ type: 'UNDO', groupId: id })}
             onStop={(id) => dispatch({ type: 'STOP', groupId: id, now: Date.now() })}
           />

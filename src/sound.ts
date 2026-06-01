@@ -19,3 +19,8 @@ export function beep(): void {
   }
   navigator.vibrate?.(200)
 }
+
+/** 按圈/出發的觸覺回饋（Android 等支援裝置會震動；iOS Safari 不支援，靜默略過） */
+export function vibrateTap(): void {
+  navigator.vibrate?.(35)
+}
