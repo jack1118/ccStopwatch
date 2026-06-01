@@ -55,9 +55,25 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
     onPointerCancel: () => endPress(),
   })
   const HoldRing = holding ? <span className="hold-ring" /> : null
+
+  // 復原也用長按（白色寬線繞圓框），避免誤觸
+  const undoTimer = useRef<number | undefined>(undefined)
+  const [undoHolding, setUndoHolding] = useState(false)
+  const startUndo = () => {
+    setUndoHolding(true)
+    undoTimer.current = window.setTimeout(() => { setUndoHolding(false); onUndo(g.id) }, 900)
+  }
+  const cancelUndo = () => {
+    if (undoTimer.current) clearTimeout(undoTimer.current)
+    setUndoHolding(false)
+  }
   const Corner = (
     <div className="corner">
-      <button className="undo-btn" aria-label="復原上一圈" onClick={() => onUndo(g.id)}>↩</button>
+      <button className="undo-btn" aria-label="長按復原上一圈"
+        onPointerDown={startUndo} onPointerUp={cancelUndo}
+        onPointerLeave={cancelUndo} onPointerCancel={cancelUndo}>
+        ↩{undoHolding && <span className="undo-ring" />}
+      </button>
     </div>
   )
 

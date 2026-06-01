@@ -48,9 +48,18 @@ button { font-family: inherit; color: inherit; }
 .card.big .restmeta { font-size: 18px; }
 .corner { position: absolute; top: 44px; right: 6px; z-index: 6; display: flex;
   flex-direction: column; gap: 10px; }
-.undo-btn { background: rgba(0,0,0,.32); border: 1.5px solid rgba(255,255,255,.5);
+.undo-btn { position: relative; background: rgba(0,0,0,.32); border: 1.5px solid rgba(255,255,255,.5);
   color: #fff; font-size: 22px; font-weight: 900; line-height: 1;
   width: 40px; height: 40px; border-radius: 50%; }
+.undo-ring { position: absolute; inset: -4px; border-radius: 50%; pointer-events: none;
+  padding: 4px;
+  background: conic-gradient(#fff var(--deg, 0deg), rgba(255,255,255,.22) 0);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: fillring .9s linear forwards;
+}
 
 /* 長按停止：紅框逐漸繞滿 */
 @property --deg { syntax: '<angle>'; inherits: false; initial-value: 0deg; }

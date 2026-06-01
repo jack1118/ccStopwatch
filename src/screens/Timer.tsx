@@ -45,14 +45,16 @@ export function Timer({ session, onExit, onFinish }: Props) {
   const allDone = count > 0 && state.session.groups.every((g) => g.state === 'done')
   // 依組序提示下一個該起跑的組（第一個還沒開始的）
   const nextStartId = state.session.groups.find((g) => g.state === 'idle')?.id
-  // 跑步中：依目標配速預測最快跑完當圈的組（目標−已跑 最小者），提示準備按它
+  // 跑步中：計時超過該組目標 2/3 後才開始提示；取最快跑完當圈者（目標−已跑 最小）
   let nextRunId: string | undefined
   let bestRemaining = Infinity
   for (const g of state.session.groups) {
     if (g.state !== 'running' || g.runStartTs == null) continue
     const t = buildLapPlan(state.session.plan, g)[g.reps.length]?.target
     if (t == null) continue
-    const remaining = t - elapsedSec(g.runStartTs, now)
+    const elapsed = elapsedSec(g.runStartTs, now)
+    if (elapsed < (t * 2) / 3) continue          // 未過 2/3 目標 → 先不提示
+    const remaining = t - elapsed
     if (remaining < bestRemaining) { bestRemaining = remaining; nextRunId = g.id }
   }
 
