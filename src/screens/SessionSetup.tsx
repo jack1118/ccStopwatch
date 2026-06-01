@@ -14,10 +14,11 @@ function Stepper({ value, step, min, onChange }: {
   return (
     <div className="stepper">
       <button onClick={() => onChange(Math.max(min, value - step))}>−</button>
-      <input type="number" inputMode="numeric" value={value}
+      <input type="text" inputMode="numeric" pattern="[0-9]*" value={String(value)}
+        onFocus={(e) => e.target.select()}
         onChange={(e) => {
-          const n = Number(e.target.value)
-          onChange(Number.isFinite(n) ? Math.max(min, n) : min)
+          const digits = e.target.value.replace(/[^0-9]/g, '')
+          onChange(digits === '' ? min : Math.max(min, Number(digits)))
         }} />
       <button onClick={() => onChange(value + step)}>＋</button>
     </div>
@@ -156,7 +157,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                 </>
               )}
               <button className={`grp-toggle${on ? ' on' : ''}`} onClick={() => toggleColor(c)}>
-                {on ? '啟用中' : '未用'}
+                {on ? '啟用' : '未用'}
               </button>
             </div>
           )

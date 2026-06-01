@@ -1,6 +1,6 @@
 import type { Group, Plan } from '../types'
 import { NRC_HEX, NRC_TEXT, NRC_LABEL } from '../constants'
-import { elapsedSec, restSecForRep, upcomingLabel, paceTone, targetSecForRep } from '../timer/timer'
+import { elapsedSec, restSecForRep, upcomingLabel, paceTone, targetSecForRep, segmentOfRep } from '../timer/timer'
 import { fmtClockStr, fmtOverflow } from '../format'
 import { Clock } from './Clock'
 
@@ -17,8 +17,8 @@ interface Props {
 }
 
 export function GroupCard({ group: g, plan, now, big, onStart, onLap, onNext, onUndo, onStop }: Props) {
-  const secSize = big ? 140 : 60
-  const minSize = big ? 56 : 30
+  const secSize = big ? 132 : 64
+  const minSize = big ? 52 : 30
   const title = `${NRC_LABEL[g.color]} 第${g.number}組`
   const cardStyle = { background: NRC_HEX[g.color], color: NRC_TEXT[g.color] }
   const lastRep = g.reps[g.reps.length - 1]
@@ -60,22 +60,27 @@ export function GroupCard({ group: g, plan, now, big, onStart, onLap, onNext, on
     const target = targetSecForRep(plan, g, g.reps.length)
     const ref = target ?? g.targetPaceSec ?? (lastRep ? lastRep.runSec : null)
     const tone = paceTone(runSec, ref, 3)
-    const targetTxt = target != null ? `目標 ${fmtClockStr(target)}` : ''
+    const meters = segmentOfRep(plan, g.reps.length)?.meters
+    const repTag = `第${repNo}趟${meters ? ` · ${meters}m` : ''}`
     const pastTxt = lastRep
       ? `上趟 跑 ${fmtClockStr(lastRep.runSec)}${lastRep.restSec > 0 ? ` ·休 ${fmtClockStr(lastRep.restSec)}` : ''}`
       : ''
-    const metaTxt = [pastTxt, targetTxt].filter(Boolean).join('　·　')
     return (
       <div className={`card${big ? ' big' : ''}`} data-testid="card" style={cardStyle}>
-        <div className="ctop"><span>{title}</span><span className="tag">第{repNo}趟</span></div>
+        <div className="ctop"><span>{title}</span><span className="tag">{repTag}</span></div>
         {Corner}
-        <button className="hero" data-testid="lap-body"
+        <button className="hero row" data-testid="lap-body"
           onClick={() => onLap(g.id)}
           style={{ background: 'transparent', border: 0, cursor: 'pointer', color: 'inherit',
-                   justifyContent: 'flex-start', paddingLeft: big ? 14 : 8 }}>
+                   paddingLeft: big ? 10 : 4 }}>
           <Clock totalSec={runSec} secSize={secSize} minSize={minSize} tone={tone} />
+          {(target != null || pastTxt) && (
+            <div className="runinfo">
+              {target != null && <div className="targetline">目標 {fmtClockStr(target)}</div>}
+              {pastTxt && <div className="cmeta">{pastTxt}</div>}
+            </div>
+          )}
         </button>
-        {metaTxt && <div className="cmeta" style={{ textAlign: 'left' }}>{metaTxt}</div>}
       </div>
     )
   }
@@ -99,7 +104,7 @@ export function GroupCard({ group: g, plan, now, big, onStart, onLap, onNext, on
       <button className="restwrap" data-testid="next-body" onClick={() => onNext(g.id)}>
         <Clock totalSec={restSec} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone={tone} />
         <span className={`restbar${tone === 'over' ? ' over' : ''}`}><i style={{ width: `${pct}%` }} /></span>
-        <span className="gobtn">▶ 出發 第{nextNo}趟</span>
+        <span className="gobtn">▶ 準備出發 第{nextNo}趟</span>
       </button>
       <div className="cmeta">{lastRep ? `剛跑 ${fmtClockStr(lastRep.runSec)}` : ''}{target > 0 ? ` · 目標休 ${target}s` : ''}</div>
     </div>
