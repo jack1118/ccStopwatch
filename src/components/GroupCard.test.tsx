@@ -54,12 +54,12 @@ it('休息中點整個碼表區即觸發 onNext（出發下一趟）', async () 
   expect(onNext).toHaveBeenCalledWith('g1')
 })
 
-it('跑步中「上趟」顯示跑步＋休息時間', () => {
+it('跑步中「上圈」顯示跑步＋休息時間', () => {
   const g = {
     ...base, state: 'running' as const, runStartTs: 0,
     reps: [{ index: 0, runSec: 88, restSec: 92 }],
   }
   render(<GroupCard group={g} plan={plan} now={10000} big
     onStart={vi.fn()} onLap={vi.fn()} onNext={vi.fn()} onUndo={vi.fn()} onStop={vi.fn()} />)
-  expect(screen.getByText(/上趟 跑 1:28 ·休 1:32/)).toBeInTheDocument()
+  expect(screen.getByText(/上圈 1:28 ·休 1:32/)).toBeInTheDocument()
 })

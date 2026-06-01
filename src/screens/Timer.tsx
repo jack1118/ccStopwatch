@@ -1,7 +1,7 @@
 import { useEffect, useReducer, useRef } from 'react'
 import type { Session } from '../types'
 import { timerReducer, initTimerState } from '../timer/reducer'
-import { elapsedSec, restSecForRep } from '../timer/timer'
+import { elapsedSec, buildLapPlan } from '../timer/timer'
 import { saveSession } from '../storage/storage'
 import { GroupCard } from '../components/GroupCard'
 import { useNow } from '../hooks/useNow'
@@ -29,7 +29,8 @@ export function Timer({ session, onExit, onFinish }: Props) {
     for (const g of state.session.groups) {
       const key = `${g.id}:${g.reps.length}`
       if (g.state === 'resting' && g.restStartTs != null) {
-        const target = restSecForRep(state.session.plan, g, g.reps.length - 1)
+        const lapPlan = buildLapPlan(state.session.plan, g)
+        const target = lapPlan[g.reps.length - 1]?.restAfter ?? 0
         if (target > 0 && elapsedSec(g.restStartTs, now) >= target && !beeped.current.has(key)) {
           beeped.current.add(key)
           beep()

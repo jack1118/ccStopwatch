@@ -5,7 +5,7 @@ import { LineChart } from '../chart/LineChart'
 import { sessionToCsv } from '../export/csv'
 import { downloadPng, downloadText } from '../export/screenshot'
 import { fmtClockStr } from '../format'
-import { segmentOfRep } from '../timer/timer'
+import { buildLapPlan } from '../timer/timer'
 
 interface Props {
   session: Session
@@ -42,7 +42,11 @@ export function Results({ session, onExit, onUpdate }: Props) {
 
   const maxReps = Math.max(0, ...session.groups.map((g) => g.reps.length))
   const hasPlan = session.plan.segments.length > 0
-  const distAt = (i: number) => segmentOfRep(session.plan, i)?.meters ?? null
+  // 各圈距離（以最長的那組為參考）
+  const refGroup = session.groups.reduce(
+    (a, b) => (b.reps.length > a.reps.length ? b : a), session.groups[0])
+  const refLaps = refGroup ? buildLapPlan(session.plan, refGroup) : []
+  const distAt = (i: number) => refLaps[i]?.meters ?? null
   const detail = session.groups.find((g) => g.id === detailId)
 
   return (

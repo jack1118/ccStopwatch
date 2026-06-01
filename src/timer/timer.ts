@@ -1,8 +1,9 @@
 import type { Group, Plan, Segment } from '../types'
 
-export function totalReps(plan: Plan, group: Group): number {
-  if (group.repsOverride != null) return group.repsOverride
-  return plan.segments.reduce((sum, s) => sum + s.reps, 0)
+export const DEFAULT_LAP_METERS = 400
+
+export function getLapMeters(plan: Plan): number {
+  return plan.lapMeters && plan.lapMeters > 0 ? plan.lapMeters : DEFAULT_LAP_METERS
 }
 
 export function segmentOfRep(plan: Plan, repIndex: number): Segment | null {
@@ -18,38 +19,77 @@ export function elapsedSec(startTs: number, now: number): number {
   return Math.max(0, Math.floor((now - startTs) / 1000))
 }
 
-/** 完成 repIndex 這趟後的目標休息秒數；最後一趟（或查無段落）為 0。 */
-export function restSecForRep(plan: Plan, group: Group, repIndex: number): number {
-  const total = totalReps(plan, group)
-  if (total > 0 && repIndex >= total - 1) return 0
-  const seg = segmentOfRep(plan, repIndex)
-  return seg ? seg.restSec : 0
+/** 一趟（rep）在此場地會跑幾圈 */
+export function lapsPerRep(seg: Segment, lapMeters: number): number {
+  return Math.max(1, Math.ceil(seg.meters / lapMeters))
 }
 
-/** 下一趟要跑什麼（給卡片顯示），例如 "400m"。 */
-export function upcomingLabel(plan: Plan, group: Group): string {
-  const nextIndex = group.reps.length
-  const seg = segmentOfRep(plan, nextIndex)
-  return seg ? `${seg.meters}m` : ''
+/** 規劃出的一圈 */
+export interface PlannedLap {
+  segId: string
+  repNo: number       // 全程第幾趟（從 1）
+  lapInRep: number    // 該趟內第幾圈（從 1）
+  lapsInRep: number   // 該趟共幾圈
+  meters: number      // 這一圈的距離（最後一圈可能不足整圈）
+  target: number | null  // 這一圈、此組的目標秒數
+  restAfter: number   // 完成這一圈後的休息秒數（趟結尾且非全程最後一圈才 > 0）
 }
 
 /**
- * 某趟的目標秒數：第1組為 segment.targetSec，其餘組依組號累加 gapSec。
- * 例：targetSec=96, gapSec=8 → 黃96、黑104、紫112…。未設目標回 null。
+ * 把課表攤平成「一圈一筆」的計畫（計時/按圈的基本單位是圈）。
+ * - 距離 1200m、場地 400m → 一趟 3 圈
+ * - 目標秒數為每圈基準，依組號累加 gapSec；不足一圈的尾段按比例縮放
+ * - repsOverride（總趟數）會依段落順序截斷
  */
-export function targetSecForRep(plan: Plan, group: Group, repIndex: number): number | null {
-  const seg = segmentOfRep(plan, repIndex)
-  if (!seg || !seg.targetSec || seg.targetSec <= 0) return null
-  const step = group.number - 1   // 第1組=0
-  return seg.targetSec + (seg.gapSec ?? 0) * step
+export function buildLapPlan(plan: Plan, group: Group): PlannedLap[] {
+  const L = getLapMeters(plan)
+  const laps: PlannedLap[] = []
+  const budget = group.repsOverride
+  let repsLeft = budget == null ? Infinity : budget
+  let repNo = 0
+
+  for (const seg of plan.segments) {
+    const lpr = lapsPerRep(seg, L)
+    const segReps = budget == null ? seg.reps : Math.min(seg.reps, repsLeft)
+    const baseTarget = seg.targetSec && seg.targetSec > 0
+      ? seg.targetSec + (seg.gapSec ?? 0) * (group.number - 1)
+      : null
+    for (let r = 0; r < segReps; r++) {
+      if (repsLeft <= 0) break
+      repNo++
+      repsLeft--
+      let remaining = seg.meters
+      for (let lap = 0; lap < lpr; lap++) {
+        const m = Math.min(L, remaining)
+        remaining -= m
+        const isRepEnd = lap === lpr - 1
+        laps.push({
+          segId: seg.id,
+          repNo,
+          lapInRep: lap + 1,
+          lapsInRep: lpr,
+          meters: m,
+          target: baseTarget == null ? null : Math.round(baseTarget * (m / L)),
+          restAfter: isRepEnd ? seg.restSec : 0,
+        })
+      }
+    }
+  }
+  // 全程最後一圈完成即結束，無休息
+  if (laps.length > 0) laps[laps.length - 1].restAfter = 0
+  return laps
+}
+
+/** 全程總圈數（0 = 無課表，純連續按圈） */
+export function totalLaps(plan: Plan, group: Group): number {
+  return buildLapPlan(plan, group).length
 }
 
 /**
  * 依目前秒數與參考秒數判斷顏色狀態。
  * - 超過參考 → 'over'（紅）
  * - 接近參考（剩 warnWithin 秒內）→ 'warn'（橘紅）
- * - 否則 undefined（正常）
- * ref 為 null（無參考）時不變色。
+ * - 否則 undefined（正常）；ref 為 null 時不變色。
  */
 export function paceTone(
   current: number,

@@ -1,5 +1,5 @@
 import type { Group, Session } from '../types'
-import { elapsedSec, restSecForRep, totalReps } from './timer'
+import { elapsedSec, buildLapPlan } from './timer'
 
 export interface TimerState {
   session: Session
@@ -65,18 +65,19 @@ export function timerReducer(state: TimerState, action: TimerAction): TimerState
       return withGroup({ ...state, undo }, action.groupId, (g) => {
         if (g.state !== 'running' || g.runStartTs == null) return g
         const runSec = elapsedSec(g.runStartTs, action.now)
-        const index = g.reps.length
+        const index = g.reps.length          // 這次完成的是第 index 圈
         const reps = [...g.reps, { index, runSec, restSec: 0 }]
-        const total = totalReps(plan, g)
-        const isLast = total > 0 && index >= total - 1
-        if (isLast) {
+        const lapPlan = buildLapPlan(plan, g)
+        const total = lapPlan.length
+        if (total > 0 && index >= total - 1) {
           return { ...g, reps, state: 'done', runStartTs: null, restStartTs: null }
         }
-        const rest = restSecForRep(plan, g, index)
-        if (rest > 0) {
+        const restAfter = total > 0 ? (lapPlan[index]?.restAfter ?? 0) : 0
+        if (restAfter > 0) {
+          // 趟結尾 → 休息
           return { ...g, reps, state: 'resting', runStartTs: null, restStartTs: action.now }
         }
-        // 無休息：直接續跑下一趟
+        // 同一趟的下一圈（或純連續按圈）→ 直接續跑
         return { ...g, reps, state: 'running', runStartTs: action.now, restStartTs: null }
       })
 

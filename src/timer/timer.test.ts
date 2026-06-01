@@ -1,86 +1,88 @@
 import { describe, it, expect } from 'vitest'
-import { totalReps, segmentOfRep, elapsedSec, restSecForRep, upcomingLabel, paceTone, targetSecForRep } from './timer'
-import type { Group, Plan } from '../types'
-
-const plan: Plan = { segments: [
-  { id: 's1', meters: 400, reps: 6, restSec: 90 },
-  { id: 's2', meters: 200, reps: 4, restSec: 60 },
-] }
+import {
+  segmentOfRep, elapsedSec, getLapMeters, lapsPerRep, buildLapPlan, totalLaps, paceTone,
+} from './timer'
+import type { Group, Plan, Segment } from '../types'
 
 const baseGroup: Group = {
   id: 'g1', color: 'yellow', number: 1, repsOverride: null, targetPaceSec: null,
   athletes: [], state: 'idle', runStartTs: null, restStartTs: null, reps: [],
 }
+const seg = (s: Partial<Segment>): Segment =>
+  ({ id: 's', meters: 400, reps: 1, restSec: 90, ...s })
 
-describe('totalReps', () => {
-  it('無覆寫時加總課表趟數', () => {
-    expect(totalReps(plan, baseGroup)).toBe(10)
+describe('getLapMeters', () => {
+  it('預設 400、可覆寫', () => {
+    expect(getLapMeters({ segments: [] })).toBe(400)
+    expect(getLapMeters({ segments: [], lapMeters: 200 })).toBe(200)
   })
-  it('有覆寫時用覆寫值', () => {
-    expect(totalReps(plan, { ...baseGroup, repsOverride: 8 })).toBe(8)
+})
+
+describe('lapsPerRep', () => {
+  it('距離 / 一圈長度，無條件進位，至少 1', () => {
+    expect(lapsPerRep(seg({ meters: 1200 }), 400)).toBe(3)
+    expect(lapsPerRep(seg({ meters: 400 }), 400)).toBe(1)
+    expect(lapsPerRep(seg({ meters: 200 }), 400)).toBe(1)
+    expect(lapsPerRep(seg({ meters: 600 }), 400)).toBe(2)
+  })
+})
+
+describe('buildLapPlan', () => {
+  it('1200m×1趟、場地400m → 3 圈（同一趟、趟內無休息）', () => {
+    const plan: Plan = { lapMeters: 400, segments: [seg({ meters: 1200, reps: 1, restSec: 90, targetSec: 96, gapSec: 8 })] }
+    const laps = buildLapPlan(plan, baseGroup)
+    expect(laps).toHaveLength(3)
+    expect(laps.map((l) => l.lapInRep)).toEqual([1, 2, 3])
+    expect(laps.every((l) => l.repNo === 1 && l.lapsInRep === 3)).toBe(true)
+    expect(laps.every((l) => l.restAfter === 0)).toBe(true)   // 同趟內＋全程最後 → 不休息
+    expect(laps[0].target).toBe(96)                            // 第1組每圈目標
+  })
+
+  it('各組每圈目標依組號累加 gapSec', () => {
+    const plan: Plan = { lapMeters: 400, segments: [seg({ meters: 400, reps: 1, targetSec: 96, gapSec: 8 })] }
+    expect(buildLapPlan(plan, { ...baseGroup, number: 1 })[0].target).toBe(96)
+    expect(buildLapPlan(plan, { ...baseGroup, number: 2 })[0].target).toBe(104)
+    expect(buildLapPlan(plan, { ...baseGroup, number: 3 })[0].target).toBe(112)
+  })
+
+  it('多趟：休息只在趟與趟之間，全程最後一圈不休息', () => {
+    const plan: Plan = { lapMeters: 400, segments: [seg({ meters: 400, reps: 3, restSec: 90 })] }
+    const laps = buildLapPlan(plan, baseGroup)
+    expect(laps.map((l) => l.restAfter)).toEqual([90, 90, 0])
+  })
+
+  it('repsOverride 截斷總趟數（綠組少跑）', () => {
+    const plan: Plan = { lapMeters: 400, segments: [seg({ meters: 400, reps: 10, restSec: 90 })] }
+    expect(buildLapPlan(plan, { ...baseGroup, repsOverride: 8 })).toHaveLength(8)
+  })
+
+  it('無課表 → 空計畫（純連續按圈）', () => {
+    expect(buildLapPlan({ segments: [] }, baseGroup)).toEqual([])
+    expect(totalLaps({ segments: [] }, baseGroup)).toBe(0)
   })
 })
 
 describe('segmentOfRep', () => {
-  it('依全程趟次找出所屬段落', () => {
+  const plan: Plan = { segments: [seg({ id: 'a', meters: 400, reps: 6 }), seg({ id: 'b', meters: 200, reps: 4 })] }
+  it('依趟次找出所屬段落', () => {
     expect(segmentOfRep(plan, 0)?.meters).toBe(400)
-    expect(segmentOfRep(plan, 5)?.meters).toBe(400)
     expect(segmentOfRep(plan, 6)?.meters).toBe(200)
-    expect(segmentOfRep(plan, 9)?.meters).toBe(200)
     expect(segmentOfRep(plan, 99)).toBeNull()
   })
 })
 
 describe('elapsedSec', () => {
-  it('以毫秒時間戳算整數秒', () => {
+  it('以毫秒時間戳算整數秒、不為負', () => {
     expect(elapsedSec(1000, 73000)).toBe(72)
-    expect(elapsedSec(5000, 4000)).toBe(0) // 不為負
-  })
-})
-
-describe('restSecForRep', () => {
-  it('該趟所屬段落的休息秒數', () => {
-    expect(restSecForRep(plan, baseGroup, 0)).toBe(90)
-    expect(restSecForRep(plan, baseGroup, 6)).toBe(60)
-  })
-  it('最後一趟後不休息（0）', () => {
-    expect(restSecForRep(plan, baseGroup, 9)).toBe(0)
-  })
-})
-
-describe('upcomingLabel', () => {
-  it('已完成 1 趟時下一步為第 2 趟的距離', () => {
-    const g = { ...baseGroup, reps: [{ index: 0, runSec: 88, restSec: 0 }] }
-    expect(upcomingLabel(plan, g)).toContain('400m')
-  })
-})
-
-describe('targetSecForRep', () => {
-  const planT: Plan = { segments: [{ id: 's', meters: 400, reps: 4, restSec: 90, targetSec: 96, gapSec: 8 }] }
-  it('第1組（黃，number=1）為基準秒數', () => {
-    expect(targetSecForRep(planT, { ...baseGroup, number: 1 }, 0)).toBe(96)
-  })
-  it('依組號累加 gapSec（黑=2→+8、紫=3→+16）', () => {
-    expect(targetSecForRep(planT, { ...baseGroup, number: 2 }, 0)).toBe(104)
-    expect(targetSecForRep(planT, { ...baseGroup, number: 3 }, 0)).toBe(112)
-  })
-  it('未設目標（targetSec 0）回 null', () => {
-    const p: Plan = { segments: [{ id: 's', meters: 400, reps: 4, restSec: 90 }] }
-    expect(targetSecForRep(p, { ...baseGroup, number: 1 }, 0)).toBeNull()
+    expect(elapsedSec(5000, 4000)).toBe(0)
   })
 })
 
 describe('paceTone', () => {
-  it('超過參考為 over', () => {
+  it('超過→over、接近→warn、還遠→正常、無參考→不變色', () => {
     expect(paceTone(95, 90, 3)).toBe('over')
-  })
-  it('接近參考（warnWithin 內）為 warn', () => {
-    expect(paceTone(88, 90, 3)).toBe('warn')   // 90-3=87 ≤ 88 ≤ 90
-  })
-  it('離參考還遠為正常（undefined）', () => {
+    expect(paceTone(88, 90, 3)).toBe('warn')
     expect(paceTone(70, 90, 3)).toBeUndefined()
-  })
-  it('無參考時不變色', () => {
     expect(paceTone(120, null, 3)).toBeUndefined()
   })
 })

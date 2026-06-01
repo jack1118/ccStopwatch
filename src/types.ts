@@ -11,6 +11,7 @@ export interface Segment {
 
 export interface Plan {
   segments: Segment[]
+  lapMeters?: number   // 操作場地一圈幾公尺（預設 400）
 }
 
 export interface RepRecord {
