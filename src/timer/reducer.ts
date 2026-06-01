@@ -11,7 +11,7 @@ export type TimerAction =
   | { type: 'LAP'; groupId: string; now: number }
   | { type: 'NEXT'; groupId: string; now: number }
   | { type: 'STOP'; groupId: string; now: number }
-  | { type: 'UNDO'; groupId: string }
+  | { type: 'UNDO'; groupId: string; now?: number }
 
 export function initTimerState(session: Session): TimerState {
   return { session, undo: {} }
@@ -46,8 +46,9 @@ export function timerReducer(state: TimerState, action: TimerAction): TimerState
     const stack = state.undo[action.groupId] ?? []
     if (stack.length === 0) return state
     let prev = stack[stack.length - 1]
-    // 復原後：該圈計時歸 0、需點一下才開始（不自動繼續跑）
+    // 復原後計時歸 0：跑步→暫停(需點一下才開始)；休息→從 0 重新計時
     if (prev.state === 'running') prev = { ...prev, runStartTs: null }
+    else if (prev.state === 'resting') prev = { ...prev, restStartTs: action.now ?? prev.restStartTs }
     const undo = { ...state.undo, [action.groupId]: stack.slice(0, -1) }
     const groups = state.session.groups.map((g) => (g.id === prev.id ? prev : g))
     const session = { ...state.session, groups }

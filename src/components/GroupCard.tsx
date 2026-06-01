@@ -67,12 +67,13 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
     if (undoTimer.current) clearTimeout(undoTimer.current)
     setUndoHolding(false)
   }
+  const UndoRing = undoHolding ? <span className="undo-ring" /> : null
   const Corner = (
     <div className="corner">
       <button className="undo-btn" aria-label="長按復原上一圈"
         onPointerDown={startUndo} onPointerUp={cancelUndo}
         onPointerLeave={cancelUndo} onPointerCancel={cancelUndo}>
-        ↩{undoHolding && <span className="undo-ring" />}
+        ↩
       </button>
     </div>
   )
@@ -127,10 +128,10 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
           {cur?.target != null && <div className="targetline">目標 {fmtClockStr(cur.target)}</div>}
           {ticking
             ? <Clock totalSec={runSec} secSize={secSize} minSize={minSize} tone={tone} />
-            : <span className="resume-hint">▶ 點一下開始 第{repNo}趟</span>}
+            : <span className="resume-hint">▶ 點一下開始<br />第{repNo}趟</span>}
           {pastTxt && <div className="cmeta">{pastTxt}</div>}
         </button>
-        {HoldRing}
+        {HoldRing}{UndoRing}
       </div>
     )
   }
@@ -161,7 +162,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
         <span className="gobtn">▶ 準備出發 第<b className="bignum">{nextRep}</b>趟</span>
       </button>
       <div className="cmeta restmeta">{lastRep ? `剛跑 ${fmtClockStr(lastRep.runSec)}` : ''}{target > 0 ? `　目標休 ${target}s` : ''}</div>
-      {HoldRing}
+      {HoldRing}{UndoRing}
     </div>
   )
 }

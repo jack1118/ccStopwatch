@@ -73,7 +73,7 @@ export function Timer({ session, onExit, onFinish }: Props) {
             onStart={(id) => { vibrateTap(); dispatch({ type: 'START', groupId: id, now: Date.now() }) }}
             onLap={(id) => { vibrateTap(); dispatch({ type: 'LAP', groupId: id, now: Date.now() }) }}
             onNext={(id) => { vibrateTap(); dispatch({ type: 'NEXT', groupId: id, now: Date.now() }) }}
-            onUndo={(id) => dispatch({ type: 'UNDO', groupId: id })}
+            onUndo={(id) => dispatch({ type: 'UNDO', groupId: id, now: Date.now() })}
             onStop={(id) => dispatch({ type: 'STOP', groupId: id, now: Date.now() })}
           />
         ))}
