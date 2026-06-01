@@ -112,6 +112,13 @@ button.restwrap { background: transparent; border: 0; color: inherit;
   font-weight: 800; background: #15151a; border: 0; color: #fff; }
 .stepper .val { min-width: 48px; text-align: center; font-size: 19px; font-weight: 800; }
 
+/* 課程設定：段落卡片與標籤列 */
+.seg-card { background: #1c1c22; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+.field-row { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+.field-row:last-child { margin-bottom: 0; }
+.field-row .rl { width: 92px; font-size: 14px; color: #cfcfd4; }
+.field-row .ru { font-size: 14px; color: #9a9aa0; }
+
 /* 課程設定：色塊開關 */
 .grp-toggle { margin-left: auto; font-size: 13px; font-weight: 700;
   padding: 7px 12px; border-radius: 9px; border: 0; background: #2c2c2e; color: #fff; }

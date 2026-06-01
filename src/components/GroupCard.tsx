@@ -1,6 +1,6 @@
 import type { Group, Plan } from '../types'
 import { NRC_HEX, NRC_TEXT, NRC_LABEL } from '../constants'
-import { elapsedSec, restSecForRep, upcomingLabel, paceTone } from '../timer/timer'
+import { elapsedSec, restSecForRep, upcomingLabel, paceTone, targetSecForRep } from '../timer/timer'
 import { fmtClockStr, fmtOverflow } from '../format'
 import { Clock } from './Clock'
 
@@ -56,12 +56,15 @@ export function GroupCard({ group: g, plan, now, big, onStart, onLap, onNext, on
   if (g.state === 'running') {
     const runSec = g.runStartTs != null ? elapsedSec(g.runStartTs, now) : 0
     const repNo = g.reps.length + 1
-    // 預計時間參考：目標配速優先，否則用上一趟時間。快到→橘紅，超過→紅。
-    const ref = g.targetPaceSec ?? (lastRep ? lastRep.runSec : null)
+    // 預計時間參考：課表目標(各組累加)優先，其次群組目標配速，再退而用上一趟時間。快到→橘紅，超過→紅。
+    const target = targetSecForRep(plan, g, g.reps.length)
+    const ref = target ?? g.targetPaceSec ?? (lastRep ? lastRep.runSec : null)
     const tone = paceTone(runSec, ref, 3)
+    const targetTxt = target != null ? `目標 ${fmtClockStr(target)}` : ''
     const pastTxt = lastRep
       ? `上趟 跑 ${fmtClockStr(lastRep.runSec)}${lastRep.restSec > 0 ? ` ·休 ${fmtClockStr(lastRep.restSec)}` : ''}`
       : ''
+    const metaTxt = [pastTxt, targetTxt].filter(Boolean).join('　·　')
     return (
       <div className={`card${big ? ' big' : ''}`} data-testid="card" style={cardStyle}>
         <div className="ctop"><span>{title}</span><span className="tag">第{repNo}趟</span></div>
@@ -72,7 +75,7 @@ export function GroupCard({ group: g, plan, now, big, onStart, onLap, onNext, on
                    justifyContent: 'flex-start', paddingLeft: big ? 14 : 8 }}>
           <Clock totalSec={runSec} secSize={secSize} minSize={minSize} tone={tone} />
         </button>
-        {pastTxt && <div className="cmeta" style={{ textAlign: 'left' }}>{pastTxt}</div>}
+        {metaTxt && <div className="cmeta" style={{ textAlign: 'left' }}>{metaTxt}</div>}
       </div>
     )
   }

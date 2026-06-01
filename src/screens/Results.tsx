@@ -5,6 +5,7 @@ import { LineChart } from '../chart/LineChart'
 import { sessionToCsv } from '../export/csv'
 import { downloadPng, downloadText } from '../export/screenshot'
 import { fmtClockStr } from '../format'
+import { segmentOfRep } from '../timer/timer'
 
 interface Props {
   session: Session
@@ -40,6 +41,8 @@ export function Results({ session, onExit, onUpdate }: Props) {
     g.reps.length ? Math.round(g.reps.reduce((s, r) => s + r.runSec, 0) / g.reps.length) : 0
 
   const maxReps = Math.max(0, ...session.groups.map((g) => g.reps.length))
+  const hasPlan = session.plan.segments.length > 0
+  const distAt = (i: number) => segmentOfRep(session.plan, i)?.meters ?? null
   const detail = session.groups.find((g) => g.id === detailId)
 
   return (
@@ -68,7 +71,14 @@ export function Results({ session, onExit, onUpdate }: Props) {
             <thead>
               <tr>
                 <th>組別</th>
-                {Array.from({ length: maxReps }).map((_, i) => <th key={i}>{i + 1}</th>)}
+                {Array.from({ length: maxReps }).map((_, i) => (
+                  <th key={i}>
+                    {i + 1}
+                    {hasPlan && distAt(i) != null && (
+                      <div style={{ fontSize: 9, fontWeight: 400, opacity: .65 }}>{distAt(i)}m</div>
+                    )}
+                  </th>
+                ))}
                 <th>均</th><th>休</th>
               </tr>
             </thead>
@@ -104,10 +114,15 @@ export function Results({ session, onExit, onUpdate }: Props) {
               onBlur={(e) => setAthletes(detail.id, e.target.value)} />
           </div>
           <table className="splits">
-            <thead><tr><th>趟</th><th>跑步</th><th>休息</th></tr></thead>
+            <thead><tr><th>趟</th>{hasPlan && <th>距離</th>}<th>跑步</th><th>休息</th></tr></thead>
             <tbody>
               {detail.reps.map((r) => (
-                <tr key={r.index}><td>{r.index + 1}</td><td>{fmtClockStr(r.runSec)}</td><td>{r.restSec}s</td></tr>
+                <tr key={r.index}>
+                  <td>{r.index + 1}</td>
+                  {hasPlan && <td>{distAt(r.index) != null ? `${distAt(r.index)}m` : '—'}</td>}
+                  <td>{fmtClockStr(r.runSec)}</td>
+                  <td>{r.restSec}s</td>
+                </tr>
               ))}
             </tbody>
           </table>

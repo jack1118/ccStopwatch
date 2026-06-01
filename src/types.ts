@@ -5,6 +5,8 @@ export interface Segment {
   meters: number     // 距離（公尺）；顯示時固定加上 "m"
   reps: number
   restSec: number    // 0 = 此段無休息（連續按圈）
+  targetSec?: number // 第1組（黃）此距離的目標秒數；0/未設 = 不設目標
+  gapSec?: number    // 各組依序累加的秒差（黑=+gap、紫=+2gap…）
 }
 
 export interface Plan {

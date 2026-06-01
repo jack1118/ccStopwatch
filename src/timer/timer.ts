@@ -34,6 +34,17 @@ export function upcomingLabel(plan: Plan, group: Group): string {
 }
 
 /**
+ * 某趟的目標秒數：第1組為 segment.targetSec，其餘組依組號累加 gapSec。
+ * 例：targetSec=96, gapSec=8 → 黃96、黑104、紫112…。未設目標回 null。
+ */
+export function targetSecForRep(plan: Plan, group: Group, repIndex: number): number | null {
+  const seg = segmentOfRep(plan, repIndex)
+  if (!seg || !seg.targetSec || seg.targetSec <= 0) return null
+  const step = group.number - 1   // 第1組=0
+  return seg.targetSec + (seg.gapSec ?? 0) * step
+}
+
+/**
  * 依目前秒數與參考秒數判斷顏色狀態。
  * - 超過參考 → 'over'（紅）
  * - 接近參考（剩 warnWithin 秒內）→ 'warn'（橘紅）

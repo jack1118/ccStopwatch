@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { totalReps, segmentOfRep, elapsedSec, restSecForRep, upcomingLabel, paceTone } from './timer'
+import { totalReps, segmentOfRep, elapsedSec, restSecForRep, upcomingLabel, paceTone, targetSecForRep } from './timer'
 import type { Group, Plan } from '../types'
 
 const plan: Plan = { segments: [
@@ -52,6 +52,21 @@ describe('upcomingLabel', () => {
   it('已完成 1 趟時下一步為第 2 趟的距離', () => {
     const g = { ...baseGroup, reps: [{ index: 0, runSec: 88, restSec: 0 }] }
     expect(upcomingLabel(plan, g)).toContain('400m')
+  })
+})
+
+describe('targetSecForRep', () => {
+  const planT: Plan = { segments: [{ id: 's', meters: 400, reps: 4, restSec: 90, targetSec: 96, gapSec: 8 }] }
+  it('第1組（黃，number=1）為基準秒數', () => {
+    expect(targetSecForRep(planT, { ...baseGroup, number: 1 }, 0)).toBe(96)
+  })
+  it('依組號累加 gapSec（黑=2→+8、紫=3→+16）', () => {
+    expect(targetSecForRep(planT, { ...baseGroup, number: 2 }, 0)).toBe(104)
+    expect(targetSecForRep(planT, { ...baseGroup, number: 3 }, 0)).toBe(112)
+  })
+  it('未設目標（targetSec 0）回 null', () => {
+    const p: Plan = { segments: [{ id: 's', meters: 400, reps: 4, restSec: 90 }] }
+    expect(targetSecForRep(p, { ...baseGroup, number: 1 }, 0)).toBeNull()
   })
 })
 

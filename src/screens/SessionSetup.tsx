@@ -46,14 +46,14 @@ function initGroupCfg(initial?: Session): Record<NRCColor, GroupCfg> {
 export function SessionSetup({ initial, onStart, onCancel }: Props) {
   const [name, setName] = useState(initial?.name ?? new Date().toLocaleDateString('zh-TW'))
   const [segments, setSegments] = useState<Segment[]>(
-    initial?.plan.segments ?? [{ id: uid(), meters: 400, reps: 10, restSec: 90 }],
+    initial?.plan.segments ?? [{ id: uid(), meters: 400, reps: 1, restSec: 90, targetSec: 0, gapSec: 0 }],
   )
   const [cfg, setCfg] = useState<Record<NRCColor, GroupCfg>>(() => initGroupCfg(initial))
 
   const planTotal = segments.reduce((s, seg) => s + seg.reps, 0)
 
   const addSegment = () =>
-    setSegments((s) => [...s, { id: uid(), meters: 200, reps: 4, restSec: 60 }])
+    setSegments((s) => [...s, { id: uid(), meters: 200, reps: 1, restSec: 60, targetSec: 0, gapSec: 0 }])
   const patchSegment = (id: string, patch: Partial<Segment>) =>
     setSegments((s) => s.map((seg) => (seg.id === id ? { ...seg, ...patch } : seg)))
   const removeSegment = (id: string) => setSegments((s) => s.filter((seg) => seg.id !== id))
@@ -94,24 +94,45 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
       </div>
 
       <div className="sec-block">
-        <div className="label">共用課表（可留空＝純碼表，不需課表也能開始）</div>
-        {segments.map((seg) => (
-          <div className="seg-row" key={seg.id} style={{ flexWrap: 'wrap' }}>
-            <span style={{ width: 40 }}>距離</span>
-            <Stepper value={seg.meters} step={100} min={50}
-              onChange={(v) => patchSegment(seg.id, { meters: v })} />
-            <span>m</span>
-            <span style={{ width: 40, marginLeft: 6 }}>趟數</span>
-            <Stepper value={seg.reps} step={1} min={1}
-              onChange={(v) => patchSegment(seg.id, { reps: v })} />
-            <span>趟</span>
-            <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeSegment(seg.id)}>✕</button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', marginTop: 8 }}>
-              <span style={{ width: 40 }}>間休</span>
-              <Stepper value={seg.restSec} step={5} min={0}
-                onChange={(v) => patchSegment(seg.id, { restSec: v })} />
-              <span>秒</span>
+        <div className="label">共用課表（以「第1組」為基準；可留空＝純碼表）</div>
+        {segments.map((seg, idx) => (
+          <div className="seg-card" key={seg.id}>
+            <div className="field-row">
+              <span className="rl">段落 {idx + 1}</span>
+              <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeSegment(seg.id)}>✕ 刪除</button>
             </div>
+            <div className="field-row">
+              <span className="rl">距離</span>
+              <Stepper value={seg.meters} step={100} min={50} onChange={(v) => patchSegment(seg.id, { meters: v })} />
+              <span className="ru">m</span>
+            </div>
+            <div className="field-row">
+              <span className="rl">趟數</span>
+              <Stepper value={seg.reps} step={1} min={1} onChange={(v) => patchSegment(seg.id, { reps: v })} />
+              <span className="ru">趟</span>
+            </div>
+            <div className="field-row">
+              <span className="rl">第1組目標</span>
+              <Stepper value={seg.targetSec ?? 0} step={1} min={0} onChange={(v) => patchSegment(seg.id, { targetSec: v })} />
+              <span className="ru">秒（0＝不設）</span>
+            </div>
+            <div className="field-row">
+              <span className="rl">每組＋</span>
+              <Stepper value={seg.gapSec ?? 0} step={1} min={0} onChange={(v) => patchSegment(seg.id, { gapSec: v })} />
+              <span className="ru">秒／組（黑、紫…依序累加）</span>
+            </div>
+            <div className="field-row">
+              <span className="rl">間休</span>
+              <Stepper value={seg.restSec} step={5} min={0} onChange={(v) => patchSegment(seg.id, { restSec: v })} />
+              <span className="ru">秒</span>
+            </div>
+            {(seg.targetSec ?? 0) > 0 && (
+              <div className="field-row" style={{ marginTop: 2 }}>
+                <span className="ru" style={{ fontSize: 12.5 }}>
+                  各組目標：{NRC_ORDER.map((c) => `${NRC_LABEL[c]}${(seg.targetSec ?? 0) + (seg.gapSec ?? 0) * (NRC_NUM[c] - 1)}`).join('・')}
+                </span>
+              </div>
+            )}
           </div>
         ))}
         <button className="btn" onClick={addSegment}>＋ 新增段落</button>
