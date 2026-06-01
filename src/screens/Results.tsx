@@ -92,7 +92,10 @@ export function Results({ session, onExit, onUpdate }: Props) {
                 const restTotal = g.reps.reduce((s, r) => s + r.restSec, 0)
                 return (
                   <tr key={g.id} onClick={() => setDetailId(g.id)} style={{ cursor: 'pointer' }}>
-                    <td>{NRC_LABEL[g.color]} 第{g.number}組</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      <span className="dot" style={{ background: NRC_CHART[g.color], display: 'inline-block', marginRight: 6, verticalAlign: 'middle' }} />
+                      {NRC_LABEL[g.color]} 第{g.number}組
+                    </td>
                     {g.reps.map((r) => (
                       <td key={r.index} className={r.runSec === best ? 'bestcell' : ''}>{r.runSec}</td>
                     ))}

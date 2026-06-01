@@ -60,17 +60,19 @@ export function GroupCard({ group: g, plan, now, big, onStart, onLap, onNext, on
     const runSec = g.runStartTs != null ? elapsedSec(g.runStartTs, now) : 0
     const ref = cur?.target ?? g.targetPaceSec ?? (lastRep ? lastRep.runSec : null)
     const tone = paceTone(runSec, ref, 3)
-    const tag = cur
-      ? (cur.lapsInRep > 1
-          ? `第${cur.repNo}趟 ${cur.lapInRep}/${cur.lapsInRep}圈 · ${cur.meters}m`
-          : `第${cur.repNo}趟 · ${cur.meters}m`)
-      : `第${idx + 1}圈`
+    const repNo = cur?.repNo ?? idx + 1
+    const tagSuffix = cur
+      ? `${cur.lapsInRep > 1 ? ` ${cur.lapInRep}/${cur.lapsInRep}圈` : ''} · ${cur.meters}m`
+      : '圈'
     const pastTxt = lastRep
       ? `上圈 ${fmtClockStr(lastRep.runSec)}${lastRep.restSec > 0 ? ` ·休 ${fmtClockStr(lastRep.restSec)}` : ''}`
       : ''
     return (
       <div className={`card${big ? ' big' : ''}`} data-testid="card" style={cardStyle}>
-        <div className="ctop"><span>{title}</span><span className="tag">{tag}</span></div>
+        <div className="ctop">
+          <span>{title}</span>
+          <span className="reptag">第<b className="bignum">{repNo}</b>{cur ? '趟' : ''}{tagSuffix}</span>
+        </div>
         {Corner}
         <button className="lapface" data-testid="lap-body"
           onClick={() => onLap(g.id)}
@@ -103,7 +105,7 @@ export function GroupCard({ group: g, plan, now, big, onStart, onLap, onNext, on
       <button className="restwrap" data-testid="next-body" onClick={() => onNext(g.id)}>
         <Clock totalSec={restSec} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone={tone} />
         <span className={`restbar${tone === 'over' ? ' over' : ''}`}><i style={{ width: `${pct}%` }} /></span>
-        <span className="gobtn">▶ 準備出發 第{nextRep}趟</span>
+        <span className="gobtn">▶ 準備出發 第<b className="bignum">{nextRep}</b>趟</span>
       </button>
       <div className="cmeta">{lastRep ? `剛跑 ${fmtClockStr(lastRep.runSec)}` : ''}{target > 0 ? ` · 目標休 ${target}s` : ''}</div>
     </div>

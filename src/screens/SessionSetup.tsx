@@ -135,7 +135,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
             <div className="field-row">
               <span className="rl">每組＋</span>
               <Stepper value={seg.gapSec ?? 0} step={1} min={0} onChange={(v) => patchSegment(seg.id, { gapSec: v })} />
-              <span className="ru">秒／圈（黑、紫…依序累加）</span>
+              <span className="ru">秒／圈（依序累加）</span>
             </div>
             <div className="field-row">
               <span className="rl">間休</span>
