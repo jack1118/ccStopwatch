@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import type { NRCColor, Segment, Session } from '../types'
 import { NRC_ORDER, NRC_NUM, NRC_HEX, NRC_TEXT, NRC_LABEL } from '../constants'
+import { lapsPerRep } from '../timer/timer'
 
 const uid = () => crypto.randomUUID()
 
 // 預設啟用的組別：黃～綠共 5 組（紅預設關閉，可開）
 const DEFAULT_ON: NRCColor[] = ['yellow', 'black', 'purple', 'blue', 'green']
 
-/** 統一的步進器：−、可直接輸入數字（內部字串狀態，輸入過程不夾限，失焦才套用）、＋ */
+/** 統一步進器：−、可直接輸入（內部字串、失焦才套用）、＋ */
 function Stepper({ value, step, min, onChange }: {
   value: number; step: number; min: number; onChange: (v: number) => void
 }) {
@@ -16,8 +17,7 @@ function Stepper({ value, step, min, onChange }: {
   const commit = (raw: string) => {
     const digits = raw.replace(/[^0-9]/g, '')
     const n = digits === '' ? min : Math.max(min, Number(digits))
-    onChange(n)
-    setText(String(n))
+    onChange(n); setText(String(n))
   }
   return (
     <div className="stepper">
@@ -37,28 +37,45 @@ interface Props {
   onCancel: () => void
 }
 
-interface GroupCfg { on: boolean; repsOverride: number | null }
+interface GroupCfg { on: boolean; segReps: Record<string, number> }
 
 function initGroupCfg(initial?: Session): Record<NRCColor, GroupCfg> {
   const cfg = {} as Record<NRCColor, GroupCfg>
   for (const c of NRC_ORDER) {
     const existing = initial?.groups.find((g) => g.color === c)
     cfg[c] = existing
-      ? { on: true, repsOverride: existing.repsOverride }
-      : { on: !initial && DEFAULT_ON.includes(c), repsOverride: null }
+      ? { on: true, segReps: { ...(existing.segReps ?? {}) } }
+      : { on: !initial && DEFAULT_ON.includes(c), segReps: {} }
   }
   return cfg
 }
 
+/** 課表摘要（以第1組為準）：400mx10 r90s */
+function planSummaryOf(segments: Segment[]): string {
+  return segments
+    .map((s) => `${s.meters}mx${s.reps}${s.restSec > 0 ? ` r${s.restSec}s` : ''}`)
+    .join(' ')
+}
+
 export function SessionSetup({ initial, onStart, onCancel }: Props) {
-  const [name, setName] = useState(initial?.name ?? new Date().toLocaleDateString('zh-TW'))
+  const [today] = useState(() => new Date().toLocaleDateString('zh-TW'))
+  const [name, setName] = useState(initial?.name ?? today)
+  const [nameTouched, setNameTouched] = useState(!!initial)
   const [segments, setSegments] = useState<Segment[]>(
     initial?.plan.segments ?? [{ id: uid(), meters: 400, reps: 1, restSec: 90, targetSec: 0, gapSec: 0 }],
   )
   const [cfg, setCfg] = useState<Record<NRCColor, GroupCfg>>(() => initGroupCfg(initial))
   const [lapMeters, setLapMeters] = useState(initial?.plan.lapMeters ?? 400)
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
-  const planTotal = segments.reduce((s, seg) => s + seg.reps, 0)
+  const planSummary = planSummaryOf(segments)
+  const gapStep = Math.max(1, Math.round(lapMeters / 100))   // 每 100m → 1 秒
+
+  // 課程名稱：未手動編輯時，自動帶入「日期 + 課表摘要」
+  useEffect(() => {
+    if (nameTouched) return
+    setName(`${today}${planSummary ? ` ${planSummary}` : ''}`)
+  }, [planSummary, nameTouched, today])
 
   const addSegment = () =>
     setSegments((s) => [...s, { id: uid(), meters: 200, reps: 1, restSec: 60, targetSec: 0, gapSec: 0 }])
@@ -68,15 +85,22 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
 
   const toggleColor = (c: NRCColor) =>
     setCfg((p) => ({ ...p, [c]: { ...p[c], on: !p[c].on } }))
-  const setReps = (c: NRCColor, v: number) =>
-    setCfg((p) => ({ ...p, [c]: { ...p[c], repsOverride: Math.max(1, v) } }))
+  const setSegReps = (c: NRCColor, segId: string, v: number) =>
+    setCfg((p) => ({ ...p, [c]: { ...p[c], segReps: { ...p[c].segReps, [segId]: v } } }))
+  const toggleExpand = (c: NRCColor) =>
+    setExpanded((p) => ({ ...p, [c]: !p[c] }))
+
+  const repsFor = (c: NRCColor, seg: Segment) => cfg[c].segReps[seg.id] ?? seg.reps
+  const totalReps = (c: NRCColor) => segments.reduce((s, seg) => s + repsFor(c, seg), 0)
+  const totalLaps = (c: NRCColor) =>
+    segments.reduce((s, seg) => s + repsFor(c, seg) * lapsPerRep(seg, lapMeters), 0)
 
   const activeCount = NRC_ORDER.filter((c) => cfg[c].on).length
 
   const start = () => {
     const groups = NRC_ORDER.filter((c) => cfg[c].on).map((c) => ({
       id: uid(), color: c, number: NRC_NUM[c],
-      repsOverride: cfg[c].repsOverride, targetPaceSec: null,
+      segReps: { ...cfg[c].segReps }, targetPaceSec: null,
       athletes: [], state: 'idle' as const, runStartTs: null, restStartTs: null, reps: [],
     }))
     onStart({
@@ -97,8 +121,9 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
       </div>
 
       <div className="sec-block">
-        <div className="label">課程名稱</div>
-        <input className="field wide" value={name} onChange={(e) => setName(e.target.value)} />
+        <div className="label">課程名稱（會自動帶入課表摘要，可自行修改）</div>
+        <input className="field wide" value={name}
+          onChange={(e) => { setName(e.target.value); setNameTouched(true) }} />
       </div>
 
       <div className="sec-block">
@@ -120,7 +145,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
             <div className="field-row">
               <span className="rl">距離</span>
               <Stepper value={seg.meters} step={100} min={50} onChange={(v) => patchSegment(seg.id, { meters: v })} />
-              <span className="ru">m（＝ {Math.max(1, Math.ceil(seg.meters / lapMeters))} 圈／趟）</span>
+              <span className="ru">m（＝ {lapsPerRep(seg, lapMeters)} 圈／趟）</span>
             </div>
             <div className="field-row">
               <span className="rl">趟數</span>
@@ -134,7 +159,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
             </div>
             <div className="field-row">
               <span className="rl">每組＋</span>
-              <Stepper value={seg.gapSec ?? 0} step={1} min={0} onChange={(v) => patchSegment(seg.id, { gapSec: v })} />
+              <Stepper value={seg.gapSec ?? 0} step={gapStep} min={0} onChange={(v) => patchSegment(seg.id, { gapSec: v })} />
               <span className="ru">秒／圈（依序累加）</span>
             </div>
             <div className="field-row">
@@ -155,25 +180,40 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
       </div>
 
       <div className="sec-block">
-        <div className="label">組別（顏色固定對應組號，點右側開關啟用）</div>
+        <div className="label">組別（顏色固定對應組號；可逐組展開自訂各段趟數）</div>
         {NRC_ORDER.map((c) => {
           const on = cfg[c].on
-          const reps = cfg[c].repsOverride ?? planTotal
+          const isOpen = !!expanded[c]
           return (
-            <div className={`grp-row${on ? '' : ' off'}`} key={c}>
-              <span className="pill" style={{ background: NRC_HEX[c], color: NRC_TEXT[c] }}>
-                {NRC_LABEL[c]} 第{NRC_NUM[c]}組
-              </span>
-              {on && (
-                <>
-                  <span style={{ fontSize: 14 }}>趟數</span>
-                  <Stepper value={reps || 1} step={1} min={1}
-                    onChange={(v) => setReps(c, v)} />
-                </>
+            <div key={c}>
+              <div className={`grp-row${on ? '' : ' off'}`}>
+                <span className="pill" style={{ background: NRC_HEX[c], color: NRC_TEXT[c] }}>
+                  {NRC_LABEL[c]} 第{NRC_NUM[c]}組
+                </span>
+                {on && segments.length > 0 && (
+                  <>
+                    <button className="grp-expand" onClick={() => toggleExpand(c)}>
+                      {isOpen ? '▾ 趟數' : '▸ 趟數'}
+                    </button>
+                    {!isOpen && <span className="grp-sum">{totalReps(c)}趟·{totalLaps(c)}圈</span>}
+                  </>
+                )}
+                <button className={`grp-toggle${on ? ' on' : ''}`} onClick={() => toggleColor(c)}>
+                  {on ? '啟用' : '未用'}
+                </button>
+              </div>
+              {on && isOpen && segments.length > 0 && (
+                <div className="grp-expand-body">
+                  {segments.map((seg, i) => (
+                    <div className="field-row" key={seg.id}>
+                      <span className="rl">段{i + 1} · {seg.meters}m</span>
+                      <Stepper value={repsFor(c, seg)} step={1} min={0}
+                        onChange={(v) => setSegReps(c, seg.id, v)} />
+                      <span className="ru">趟（{lapsPerRep(seg, lapMeters)}圈/趟）</span>
+                    </div>
+                  ))}
+                </div>
               )}
-              <button className={`grp-toggle${on ? ' on' : ''}`} onClick={() => toggleColor(c)}>
-                {on ? '啟用' : '未用'}
-              </button>
             </div>
           )
         })}

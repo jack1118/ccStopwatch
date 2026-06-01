@@ -51,9 +51,16 @@ describe('buildLapPlan', () => {
     expect(laps.map((l) => l.restAfter)).toEqual([90, 90, 0])
   })
 
-  it('repsOverride 截斷總趟數（綠組少跑）', () => {
-    const plan: Plan = { lapMeters: 400, segments: [seg({ meters: 400, reps: 10, restSec: 90 })] }
-    expect(buildLapPlan(plan, { ...baseGroup, repsOverride: 8 })).toHaveLength(8)
+  it('segReps 各段自訂趟數（某組少跑）', () => {
+    const plan: Plan = { lapMeters: 400, segments: [seg({ id: 'a', meters: 400, reps: 10, restSec: 90 })] }
+    expect(buildLapPlan(plan, { ...baseGroup, segReps: { a: 8 } })).toHaveLength(8)
+  })
+  it('多段各自不同趟數', () => {
+    const plan: Plan = { lapMeters: 400, segments: [
+      seg({ id: 'a', meters: 1200, reps: 1 }), seg({ id: 'b', meters: 400, reps: 3 }),
+    ] }
+    // 紅組：1200×1（3圈）＋400×2（2圈）= 5 圈
+    expect(buildLapPlan(plan, { ...baseGroup, segReps: { b: 2 } })).toHaveLength(5)
   })
 
   it('無課表 → 空計畫（純連續按圈）', () => {

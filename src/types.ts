@@ -26,7 +26,8 @@ export interface Group {
   id: string
   color: NRCColor
   number: number
-  repsOverride: number | null   // null = 用課表趟數加總
+  repsOverride?: number | null            // 已棄用（保留相容）
+  segReps?: Record<string, number>        // 各段落自訂趟數（key=segment.id）；缺則用 segment.reps
   targetPaceSec: number | null
   athletes: string[]
   state: GroupState

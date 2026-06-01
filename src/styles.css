@@ -142,6 +142,11 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .grp-toggle { margin-left: auto; font-size: 13px; font-weight: 700;
   padding: 7px 12px; border-radius: 9px; border: 0; background: #2c2c2e; color: #fff; }
 .grp-toggle.on { background: #30D158; color: #03260f; }
+.grp-expand { font-size: 13px; font-weight: 700; padding: 7px 10px; border-radius: 9px;
+  border: 0; background: #2c2c2e; color: #cfcfd4; }
+.grp-sum { font-size: 13px; color: #9a9aa0; }
+.grp-expand-body { background: #15151a; border-radius: 10px; padding: 10px 12px;
+  margin: -2px 0 8px; }
 
 /* ── 結果 ── */
 .panel { background: #15151a; border-radius: 16px; margin: 8px 12px; padding: 14px; }

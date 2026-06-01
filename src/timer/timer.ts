@@ -44,20 +44,16 @@ export interface PlannedLap {
 export function buildLapPlan(plan: Plan, group: Group): PlannedLap[] {
   const L = getLapMeters(plan)
   const laps: PlannedLap[] = []
-  const budget = group.repsOverride
-  let repsLeft = budget == null ? Infinity : budget
   let repNo = 0
 
   for (const seg of plan.segments) {
     const lpr = lapsPerRep(seg, L)
-    const segReps = budget == null ? seg.reps : Math.min(seg.reps, repsLeft)
+    const segReps = group.segReps?.[seg.id] ?? seg.reps   // 各組可逐段自訂趟數
     const baseTarget = seg.targetSec && seg.targetSec > 0
       ? seg.targetSec + (seg.gapSec ?? 0) * (group.number - 1)
       : null
     for (let r = 0; r < segReps; r++) {
-      if (repsLeft <= 0) break
       repNo++
-      repsLeft--
       let remaining = seg.meters
       for (let lap = 0; lap < lpr; lap++) {
         const m = Math.min(L, remaining)
