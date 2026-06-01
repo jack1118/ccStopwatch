@@ -94,12 +94,14 @@ export function GroupCard({ group: g, plan, now, big, onStart, onLap, onNext, on
   const tone = paceTone(restSec, target > 0 ? target : null, 5)
   const overTxt = fmtOverflow(restSec, target)
   const pct = target > 0 ? Math.min(100, (restSec / target) * 100) : 0
-  const tagCls = tone === 'over' ? ' over' : tone === 'warn' ? ' warn' : ''
   return (
     <div className={`card resting${big ? ' big' : ''}`} data-testid="card" style={cardStyle}>
       <div className="ctop">
         <span>{title}</span>
-        <span className={`tag${tagCls}`}>{tone === 'over' ? overTxt : `第${justRep}趟 休息`}</span>
+        <span className={`reptag${tone === 'warn' ? ' warn-text' : ''}`}>
+          第<b className="bignum">{justRep}</b>趟 休息
+          {tone === 'over' && <b className="over-text" style={{ marginLeft: 4 }}>{overTxt}</b>}
+        </span>
       </div>
       {Corner}
       <button className="restwrap" data-testid="next-body" onClick={() => onNext(g.id)}>

@@ -63,6 +63,13 @@ describe('buildLapPlan', () => {
     expect(buildLapPlan(plan, { ...baseGroup, segReps: { b: 2 } })).toHaveLength(5)
   })
 
+  it('segTarget / segRest 各組逐段覆寫目標與休息', () => {
+    const plan: Plan = { lapMeters: 400, segments: [seg({ id: 'a', meters: 400, reps: 2, restSec: 90, targetSec: 96, gapSec: 8 })] }
+    const laps = buildLapPlan(plan, { ...baseGroup, number: 3, segTarget: { a: 70 }, segRest: { a: 120 } })
+    expect(laps[0].target).toBe(70)        // 覆寫優先於 gap 推算
+    expect(laps[0].restAfter).toBe(120)    // 覆寫休息
+  })
+
   it('無課表 → 空計畫（純連續按圈）', () => {
     expect(buildLapPlan({ segments: [] }, baseGroup)).toEqual([])
     expect(totalLaps({ segments: [] }, baseGroup)).toBe(0)

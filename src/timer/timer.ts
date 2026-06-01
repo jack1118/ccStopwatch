@@ -49,9 +49,14 @@ export function buildLapPlan(plan: Plan, group: Group): PlannedLap[] {
   for (const seg of plan.segments) {
     const lpr = lapsPerRep(seg, L)
     const segReps = group.segReps?.[seg.id] ?? seg.reps   // 各組可逐段自訂趟數
-    const baseTarget = seg.targetSec && seg.targetSec > 0
-      ? seg.targetSec + (seg.gapSec ?? 0) * (group.number - 1)
-      : null
+    const segRest = group.segRest?.[seg.id] ?? seg.restSec
+    // 每圈目標：優先用該組自訂，否則由 gap 依組號推算
+    const ownTarget = group.segTarget?.[seg.id]
+    const baseTarget = ownTarget != null && ownTarget > 0
+      ? ownTarget
+      : seg.targetSec && seg.targetSec > 0
+        ? seg.targetSec + (seg.gapSec ?? 0) * (group.number - 1)
+        : null
     for (let r = 0; r < segReps; r++) {
       repNo++
       let remaining = seg.meters
@@ -66,7 +71,7 @@ export function buildLapPlan(plan: Plan, group: Group): PlannedLap[] {
           lapsInRep: lpr,
           meters: m,
           target: baseTarget == null ? null : Math.round(baseTarget * (m / L)),
-          restAfter: isRepEnd ? seg.restSec : 0,
+          restAfter: isRepEnd ? segRest : 0,
         })
       }
     }

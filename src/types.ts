@@ -28,6 +28,8 @@ export interface Group {
   number: number
   repsOverride?: number | null            // 已棄用（保留相容）
   segReps?: Record<string, number>        // 各段落自訂趟數（key=segment.id）；缺則用 segment.reps
+  segTarget?: Record<string, number>      // 各段落自訂「每圈目標秒」；缺則用 gap 推算
+  segRest?: Record<string, number>        // 各段落自訂「間休秒」；缺則用 segment.restSec
   targetPaceSec: number | null
   athletes: string[]
   state: GroupState

@@ -37,15 +37,25 @@ interface Props {
   onCancel: () => void
 }
 
-interface GroupCfg { on: boolean; segReps: Record<string, number> }
+interface GroupCfg {
+  on: boolean
+  segReps: Record<string, number>
+  segTarget: Record<string, number>
+  segRest: Record<string, number>
+}
 
 function initGroupCfg(initial?: Session): Record<NRCColor, GroupCfg> {
   const cfg = {} as Record<NRCColor, GroupCfg>
   for (const c of NRC_ORDER) {
     const existing = initial?.groups.find((g) => g.color === c)
     cfg[c] = existing
-      ? { on: true, segReps: { ...(existing.segReps ?? {}) } }
-      : { on: !initial && DEFAULT_ON.includes(c), segReps: {} }
+      ? {
+          on: true,
+          segReps: { ...(existing.segReps ?? {}) },
+          segTarget: { ...(existing.segTarget ?? {}) },
+          segRest: { ...(existing.segRest ?? {}) },
+        }
+      : { on: !initial && DEFAULT_ON.includes(c), segReps: {}, segTarget: {}, segRest: {} }
   }
   return cfg
 }
@@ -87,10 +97,18 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
     setCfg((p) => ({ ...p, [c]: { ...p[c], on: !p[c].on } }))
   const setSegReps = (c: NRCColor, segId: string, v: number) =>
     setCfg((p) => ({ ...p, [c]: { ...p[c], segReps: { ...p[c].segReps, [segId]: v } } }))
+  const setSegTarget = (c: NRCColor, segId: string, v: number) =>
+    setCfg((p) => ({ ...p, [c]: { ...p[c], segTarget: { ...p[c].segTarget, [segId]: v } } }))
+  const setSegRest = (c: NRCColor, segId: string, v: number) =>
+    setCfg((p) => ({ ...p, [c]: { ...p[c], segRest: { ...p[c].segRest, [segId]: v } } }))
   const toggleExpand = (c: NRCColor) =>
     setExpanded((p) => ({ ...p, [c]: !p[c] }))
 
   const repsFor = (c: NRCColor, seg: Segment) => cfg[c].segReps[seg.id] ?? seg.reps
+  const targetFor = (c: NRCColor, seg: Segment) =>
+    cfg[c].segTarget[seg.id] ??
+    ((seg.targetSec ?? 0) > 0 ? (seg.targetSec ?? 0) + (seg.gapSec ?? 0) * (NRC_NUM[c] - 1) : 0)
+  const restFor = (c: NRCColor, seg: Segment) => cfg[c].segRest[seg.id] ?? seg.restSec
   const totalReps = (c: NRCColor) => segments.reduce((s, seg) => s + repsFor(c, seg), 0)
   const totalLaps = (c: NRCColor) =>
     segments.reduce((s, seg) => s + repsFor(c, seg) * lapsPerRep(seg, lapMeters), 0)
@@ -100,7 +118,10 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
   const start = () => {
     const groups = NRC_ORDER.filter((c) => cfg[c].on).map((c) => ({
       id: uid(), color: c, number: NRC_NUM[c],
-      segReps: { ...cfg[c].segReps }, targetPaceSec: null,
+      segReps: { ...cfg[c].segReps },
+      segTarget: { ...cfg[c].segTarget },
+      segRest: { ...cfg[c].segRest },
+      targetPaceSec: null,
       athletes: [], state: 'idle' as const, runStartTs: null, restStartTs: null, reps: [],
     }))
     onStart({
@@ -205,11 +226,25 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
               {on && isOpen && segments.length > 0 && (
                 <div className="grp-expand-body">
                   {segments.map((seg, i) => (
-                    <div className="field-row" key={seg.id}>
-                      <span className="rl">段{i + 1} · {seg.meters}m</span>
-                      <Stepper value={repsFor(c, seg)} step={1} min={0}
-                        onChange={(v) => setSegReps(c, seg.id, v)} />
-                      <span className="ru">趟（{lapsPerRep(seg, lapMeters)}圈/趟）</span>
+                    <div key={seg.id} style={{ marginBottom: 10 }}>
+                      <div className="rl" style={{ width: 'auto', marginBottom: 4, fontWeight: 700 }}>
+                        段{i + 1} · {seg.meters}m（{lapsPerRep(seg, lapMeters)}圈/趟）
+                      </div>
+                      <div className="field-row">
+                        <span className="rl">趟數</span>
+                        <Stepper value={repsFor(c, seg)} step={1} min={0} onChange={(v) => setSegReps(c, seg.id, v)} />
+                        <span className="ru">趟</span>
+                      </div>
+                      <div className="field-row">
+                        <span className="rl">每圈目標</span>
+                        <Stepper value={targetFor(c, seg)} step={1} min={0} onChange={(v) => setSegTarget(c, seg.id, v)} />
+                        <span className="ru">秒／圈（0＝不設）</span>
+                      </div>
+                      <div className="field-row">
+                        <span className="rl">間休</span>
+                        <Stepper value={restFor(c, seg)} step={5} min={0} onChange={(v) => setSegRest(c, seg.id, v)} />
+                        <span className="ru">秒</span>
+                      </div>
                     </div>
                   ))}
                 </div>
