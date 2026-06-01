@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react'
 import type { Group, Plan } from '../types'
 import { NRC_HEX, NRC_TEXT, NRC_LABEL } from '../constants'
 import { elapsedSec, buildLapPlan, paceTone } from '../timer/timer'
@@ -9,13 +10,16 @@ interface Props {
   plan: Plan
   now: number
   big: boolean
-  hint?: boolean        // 下一個該起跑的組 → 外框閃燈提示
+  hint?: boolean        // 下一個該按的組 → 外框閃燈提示
   onStart: (id: string) => void
   onLap: (id: string) => void
   onNext: (id: string) => void
   onUndo: (id: string) => void
   onStop: (id: string) => void
 }
+
+const TAP_MAX = 250      // 250ms 內放開 = 點按（按圈/出發）
+const HOLD_MS = 1500     // 長按滿 1.5s = 確認停止
 
 export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNext, onUndo, onStop }: Props) {
   const secSize = big ? 140 : 70
@@ -27,10 +31,33 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
   const lapPlan = buildLapPlan(plan, g)
   const lastRep = g.reps[g.reps.length - 1]
 
+  // 長按停止：快速點＝動作；按住到紅框繞滿＝停止
+  const downAt = useRef(0)
+  const ringTimer = useRef<number | undefined>(undefined)
+  const holdTimer = useRef<number | undefined>(undefined)
+  const [holding, setHolding] = useState(false)
+  const startPress = () => {
+    downAt.current = Date.now()
+    ringTimer.current = window.setTimeout(() => setHolding(true), TAP_MAX)
+    holdTimer.current = window.setTimeout(() => { setHolding(false); onStop(g.id) }, HOLD_MS)
+  }
+  const endPress = (action?: () => void) => {
+    const dur = Date.now() - downAt.current
+    if (ringTimer.current) clearTimeout(ringTimer.current)
+    if (holdTimer.current) clearTimeout(holdTimer.current)
+    setHolding(false)
+    if (dur < TAP_MAX && action) action()
+  }
+  const pressProps = (action: () => void) => ({
+    onPointerDown: startPress,
+    onPointerUp: () => endPress(action),
+    onPointerLeave: () => endPress(),
+    onPointerCancel: () => endPress(),
+  })
+  const HoldRing = holding ? <span className="hold-ring" /> : null
   const Corner = (
     <div className="corner">
-      <button aria-label="撤銷" onClick={() => onUndo(g.id)}>↶</button>
-      <button aria-label="結束" onClick={() => onStop(g.id)}>⏹</button>
+      <button className="undo-btn" aria-label="復原上一圈" onClick={() => onUndo(g.id)}>↩</button>
     </div>
   )
 
@@ -77,19 +104,19 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
           <span className="reptag">第<b className="bignum">{repNo}</b>{cur ? '趟' : ''}{tagSuffix}</span>
         </div>
         {Corner}
-        <button className="lapface" data-testid="lap-body"
-          onClick={() => onLap(g.id)}
+        <button className="lapface" data-testid="lap-body" {...pressProps(() => onLap(g.id))}
           style={{ paddingLeft: big ? 12 : 6 }}>
           {cur?.target != null && <div className="targetline">目標 {fmtClockStr(cur.target)}</div>}
           <Clock totalSec={runSec} secSize={secSize} minSize={minSize} tone={tone} />
           {pastTxt && <div className="cmeta">{pastTxt}</div>}
         </button>
+        {HoldRing}
       </div>
     )
   }
 
-  // resting：整個休息區即為「準備出發」按鈕
-  const doneIdx = g.reps.length - 1        // 觸發休息的那一圈
+  // resting：整個休息區即為「準備出發」按鈕（長按＝停止）
+  const doneIdx = g.reps.length - 1
   const justRep = lapPlan[doneIdx]?.repNo ?? g.reps.length
   const nextRep = lapPlan[g.reps.length]?.repNo ?? justRep + 1
   const restSec = g.restStartTs != null ? elapsedSec(g.restStartTs, now) : 0
@@ -97,7 +124,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
   const tone = paceTone(restSec, target > 0 ? target : null, 5)
   const overTxt = fmtOverflow(restSec, target)
   const pct = target > 0 ? Math.min(100, (restSec / target) * 100) : 0
-  const readyToGo = target > 0 && restSec >= target   // 休息到點 → 提示出發
+  const readyToGo = target > 0 && restSec >= target
   return (
     <div className={`card resting${big ? ' big' : ''}${readyToGo ? ' blink' : ''}`} data-testid="card" style={cardStyle}>
       <div className="ctop">
@@ -108,12 +135,13 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
         </span>
       </div>
       {Corner}
-      <button className="restwrap" data-testid="next-body" onClick={() => onNext(g.id)}>
+      <button className="restwrap" data-testid="next-body" {...pressProps(() => onNext(g.id))}>
         <Clock totalSec={restSec} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone={tone} />
         <span className={`restbar${tone === 'over' ? ' over' : ''}`}><i style={{ width: `${pct}%` }} /></span>
         <span className="gobtn">▶ 準備出發 第<b className="bignum">{nextRep}</b>趟</span>
       </button>
       <div className="cmeta restmeta">{lastRep ? `剛跑 ${fmtClockStr(lastRep.runSec)}` : ''}{target > 0 ? `　目標休 ${target}s` : ''}</div>
+      {HoldRing}
     </div>
   )
 }
