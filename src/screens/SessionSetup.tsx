@@ -190,7 +190,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                   <div className="field-row">
                     <span className="rl">每組＋</span>
                     <Stepper value={it.gapSec ?? 0} step={gapStepOf(it.meters)} min={0} onChange={(v) => patchItem(seg.id, it.id, { gapSec: v })} />
-                    <span className="ru">秒（每按一下＝{gapStepOf(it.meters)}秒；依序累加）</span>
+                    <span className="ru">秒（依序累加）</span>
                   </div>
                   <div className="field-row">
                     <span className="rl">間休</span>
