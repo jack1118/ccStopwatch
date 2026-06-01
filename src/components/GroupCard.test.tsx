@@ -41,3 +41,26 @@ it('休息超時：卡片維持綠色、出現 over 標記', () => {
   expect(overTag).toBeInTheDocument()
   expect(overTag.className).toContain('over')
 })
+
+it('休息中點整個碼表區即觸發 onNext（出發下一趟）', async () => {
+  const onNext = vi.fn()
+  const g = {
+    ...base, state: 'resting' as const, restStartTs: 0,
+    reps: [{ index: 0, runSec: 88, restSec: 0 }],
+  }
+  render(<GroupCard group={g} plan={plan} now={30000} big
+    onStart={vi.fn()} onLap={vi.fn()} onNext={onNext} onUndo={vi.fn()} onStop={vi.fn()} />)
+  await userEvent.click(screen.getByTestId('next-body'))
+  expect(onNext).toHaveBeenCalledWith('g1')
+})
+
+it('跑步中顯示「上趟（含休息）」與 Next 兩個區隔資訊', () => {
+  const g = {
+    ...base, state: 'running' as const, runStartTs: 0,
+    reps: [{ index: 0, runSec: 88, restSec: 92 }],
+  }
+  render(<GroupCard group={g} plan={plan} now={10000} big
+    onStart={vi.fn()} onLap={vi.fn()} onNext={vi.fn()} onUndo={vi.fn()} onStop={vi.fn()} />)
+  expect(screen.getByText(/上趟 1:28 ·休 1:32/)).toBeInTheDocument()
+  expect(screen.getByText(/Next 休 90s/)).toBeInTheDocument()
+})

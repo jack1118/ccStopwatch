@@ -20,12 +20,11 @@ export function SessionList({ onNew, onOpen }: Props) {
     <div className="app">
       <div className="topbar">
         <h1>跑班碼表</h1>
-        <button className="btn primary" onClick={onNew}>＋ 新課程</button>
       </div>
       <div className="list">
         {items.length === 0 && (
           <p style={{ opacity: .5, textAlign: 'center', marginTop: 40 }}>
-            還沒有課程，點右上「＋ 新課程」開始
+            還沒有課程，點下方「＋ 新課程」開始
           </p>
         )}
         {items.map((m) => (
@@ -40,6 +39,12 @@ export function SessionList({ onNew, onOpen }: Props) {
             <button className="btn danger" onClick={() => remove(m.id)}>刪除</button>
           </div>
         ))}
+      </div>
+      <div className="spacer" />
+      <div className="bottombar">
+        <button className="btn primary" style={{ fontSize: 17, padding: '14px' }} onClick={onNew}>
+          ＋ 新課程
+        </button>
       </div>
     </div>
   )
