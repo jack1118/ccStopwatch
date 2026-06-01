@@ -7,7 +7,7 @@ const uid = () => crypto.randomUUID()
 const DEFAULT_ON: NRCColor[] = ['yellow', 'black', 'purple', 'blue', 'green']
 
 const newItem = (meters: number, restSec: number): Item =>
-  ({ id: uid(), meters, restSec, targetSec: 96, gapSec: 4 })
+  ({ id: uid(), meters, restSec, targetSec: Math.round((96 * meters) / 400), gapSec: Math.max(1, Math.round(meters / 100)) })
 
 /** 統一步進器：−、可直接輸入（內部字串、失焦套用）、＋ */
 function Stepper({ value, step, min, onChange }: {
@@ -77,7 +77,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
   const planSummary = summaryOf(segments)
-  const gapStep = Math.max(1, Math.round(lapMeters / 100))
+  const gapStepOf = (meters: number) => Math.max(1, Math.round(meters / 100))   // 每 100m = 1 秒級距
 
   useEffect(() => {
     if (nameTouched) return
@@ -189,8 +189,8 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                   </div>
                   <div className="field-row">
                     <span className="rl">每組＋</span>
-                    <Stepper value={it.gapSec ?? 0} step={gapStep} min={0} onChange={(v) => patchItem(seg.id, it.id, { gapSec: v })} />
-                    <span className="ru">秒（依序累加）</span>
+                    <Stepper value={it.gapSec ?? 0} step={gapStepOf(it.meters)} min={0} onChange={(v) => patchItem(seg.id, it.id, { gapSec: v })} />
+                    <span className="ru">秒（每按一下＝{gapStepOf(it.meters)}秒；依序累加）</span>
                   </div>
                   <div className="field-row">
                     <span className="rl">間休</span>
