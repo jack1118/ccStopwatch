@@ -70,6 +70,8 @@ button { font-family: inherit; color: inherit; }
 .reptag { font-size: 12px; font-weight: 700; display: inline-flex; align-items: baseline; gap: 1px; }
 .card.big .reptag { font-size: 15px; }
 .reptag .bignum { font-size: 22px; font-weight: 900; line-height: 1; }
+/* 組名「第N組」的 N 放大 */
+.gtitle .num { font-size: 1.55em; font-weight: 900; }
 .card.big .reptag .bignum { font-size: 30px; }
 /* 「準備出發 第 N 趟」的 N 放大 */
 .gobtn .bignum { font-size: 1.6em; font-weight: 900; }

@@ -20,7 +20,9 @@ interface Props {
 export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNext, onUndo, onStop }: Props) {
   const secSize = big ? 140 : 70
   const minSize = big ? 54 : 32
-  const title = `${NRC_LABEL[g.color]} 第${g.number}組`
+  const Title = (
+    <span className="gtitle">{NRC_LABEL[g.color]} 第<b className="num">{g.number}</b>組</span>
+  )
   const cardStyle = { background: NRC_HEX[g.color], color: NRC_TEXT[g.color] }
   const lapPlan = buildLapPlan(plan, g)
   const lastRep = g.reps[g.reps.length - 1]
@@ -35,7 +37,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
   if (g.state === 'idle') {
     return (
       <div className={`card${big ? ' big' : ''}${hint ? ' blink' : ''}`} data-testid="card" style={cardStyle}>
-        <div className="ctop"><span>{title}</span><span className="tag">{hint ? '👉 換這組' : '未開始'}</span></div>
+        <div className="ctop">{Title}<span className="tag">{hint ? '👉 換這組' : '未開始'}</span></div>
         <button className="startbtn" onClick={() => onStart(g.id)}>▶ 開始</button>
         <div className="cmeta">{lapPlan.length > 0 ? `共 ${lapPlan.length} 圈` : '純碼表'}</div>
       </div>
@@ -46,7 +48,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
     const total = g.reps.reduce((s, r) => s + r.runSec + r.restSec, 0)
     return (
       <div className={`card${big ? ' big' : ''}`} data-testid="card" style={{ ...cardStyle, opacity: 0.72 }}>
-        <div className="ctop"><span>{title}</span><span className="tag">✓完成</span></div>
+        <div className="ctop">{Title}<span className="tag">✓完成</span></div>
         <div className="hero" style={{ justifyContent: 'center' }}>
           <span style={{ fontSize: big ? 34 : 24, fontWeight: 900 }}>總 {fmtClockStr(total)}</span>
         </div>
@@ -63,7 +65,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
     const tone = paceTone(runSec, ref, 3)
     const repNo = cur?.repNo ?? idx + 1
     const tagSuffix = cur
-      ? `${cur.lapsInRep > 1 ? ` ${cur.lapInRep}/${cur.lapsInRep}圈` : ''} · ${cur.meters}m`
+      ? `${cur.lapsInRep > 1 ? ` ${cur.lapInRep}/${cur.lapsInRep}圈` : ''}　${cur.meters}m`
       : '圈'
     const pastTxt = lastRep
       ? `上圈 ${fmtClockStr(lastRep.runSec)}${lastRep.restSec > 0 ? ` ·休 ${fmtClockStr(lastRep.restSec)}` : ''}`
@@ -71,7 +73,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
     return (
       <div className={`card${big ? ' big' : ''}`} data-testid="card" style={cardStyle}>
         <div className="ctop">
-          <span>{title}</span>
+          {Title}
           <span className="reptag">第<b className="bignum">{repNo}</b>{cur ? '趟' : ''}{tagSuffix}</span>
         </div>
         {Corner}
@@ -99,7 +101,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
   return (
     <div className={`card resting${big ? ' big' : ''}${readyToGo ? ' blink' : ''}`} data-testid="card" style={cardStyle}>
       <div className="ctop">
-        <span>{title}</span>
+        {Title}
         <span className={`reptag${tone === 'warn' ? ' warn-text' : ''}`}>
           第<b className="bignum">{justRep}</b>趟 休息
           {tone === 'over' && <b className="over-text" style={{ marginLeft: 4 }}>{overTxt}</b>}
