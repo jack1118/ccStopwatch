@@ -82,11 +82,10 @@ function initGroupCfg(initial?: Session): Record<NRCColor, GroupCfg> {
 
 function segLabel(seg: Segment): string {
   const items = itemsOf(seg)
-  const base = items.length > 1
-    ? `(${items.map((i) => `${i.meters}m`).join('+')})×${seg.reps}`
-    : `${items[0].meters}m×${seg.reps}`
-  const rest = items[items.length - 1].restSec   // 該段組間休
-  return rest > 0 ? `${base} r${rest}s` : base
+  const r = (it: Item) => (it.restSec > 0 ? ` r${it.restSec}s` : '')   // 每段距離各自的間休
+  return items.length > 1
+    ? `(${items.map((i) => `${i.meters}m${r(i)}`).join('+')})×${seg.reps}`   // 例：(400m r90s+200m r60s)×8
+    : `${items[0].meters}m×${seg.reps}${r(items[0])}`                        // 例：600m×10 r90s
 }
 function summaryOf(segments: Segment[]): string {
   return segments.map(segLabel).join(' ')
