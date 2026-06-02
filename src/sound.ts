@@ -61,20 +61,43 @@ export function setTapSound(on: boolean): void {
   localStorage.setItem(SOUND_KEY, on ? '1' : '0')
 }
 
+// 機械碼錶「喀噠」：寬頻噪音瞬態(金屬卡榫) + 低頻短共振(機身)，比純音更逼真
 function clickSound(): void {
   try {
     const c = audio()
-    const o = c.createOscillator()
-    const g = c.createGain()
-    o.type = 'square'
-    o.frequency.value = 1100
-    o.connect(g)
-    g.connect(c.destination)
-    g.gain.setValueAtTime(0.0001, c.currentTime)
-    g.gain.exponentialRampToValueAtTime(0.12, c.currentTime + 0.004)
-    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.05)
-    o.start()
-    o.stop(c.currentTime + 0.06)
+    const t = c.currentTime
+    const out = c.createGain()
+    out.gain.value = 1
+    out.connect(c.destination)
+
+    // 1) 噪音瞬態：極短白噪音 → 帶通 → 清脆金屬「喀」
+    const dur = 0.028
+    const n = Math.ceil(c.sampleRate * dur)
+    const buf = c.createBuffer(1, n, c.sampleRate)
+    const d = buf.getChannelData(0)
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.5)  // 指數衰減噪音
+    const noise = c.createBufferSource()
+    noise.buffer = buf
+    const bp = c.createBiquadFilter()
+    bp.type = 'bandpass'
+    bp.frequency.value = 2700
+    bp.Q.value = 1.3
+    const ng = c.createGain()
+    ng.gain.setValueAtTime(0.5, t)
+    ng.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+    noise.connect(bp); bp.connect(ng); ng.connect(out)
+    noise.start(t); noise.stop(t + dur)
+
+    // 2) 機身共振：~180Hz 三角波極短衰減 → 「噠」的實體感
+    const body = c.createOscillator()
+    body.type = 'triangle'
+    body.frequency.value = 180
+    const bg = c.createGain()
+    bg.gain.setValueAtTime(0.0001, t)
+    bg.gain.exponentialRampToValueAtTime(0.16, t + 0.002)
+    bg.gain.exponentialRampToValueAtTime(0.0001, t + 0.04)
+    body.connect(bg); bg.connect(out)
+    body.start(t); body.stop(t + 0.05)
   } catch { /* 略過 */ }
 }
 
