@@ -154,13 +154,13 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 /* 峰值落在 35%：吸氣 ~1.6s 快、吐氣 ~2.9s 慢；快到點/該出發(.blink)時自動停，交給綠光催促 */
 @keyframes restBreatheGlow {
   0%   { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
-  35%  { box-shadow: 0 0 18px 3px rgba(255,255,255,.5); }
+  35%  { box-shadow: 0 0 34px 8px rgba(255,255,255,.85); }
   100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
 }
 @keyframes restBreatheText {
-  0%   { opacity: .55; transform: scaleY(1); }
-  35%  { opacity: 1;   transform: scaleY(1.035); }
-  100% { opacity: .55; transform: scaleY(1); }
+  0%   { opacity: .35; transform: scale(.94); }
+  35%  { opacity: 1;   transform: scale(1.12); }
+  100% { opacity: .35; transform: scale(.94); }
 }
 @media (prefers-reduced-motion: no-preference) {
   .card.resting:not(.blink) {
@@ -168,7 +168,7 @@ button.restwrap { background: transparent; border: 0; color: inherit;
   }
   .card.resting:not(.blink) .rest-vlabel {
     animation: restBreatheText 4.5s cubic-bezier(.45,0,.55,1) infinite;
-    transform-origin: center bottom;
+    transform-origin: center center;
   }
 }
 

@@ -1,7 +1,7 @@
 let ctx: AudioContext | null = null
 function audio(): AudioContext {
   const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-  ctx = ctx ?? new AC()
+  ctx = ctx ?? new AC({ sampleRate: 44100 })   // 固定 44.1k，避免 iOS 取樣率不符的爆音
   if (ctx.state === 'suspended') void ctx.resume()   // iOS 預設 suspended，需在使用者手勢內 resume
   return ctx
 }
@@ -61,43 +61,55 @@ export function setTapSound(on: boolean): void {
   localStorage.setItem(SOUND_KEY, on ? '1' : '0')
 }
 
-// 機械碼錶「喀噠」：寬頻噪音瞬態(金屬卡榫) + 低頻短共振(機身)，比純音更逼真
+// 金屬多模態共振：頻率非諧、越高頻衰減越快（高 Q 帶通被脈衝激發 → 自然 ring-down）
+const CLICK_MODES = [
+  { f: 1800, g: 0.7, q: 22 },
+  { f: 3200, g: 1.0, q: 26 },
+  { f: 5400, g: 0.6, q: 20 },
+  { f: 8200, g: 0.4, q: 16 },
+  { f: 11500, g: 0.25, q: 12 },
+]
+
+// 一個瞬態「喀」：~3ms 寬頻衝擊 → 激發 5 個共振模態 + 直出高頻 snap
+function clickBurst(c: AudioContext, t: number, amp: number): void {
+  const ed = 0.003
+  const elen = Math.ceil(c.sampleRate * ed)
+  const ebuf = c.createBuffer(1, elen, c.sampleRate)
+  const e = ebuf.getChannelData(0)
+  for (let i = 0; i < elen; i++) e[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / elen, 1.5)
+  const src = c.createBufferSource()
+  src.buffer = ebuf
+
+  const out = c.createGain()
+  out.gain.value = amp * 0.6
+  out.connect(c.destination)
+
+  for (const m of CLICK_MODES) {
+    const bp = c.createBiquadFilter()
+    bp.type = 'bandpass'
+    bp.frequency.value = m.f
+    bp.Q.value = m.q
+    const g = c.createGain()
+    g.gain.value = m.g
+    src.connect(bp); bp.connect(g); g.connect(out)
+  }
+  // 直出高頻 snap → 金屬咬合的脆度
+  const hp = c.createBiquadFilter()
+  hp.type = 'highpass'
+  hp.frequency.value = 5500
+  const ng = c.createGain()
+  ng.gain.value = 0.35
+  src.connect(hp); hp.connect(ng); ng.connect(out)
+
+  src.start(t)
+}
+
+// 機械碼錶「喀噠」：兩個瞬態 = 按下 + 放開(較輕)，相隔 ~25ms，這是「機械感」的關鍵
 function clickSound(): void {
   try {
     const c = audio()
-    const t = c.currentTime
-    const out = c.createGain()
-    out.gain.value = 1
-    out.connect(c.destination)
-
-    // 1) 噪音瞬態：極短白噪音 → 帶通 → 清脆金屬「喀」
-    const dur = 0.028
-    const n = Math.ceil(c.sampleRate * dur)
-    const buf = c.createBuffer(1, n, c.sampleRate)
-    const d = buf.getChannelData(0)
-    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.5)  // 指數衰減噪音
-    const noise = c.createBufferSource()
-    noise.buffer = buf
-    const bp = c.createBiquadFilter()
-    bp.type = 'bandpass'
-    bp.frequency.value = 2700
-    bp.Q.value = 1.3
-    const ng = c.createGain()
-    ng.gain.setValueAtTime(0.5, t)
-    ng.gain.exponentialRampToValueAtTime(0.0001, t + dur)
-    noise.connect(bp); bp.connect(ng); ng.connect(out)
-    noise.start(t); noise.stop(t + dur)
-
-    // 2) 機身共振：~180Hz 三角波極短衰減 → 「噠」的實體感
-    const body = c.createOscillator()
-    body.type = 'triangle'
-    body.frequency.value = 180
-    const bg = c.createGain()
-    bg.gain.setValueAtTime(0.0001, t)
-    bg.gain.exponentialRampToValueAtTime(0.16, t + 0.002)
-    bg.gain.exponentialRampToValueAtTime(0.0001, t + 0.04)
-    body.connect(bg); bg.connect(out)
-    body.start(t); body.stop(t + 0.05)
+    clickBurst(c, c.currentTime, 1)
+    clickBurst(c, c.currentTime + 0.025, 0.55)
   } catch { /* 略過 */ }
 }
 

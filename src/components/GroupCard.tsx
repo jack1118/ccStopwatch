@@ -177,11 +177,10 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
   const tone = paceTone(restSec, target > 0 ? target : null, 10)   // 剩 10 秒內轉橘、超過轉紅
   const overTxt = fmtOverflow(restSec, target)
   const pct = target > 0 ? Math.min(100, (restSec / target) * 100) : 0
-  const readyToGo = target > 0 && restSec >= target
-  const goNow = target > 0 && restSec >= target - 3   // 最後 3 秒起 → 「Go」
+  const goNow = target > 0 && restSec >= target - 3   // 最後 3 秒起 →「Go」＋綠光催促，呼吸停
   // 休息不變暗：維持鮮明組色，靠左側大「趟休」＋進度條＋出發提示來區分
   return (
-    <div className={`card resting${big ? ' big' : ''}${readyToGo ? ' blink' : ''}`} data-testid="card"
+    <div className={`card resting${big ? ' big' : ''}${goNow ? ' blink' : ''}`} data-testid="card"
       style={{ ...cardStyle, ...flashStyle }}>
       <div className="ctop">
         {Title}
