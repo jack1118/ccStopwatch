@@ -124,8 +124,11 @@ button.restwrap { background: transparent; border: 0; color: inherit;
   background: rgba(255,255,255,.3); overflow: hidden; }
 .restbar i { display: block; height: 100%; background: rgba(255,255,255,.9); }
 .restbar.over i { background: #FF453A; }
-.gobtn { font-size: 14px; font-weight: 800; background: rgba(255,255,255,.22);
-  border: 0; border-radius: 9px; padding: 6px 18px; }
+/* 出發提示：去掉底框，只留文字（整張卡片即出發點擊區） */
+.gobtn { font-size: 14px; font-weight: 800; background: transparent;
+  border: 0; padding: 4px 0; }
+/* 標籤後面的數字放大（標籤字維持） */
+.metaval { font-size: 1.4em; font-weight: 800; }
 .resting { outline: 2px dashed rgba(255,255,255,.5); outline-offset: -2px; }
 /* 休息中：只把底色換深（在 GroupCard 計算），文字/數字維持全亮可讀；一眼分辨「暗＝休息、亮＝進行」 */
 /* 最後3秒：只有「Go」放大變紅，其餘字維持 */

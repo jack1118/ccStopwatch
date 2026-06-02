@@ -59,7 +59,8 @@ it('跑步中有設目標時顯示目標秒數', () => {
   const g = { ...base, number: 1, state: 'running' as const, runStartTs: 0, reps: [] }
   render(<GroupCard group={g} plan={planT} now={5000} big
     onStart={vi.fn()} onLap={vi.fn()} onNext={vi.fn()} onUndo={vi.fn()} onStop={vi.fn()} />)
-  expect(screen.getByText(/目標 1:36/)).toBeInTheDocument()
+  expect(screen.getByText('目標', { exact: false })).toBeInTheDocument()
+  expect(screen.getByText('1:36')).toBeInTheDocument()   // 目標數字（放大）
 })
 
 it('跑步中「上圈」顯示跑步＋休息時間', () => {
@@ -69,5 +70,7 @@ it('跑步中「上圈」顯示跑步＋休息時間', () => {
   }
   render(<GroupCard group={g} plan={plan} now={10000} big
     onStart={vi.fn()} onLap={vi.fn()} onNext={vi.fn()} onUndo={vi.fn()} onStop={vi.fn()} />)
-  expect(screen.getByText(/上圈 1:28\s+休 1:32/)).toBeInTheDocument()
+  expect(screen.getByText('上圈', { exact: false })).toBeInTheDocument()
+  expect(screen.getByText('1:28')).toBeInTheDocument()   // 上圈數字（放大）
+  expect(screen.getByText('1:32')).toBeInTheDocument()   // 休息數字（放大）
 })

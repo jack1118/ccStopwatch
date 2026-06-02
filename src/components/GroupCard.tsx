@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import type { Group, Plan } from '../types'
-import { NRC_HEX, NRC_TEXT, NRC_LABEL, blendHex } from '../constants'
+import { NRC_HEX, NRC_TEXT, NRC_LABEL } from '../constants'
 import { elapsedSec, buildLapPlan, paceTone } from '../timer/timer'
 import { fmtClockStr, fmtOverflow } from '../format'
 import { Clock } from './Clock'
@@ -112,9 +112,6 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
     const tagSuffix = cur
       ? `${cur.lapsInItem > 1 ? ` ${cur.lapInItem}/${cur.lapsInItem}圈` : ''}　${cur.meters}m`
       : ''
-    const pastTxt = lastRep
-      ? `上圈 ${fmtClockStr(lastRep.runSec)}${lastRep.restSec > 0 ? `　休 ${fmtClockStr(lastRep.restSec)}` : ''}`
-      : ''
     return (
       <div className={`card${big ? ' big' : ''}${hint ? ' blink' : ''}`} data-testid="card" style={cardStyle}>
         <div className="ctop">
@@ -125,11 +122,16 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
         <button className="lapface" data-testid="lap-body"
           {...pressProps(() => (ticking ? onLap(g.id) : onStart(g.id)))}
           style={{ paddingLeft: big ? 12 : 6 }}>
-          {cur?.target != null && <div className="targetline">目標 {fmtClockStr(cur.target)}</div>}
+          {cur?.target != null && <div className="targetline">目標 <b className="metaval">{fmtClockStr(cur.target)}</b></div>}
           {ticking
             ? <Clock totalSec={runSec} secSize={secSize} minSize={minSize} tone={tone} />
             : <span className="resume-hint">▶ 點一下開始<br />第{setNo}{cur ? cur.unit : '趟'}</span>}
-          {pastTxt && <div className="cmeta">{pastTxt}</div>}
+          {lastRep && (
+            <div className="cmeta">
+              <span className="nw">上圈 <b className="metaval">{fmtClockStr(lastRep.runSec)}</b></span>
+              {lastRep.restSec > 0 && <>{' '}<span className="nw">休 <b className="metaval">{fmtClockStr(lastRep.restSec)}</b></span></>}
+            </div>
+          )}
         </button>
         {HoldRing}{UndoRing}
       </div>
@@ -155,11 +157,10 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
   const pct = target > 0 ? Math.min(100, (restSec / target) * 100) : 0
   const readyToGo = target > 0 && restSec >= target
   const goNow = target > 0 && restSec >= target - 3   // 最後 3 秒起 → 「Go」
-  // 休息中：深底＋約 28% 組色的乾淨表面（非壓暗飽和色）；到點要出發(readyToGo)恢復原色並閃燈
-  const restBg = readyToGo ? NRC_HEX[g.color] : blendHex(NRC_HEX[g.color], '#15151a', 0.28)
+  // 休息不變暗：維持鮮明組色，靠左側大「趟休」＋進度條＋出發提示來區分
   return (
     <div className={`card resting${big ? ' big' : ''}${readyToGo ? ' blink' : ''}`} data-testid="card"
-      style={{ ...cardStyle, background: restBg }}>
+      style={cardStyle}>
       <div className="ctop">
         {Title}
         <span className="reptag">
@@ -179,7 +180,10 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
           </span>
         </div>
       </button>
-      <div className="cmeta restmeta">{lastRep ? `剛跑 ${fmtClockStr(lastRep.runSec)}` : ''}{target > 0 ? `　目標休 ${target}s` : ''}</div>
+      <div className="cmeta restmeta">
+        {lastRep && <span className="nw">剛跑 <b className="metaval">{fmtClockStr(lastRep.runSec)}</b></span>}
+        {target > 0 && <>{' '}<span className="nw">目標休 <b className="metaval">{target}s</b></span></>}
+      </div>
       {HoldRing}{UndoRing}
     </div>
   )
