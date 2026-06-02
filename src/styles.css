@@ -58,7 +58,8 @@ button { font-family: inherit; color: inherit; }
   padding-left: 8px; margin-top: 2px; }
 .card.big .targetline { font-size: 19px; padding-left: 14px; }
 .card .ctop { display: flex; justify-content: space-between; align-items: center;
-  font-size: 12px; font-weight: 700; }
+  font-size: 12px; font-weight: 700;
+  position: relative; z-index: 2; gap: 8px; padding: 0 5px; }   /* 在跑燈條之上、且左右內縮不頂到燈條 */
 .card.big .ctop { font-size: 15px; }
 .tag { font-size: 10px; padding: 1px 7px; border-radius: 7px;
   background: rgba(255,255,255,.26); font-weight: 700; }
@@ -99,7 +100,7 @@ button { font-family: inherit; color: inherit; }
 }
 
 /* 進行中跑燈進度環(SVG)：沿圓角邊框依邊長均勻填色 + 亮綠實心圓點貼頭部;超過→整圈轉紅持續閃 */
-.run-ring-wrap { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+.run-ring-wrap { position: absolute; inset: 0; pointer-events: none; z-index: 1; }   /* 在文字之下：綠點/填色不會蓋住文字 */
 .run-svg { position: absolute; inset: 0; overflow: visible; }
 .run-track { fill: none; stroke: rgba(255,255,255,.18); }
 .run-fill { fill: none; stroke: rgba(255,255,255,.95); stroke-linecap: round; }
@@ -120,7 +121,8 @@ button { font-family: inherit; color: inherit; }
 /* 跑步卡片主體：目標在上、計時在中、上圈在下，整塊都是按圈感應區 */
 .lapface { flex: 1; width: 100%; display: flex; flex-direction: column;
   align-items: flex-start; justify-content: center; gap: 2px;
-  background: transparent; border: 0; color: inherit; cursor: pointer; }
+  background: transparent; border: 0; color: inherit; cursor: pointer;
+  position: relative; z-index: 2; }   /* 文字在跑燈條之上，不被綠點/填色蓋住 */
 .lapface .targetline { margin: 0 0 2px; padding-left: 0; text-align: left; }
 /* 上圈資訊：至少跟目標一樣清楚，並與計時拉開距離 */
 .lapface .cmeta { margin: 8px 0 0; text-align: left; font-size: 15px; font-weight: 600; opacity: .95; }

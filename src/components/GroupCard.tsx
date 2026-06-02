@@ -12,6 +12,7 @@ interface Props {
   now: number
   big: boolean
   hint?: boolean        // 下一個該按的組 → 外框閃燈提示
+  showUndo?: boolean    // 是否顯示「復原上一步」角落鈕（預設關，由計時頁開關控制）
   onStart: (id: string) => void
   onLap: (id: string) => void
   onNext: (id: string) => void
@@ -22,7 +23,7 @@ interface Props {
 const TAP_MAX = 250      // 250ms 內放開 = 點按（按圈/出發）
 const HOLD_MS = 1500     // 長按滿 1.5s = 確認停止
 
-export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNext, onUndo, onStop }: Props) {
+export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, onStart, onLap, onNext, onUndo, onStop }: Props) {
   const secSize = big ? 140 : 70
   const minSize = big ? 54 : 32
   const Title = (
@@ -164,14 +165,18 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
             {cur && cur.lapsInItem > 1 && (
               <>{' '}第<b className="bignum">{cur.lapInItem}</b><span className="lapof">/{cur.lapsInItem}</span>圈</>
             )}
-            {cur && <span className="nw">　{cur.meters}m</span>}
           </span>
         </div>
-        {Corner}
+        {showUndo && Corner}
         <button className={`lapface${pressedCls}`} data-testid="lap-body"
           {...pressProps(() => (ticking ? onLap(g.id) : onStart(g.id)))}
           style={{ paddingLeft: big ? 12 : 6 }}>
-          {cur?.target != null && <div className="targetline">目標 <b className="metaval">{fmtClockStr(cur.target)}</b></div>}
+          {cur && (
+            <div className="targetline nw">
+              {cur.target != null && <>目標 <b className="metaval">{fmtClockStr(cur.target)}</b>{'　'}</>}
+              {cur.meters}m
+            </div>
+          )}
           {ticking
             ? <Clock totalSec={runSec} secSize={secSize} minSize={minSize} tone={tone} />
             : <span className="resume-hint">▶ 點一下開始<br />第{setNo}{cur ? cur.unit : '趟'}</span>}
@@ -223,7 +228,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
           第<b className="bignum">{justSetNo}</b>{justUnit}
         </span>
       </div>
-      {Corner}
+      {showUndo && Corner}
       <button className={`restwrap${pressedCls}`} data-testid="next-body" {...pressProps(() => onNext(g.id))}>
         <span className="rest-vlabel">{restLabel}</span>
         <div className="rest-main">

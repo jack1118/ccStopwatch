@@ -6,7 +6,7 @@ import { saveSession } from '../storage/storage'
 import { GroupCard } from '../components/GroupCard'
 import { useNow } from '../hooks/useNow'
 import { useWakeLock } from '../hooks/useWakeLock'
-import { beep, tapFeedback, isTapSoundOn, setTapSound } from '../sound'
+import { beep, tapFeedback, isTapSoundOn, setTapSound, isUndoBtnOn, setUndoBtn } from '../sound'
 import { useSwipe } from '../hooks/useSwipe'
 
 interface Props {
@@ -22,6 +22,7 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
   const now = useNow(true)
   useWakeLock(anyActive)
   const [soundOn, setSoundOn] = useState(isTapSoundOn())
+  const [showUndo, setShowUndo] = useState(isUndoBtnOn())
 
   // 持久化
   useEffect(() => { saveSession(state.session) }, [state.session])
@@ -73,13 +74,17 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
           onClick={() => { const v = !soundOn; setTapSound(v); setSoundOn(v) }}>
           {soundOn ? '🔊' : '🔇'}
         </button>
+        <button className="btn" aria-label="復原鈕顯示開關"
+          onClick={() => { const v = !showUndo; setUndoBtn(v); setShowUndo(v) }}>
+          <span style={{ opacity: showUndo ? 1 : 0.35 }}>↩</span>
+        </button>
         <button className="btn" onClick={() => onFinish(state.session)}>結果</button>
       </div>
       <div className={`timer-grid cols-${cols}`}>
         {state.session.groups.map((g) => (
           <GroupCard
             key={g.id} group={g} plan={state.session.plan} now={now} big={big}
-            hint={g.id === nextStartId || g.id === nextRunId}
+            hint={g.id === nextStartId || g.id === nextRunId} showUndo={showUndo}
             onStart={(id) => { tapFeedback(); dispatch({ type: 'START', groupId: id, now: Date.now() }) }}
             onLap={(id) => { tapFeedback(); dispatch({ type: 'LAP', groupId: id, now: Date.now() }) }}
             onNext={(id) => { tapFeedback(); dispatch({ type: 'NEXT', groupId: id, now: Date.now() }) }}

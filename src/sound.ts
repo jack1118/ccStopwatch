@@ -61,6 +61,15 @@ export function setTapSound(on: boolean): void {
   localStorage.setItem(SOUND_KEY, on ? '1' : '0')
 }
 
+// ── 復原鈕顯示開關（存 localStorage，預設關） ──
+const UNDO_KEY = 'ccsw:undobtn'
+export function isUndoBtnOn(): boolean {
+  return localStorage.getItem(UNDO_KEY) === '1'   // 預設關：只有明確設 '1' 才顯示
+}
+export function setUndoBtn(on: boolean): void {
+  localStorage.setItem(UNDO_KEY, on ? '1' : '0')
+}
+
 // 金屬多模態共振：頻率非諧、越高頻衰減越快（高 Q 帶通被脈衝激發 → 自然 ring-down）
 const CLICK_MODES = [
   { f: 1800, g: 0.7, q: 22 },
