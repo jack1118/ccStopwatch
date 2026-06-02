@@ -163,17 +163,20 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
       <div className="ctop">
         {Title}
         <span className="reptag">
-          第<b className="bignum">{justSetNo}</b>{justUnit} {restLabel}
+          第<b className="bignum">{justSetNo}</b>{justUnit}
           {tone === 'over' && <b className="bignum over-text" style={{ marginLeft: 4 }}>{overTxt}</b>}
         </span>
       </div>
       {Corner}
       <button className="restwrap" data-testid="next-body" {...pressProps(() => onNext(g.id))}>
-        <Clock totalSec={restSec} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone={tone} />
-        <span className={`restbar${tone === 'over' ? ' over' : ''}`}><i style={{ width: `${pct}%` }} /></span>
-        {goNow
-          ? <span className="gobtn go-now">Go！</span>
-          : <span className="gobtn">▶ 準備出發 第<b className="bignum">{nextSetNo}</b>{nextUnit}{nextMeters ? ` · ${nextMeters}m` : ''}</span>}
+        <span className="rest-vlabel">{restLabel}</span>
+        <div className="rest-main">
+          <Clock totalSec={restSec} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone={tone} />
+          <span className={`restbar${tone === 'over' ? ' over' : ''}`}><i style={{ width: `${pct}%` }} /></span>
+          <span className="gobtn">
+            ▶ {goNow ? <b className="go-word">Go</b> : '準備出發'} 第<b className="bignum">{nextSetNo}</b>{nextUnit}{nextMeters ? ` · ${nextMeters}m` : ''}
+          </span>
+        </div>
       </button>
       <div className="cmeta restmeta">{lastRep ? `剛跑 ${fmtClockStr(lastRep.runSec)}` : ''}{target > 0 ? `　目標休 ${target}s` : ''}</div>
       {HoldRing}{UndoRing}

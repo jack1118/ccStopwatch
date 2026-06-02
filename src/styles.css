@@ -107,11 +107,16 @@ button { font-family: inherit; color: inherit; }
   border: 0; border-radius: 12px; margin-top: 2px; }
 .resume-hint { font-size: 22px; font-weight: 800; opacity: .95; }
 .card.big .resume-hint { font-size: 30px; }
-.restwrap { flex: 1; display: flex; flex-direction: column; justify-content: center;
-  align-items: center; gap: 5px; }
-/* 整個休息區即為「出發下一趟」按鈕（大面積好點） */
+/* 休息區：左＝直書「趟休/組休」大字、右＝計時/進度/出發；整塊＝出發按鈕 */
+.restwrap { flex: 1; display: flex; flex-direction: row; align-items: center; gap: 10px; }
 button.restwrap { background: transparent; border: 0; color: inherit;
   width: 100%; cursor: pointer; }
+.rest-main { flex: 1; min-width: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 5px; }
+.rest-vlabel { flex: 0 0 auto; writing-mode: vertical-rl; text-orientation: upright;
+  font-size: 28px; font-weight: 900; letter-spacing: 2px; line-height: 1;
+  text-shadow: 0 1px 3px rgba(0,0,0,.45); }
+.card.big .rest-vlabel { font-size: 46px; }
 .restbar { height: 5px; width: 88%; border-radius: 3px;
   background: rgba(255,255,255,.3); overflow: hidden; }
 .restbar i { display: block; height: 100%; background: rgba(255,255,255,.9); }
@@ -120,9 +125,8 @@ button.restwrap { background: transparent; border: 0; color: inherit;
   border: 0; border-radius: 9px; padding: 6px 18px; }
 .resting { outline: 2px dashed rgba(255,255,255,.5); outline-offset: -2px; }
 /* 休息中：只把底色換深（在 GroupCard 計算），文字/數字維持全亮可讀；一眼分辨「暗＝休息、亮＝進行」 */
-.gobtn.go-now { background: #FF2D1A; color: #fff; font-size: 24px; font-weight: 900;
-  padding: 8px 30px; letter-spacing: 1px; }
-.card.big .gobtn.go-now { font-size: 32px; }
+/* 最後3秒：只有「Go」放大變紅，其餘字維持 */
+.gobtn .go-word { color: #FF3B30; font-size: 1.8em; font-weight: 900; }
 /* 該按的組：外框閃燈提示（更亮更快） */
 @keyframes blinkborder {
   0%, 100% { box-shadow: 0 0 0 0 rgba(48,255,120,0); border-color: rgba(255,255,255,.14); }
@@ -187,10 +191,10 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 
 /* 目標輸入方式：分段切換（以距離 / 以每圈），同一個值兩種輸入 */
 .seg-toggle { display: inline-flex; border: 1px solid #2a2a32; border-radius: 9px;
-  overflow: hidden; flex: 0 0 auto; }
-.seg-toggle button { background: #15151a; border: 0; color: #9a9aa0; font-size: 13px;
+  overflow: hidden; flex: 0 0 auto; background: #1c1c22; }
+.seg-toggle button { background: transparent; border: 0; color: #9a9aa0; font-size: 13px;
   font-weight: 700; padding: 9px 13px; }
-.seg-toggle button.on { background: #0a6cff; color: #fff; }
+.seg-toggle button.on { background: #3a3a42; color: #fff; }
 .stepper .val { min-width: 48px; text-align: center; font-size: 19px; font-weight: 800; }
 
 /* 課程設定：段落卡片與標籤列 */
