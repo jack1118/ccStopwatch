@@ -168,7 +168,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
       </div>
 
       <div className="sec-block">
-        <div className="label">共用課表（段落可為組合，如 (400m+200m)×8；可留空＝純碼表）</div>
+        <div className="label">共用課表（項目可為組合，如 (400m+200m)×8；可留空＝純碼表）</div>
         {segments.map((seg, si) => {
           const items = itemsOf(seg)
           const multi = items.length > 1
@@ -176,7 +176,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
             <div className="seg-card" key={seg.id}>
               <div className="field-row">
                 <span className="rl" style={{ width: 'auto', fontWeight: 700 }}>
-                  段落 {si + 1} · {segLabel(seg)}
+                  項目 {si + 1} · {segLabel(seg)}
                 </span>
                 <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeSegment(seg.id)}>✕ 刪除</button>
               </div>
@@ -234,7 +234,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
             </div>
           )
         })}
-        <button className="btn" onClick={addSegment}>＋ 新增段落</button>
+        <button className="btn" onClick={addSegment}>＋ 新增項目</button>
       </div>
 
       <div className="sec-block">
@@ -268,7 +268,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                     return (
                       <div key={seg.id} style={{ marginBottom: 12 }}>
                         <div className="field-row">
-                          <span className="rl" style={{ fontWeight: 700 }}>段{si + 1} {multi ? '組數' : '趟數'}</span>
+                          <span className="rl" style={{ fontWeight: 700 }}>項目{si + 1} {multi ? '組數' : '趟數'}</span>
                           <Stepper value={repsFor(c, seg)} step={1} min={0} onChange={(v) => setSegReps(c, seg.id, v)} />
                         </div>
                         {items.map((it, ii) => (
