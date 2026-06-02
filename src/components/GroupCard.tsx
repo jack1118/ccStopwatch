@@ -4,6 +4,7 @@ import { NRC_HEX, NRC_TEXT, NRC_LABEL } from '../constants'
 import { elapsedSec, buildLapPlan, paceTone } from '../timer/timer'
 import { fmtClockStr } from '../format'
 import { Clock } from './Clock'
+import { RunRing } from './RunRing'
 
 interface Props {
   group: Group
@@ -151,17 +152,20 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
     const tone = paceTone(runSec, ref, 10)   // 剩 10 秒內轉橘、超過轉紅
     // 跑燈進度環：外框填滿，繞滿一圈＝該趟目標時間；超過→整圈轉紅持續閃
     const hasRef = ticking && ref != null && ref > 0
-    const runDeg = hasRef ? Math.min(1, runSec / (ref as number)) * 360 : 0
+    const runProgress = hasRef ? runSec / (ref as number) : 0
     const runOver = hasRef && runSec > (ref as number)
     const setNo = cur?.setNo ?? idx + 1
-    const tagSuffix = cur
-      ? `${cur.lapsInItem > 1 ? ` ${cur.lapInItem}/${cur.lapsInItem}圈` : ''}　${cur.meters}m`
-      : ''
     return (
       <div className={`card${big ? ' big' : ''}${hint ? ' blink' : ''}`} data-testid="card" style={{ ...cardStyle, ...flashStyle }}>
         <div className="ctop">
           {Title}
-          <span className="reptag">第<b className="bignum">{setNo}</b>{cur ? cur.unit : '圈'}{tagSuffix}</span>
+          <span className="reptag">
+            第<b className="bignum">{setNo}</b>{cur ? cur.unit : '圈'}
+            {cur && cur.lapsInItem > 1 && (
+              <>{' '}第<b className="bignum">{cur.lapInItem}</b><span className="lapof">/{cur.lapsInItem}</span>圈</>
+            )}
+            {cur && <span className="nw">　{cur.meters}m</span>}
+          </span>
         </div>
         {Corner}
         <button className={`lapface${pressedCls}`} data-testid="lap-body"
@@ -178,10 +182,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
             </div>
           )}
         </button>
-        {hasRef && (
-          <span className={`run-ring${runOver ? ' over' : ''}`}
-            style={{ ['--deg' as string]: `${runDeg}deg` } as React.CSSProperties} />
-        )}
+        {hasRef && <RunRing progress={runProgress} over={runOver} big={big} />}
         {HoldRing}{UndoRing}
       </div>
     )
@@ -204,6 +205,8 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
   const tone = paceTone(restSec, target > 0 ? target : null, 10)   // 剩 10 秒內轉橘、超過轉紅
   const pct = target > 0 ? Math.min(100, (restSec / target) * 100) : 0
   const goNow = target > 0 && restSec >= target - 3   // 最後 3 秒起 →「Go」＋綠光催促，呼吸停
+  // 多卡同時到點：超時越久閃越快(0.85s→0.25s)，讓使用者知道先按哪個
+  const blinkDur = Math.max(0.25, 0.85 - Math.max(0, restSec - target) * 0.01)
   // 倒數模式：有目標休息時顯示剩餘並倒數；到 0 後顯示超時 +往上加（紅）。無目標→照舊往上計時
   const restOver = target > 0 && restSec > target
   const restShown = target > 0 ? (restOver ? restSec - target : target - restSec) : restSec
@@ -212,7 +215,8 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
   // 休息不變暗：維持鮮明組色，靠左側大「趟休」＋進度條＋出發提示來區分
   return (
     <div className={`card resting${big ? ' big' : ''}${goNow ? ' blink' : ''}`} data-testid="card"
-      style={{ ...cardStyle, ...flashStyle, ['--bdelay' as string]: `${bDelay}ms` } as React.CSSProperties}>
+      style={{ ...cardStyle, ...flashStyle, ['--bdelay' as string]: `${bDelay}ms`,
+        ...(goNow ? { animationDuration: `${blinkDur}s` } : {}) } as React.CSSProperties}>
       <div className="ctop">
         {Title}
         <span className="reptag">
@@ -225,7 +229,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
         <div className="rest-main">
           {restOver ? (
             <span className="overclock">
-              <span className="over-text" style={{ fontSize: big ? 40 : 26, fontWeight: 900, lineHeight: .9 }}>+</span>
+              <span className="over-plus over-text" style={{ fontSize: big ? 40 : 26 }}>+</span>
               <Clock totalSec={restShown} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone="over" />
             </span>
           ) : (
@@ -233,7 +237,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
           )}
           <span className={`restbar${tone === 'over' ? ' over' : ''}`}><i style={{ width: `${pct}%` }} /></span>
           <span className="gobtn">
-            <span className="nw">▶ {goNow ? <b className="go-word">Go</b> : '準備出發'} 第<b className="bignum">{nextSetNo}</b>{nextUnit}</span>
+            <span className="nw">▶ {goNow ? <b className="go-word">Go</b> : <b className="ready-word">Ready</b>} 第<b className="bignum">{nextSetNo}</b>{nextUnit}</span>
             {nextMeters ? <>{' '}<span className="nw">{nextMeters}m</span></> : null}
           </span>
         </div>

@@ -7,10 +7,11 @@ interface Props {
   enterAnim?: '' | 'fromRight' | 'fromLeft'
   onNew: () => void
   onOpen: (id: string) => void
+  onEdit: (id: string) => void
   onHelp: () => void
 }
 
-export function SessionList({ enterAnim = '', onNew, onOpen, onHelp }: Props) {
+export function SessionList({ enterAnim = '', onNew, onOpen, onEdit, onHelp }: Props) {
   const [items, setItems] = useState<SessionMeta[]>(() => listSessions())   // 載入一次（之後刪除課程才更新）
 
   // 向左滑 → 開啟最近一筆課程（清單⇄碼表）
@@ -46,6 +47,7 @@ export function SessionList({ enterAnim = '', onNew, onOpen, onHelp }: Props) {
                 {m.status === 'done' ? ' 已完成' : ' 點擊繼續計時'}
               </div>
             </div>
+            {m.status === 'active' && <button className="btn" onClick={() => onEdit(m.id)}>編輯</button>}
             <button className="btn danger" onClick={() => remove(m.id, m.name)}>刪除</button>
           </div>
         ))}

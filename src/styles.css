@@ -98,17 +98,15 @@ button { font-family: inherit; color: inherit; }
   animation: fillring 1.25s linear forwards;
 }
 
-/* 進行中跑燈進度環：外框填滿,繞滿=該趟目標時間;超過→整圈轉紅持續閃 */
-.run-ring { position: absolute; inset: 0; border-radius: 16px; pointer-events: none; z-index: 4;
-  padding: 4px;
-  background: conic-gradient(var(--ring-lit, rgba(255,255,255,.92)) var(--deg, 0deg), rgba(255,255,255,.16) 0);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-}
-.run-ring.over { --ring-lit: #FF2D1A; --deg: 360deg; animation: ringpulse .7s ease-in-out infinite; }
-@keyframes ringpulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+/* 進行中跑燈進度環(SVG)：沿圓角邊框依邊長均勻填色 + 亮綠實心圓點貼頭部;超過→整圈轉紅持續閃 */
+.run-ring-wrap { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+.run-svg { position: absolute; inset: 0; overflow: visible; }
+.run-track { fill: none; stroke: rgba(255,255,255,.18); }
+.run-fill { fill: none; stroke: rgba(255,255,255,.95); stroke-linecap: round; }
+.run-fill.over { stroke: #FF2D1A; animation: ringpulse .7s ease-in-out infinite; }
+.run-dot { fill: #4cff78; filter: drop-shadow(0 0 5px rgba(76,255,120,.95)); }
+.run-dot.over { fill: #FF2D1A; filter: drop-shadow(0 0 5px rgba(255,45,26,.95)); }
+@keyframes ringpulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
 
 /* 上趟（過去）/ Next（接下來）兩種視覺區隔的資訊 chip */
 .metarow { display: flex; justify-content: space-between; align-items: center;
@@ -134,6 +132,9 @@ button { font-family: inherit; color: inherit; }
 .gtitle, .targetline { white-space: nowrap; }
 .card.big .reptag { font-size: 15px; }
 .reptag .bignum { font-size: 22px; font-weight: 900; line-height: 1; }
+/* 多圈「第N/M圈」：N(目前圈)用 bignum 放大、M(總圈)用 lapof 縮小，一眼看出進行到第幾圈 */
+.reptag .lapof { font-size: 14px; font-weight: 800; opacity: .7; }
+.card.big .reptag .lapof { font-size: 18px; }
 /* 組名「第N組」的 N 放大 */
 .gtitle .num { font-size: 1.55em; font-weight: 900; }
 .card.big .reptag .bignum { font-size: 30px; }
@@ -149,8 +150,7 @@ button { font-family: inherit; color: inherit; }
 button.restwrap { background: transparent; border: 0; color: inherit;
   width: 100%; cursor: pointer; }
 .rest-main { flex: 1; min-width: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 5px;
-  padding-right: 34px; }   /* 右側避讓：倒數數字整體左移，不頂到右上角復原鈕 */
+  align-items: center; justify-content: center; gap: 5px; }
 .rest-vlabel { flex: 0 0 auto; writing-mode: vertical-rl; text-orientation: upright;
   font-size: 28px; font-weight: 900; letter-spacing: 8px; line-height: 1;
   text-shadow: 0 1px 3px rgba(0,0,0,.5); }
@@ -168,6 +168,8 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 /* 休息中：只把底色換深（在 GroupCard 計算），文字/數字維持全亮可讀；一眼分辨「暗＝休息、亮＝進行」 */
 /* 最後3秒：只有「Go」放大變紅，其餘字維持 */
 .gobtn .go-word { color: #FF3B30; font-size: 1.8em; font-weight: 900; }
+/* Ready 與 Go 成對：同字位、略小、冷靜白色（Go 紅＝爆發） */
+.gobtn .ready-word { color: #fff; font-size: 1.4em; font-weight: 900; }
 /* 該按的組：外框閃燈提示（更亮更快） */
 @keyframes blinkborder {
   0%, 100% { box-shadow: 0 0 0 0 rgba(48,255,120,0); border-color: rgba(255,255,255,.14); }
@@ -208,8 +210,9 @@ button.restwrap { background: transparent; border: 0; color: inherit;
   text-shadow: 0 2px 5px rgba(0,0,0,.55), 0 0 3px rgba(0,0,0,.55);
   -webkit-text-stroke: 1.2px rgba(0,0,0,.34); }
 .clock .min { opacity: .82; margin-right: 1px; }
-/* 趟休超時：+ 號與倒數時鐘並排對齊 */
-.overclock { display: inline-flex; align-items: baseline; gap: 1px; }
+/* 趟休超時：時鐘維持置中(與倒數同位置)，「+」絕對定位貼在時鐘左側不佔空間 */
+.overclock { position: relative; display: inline-flex; align-items: baseline; }
+.over-plus { position: absolute; right: calc(100% + 2px); bottom: 0; font-weight: 900; line-height: .9; }
 .clock .sec { transform-origin: center bottom; }
 .clock .sec.tick { animation: tick .9s ease-out; }
 @keyframes tick { 0% { transform: scale(1.16); } 18% { transform: scale(1); } 100% { transform: scale(1); } }
@@ -239,6 +242,8 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .sec-block { padding: 10px 14px; }
 .sec-block .label { font-size: 14px; color: #b3b3b9; font-weight: 700; margin-bottom: 8px; }
 .sec-block .sublabel { font-size: 12px; color: #8a8a90; line-height: 1.45; margin: -4px 0 8px; }
+.stepper.locked { opacity: .5; }
+.stepper.locked button { cursor: not-allowed; }
 .seg-row, .grp-row { background: #1c1c22; border-radius: 12px; padding: 11px 12px;
   display: flex; align-items: center; gap: 9px; margin-bottom: 8px; font-size: 16px; }
 .grp-row.off { opacity: .42; }

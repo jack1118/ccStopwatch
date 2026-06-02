@@ -14,6 +14,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('list')
   const [session, setSession] = useState<Session | null>(null)
   const [enter, setEnter] = useState<Enter>('')
+  const [editSession, setEditSession] = useState<Session | null>(null)   // 進行中課程「編輯」用
 
   const nav = (next: Screen, anim: Enter = '') => { setEnter(anim); setScreen(next) }
 
@@ -24,20 +25,31 @@ export default function App() {
     nav(s.status === 'done' ? 'results' : 'timer', 'fromRight')   // 開啟課程＝往內走，從右滑入
   }
 
+  const editExisting = (id: string) => {
+    const s = loadSession(id)
+    if (!s) return
+    setEditSession(s)
+    nav('setup', 'fromRight')
+  }
+
   const startSession = (s: Session) => {
+    const wasEdit = !!editSession
     saveSession(s)
     setSession(s)
-    nav('timer')
+    setEditSession(null)
+    nav(wasEdit ? 'list' : 'timer', wasEdit ? 'fromLeft' : 'fromRight')   // 編輯存檔→回清單；新課程→碼表
   }
 
   return (
     <>
       {screen === 'list' && (
-        <SessionList enterAnim={enter} onNew={() => nav('setup', 'fromRight')} onOpen={openExisting} onHelp={() => setScreen('help')} />
+        <SessionList enterAnim={enter} onNew={() => { setEditSession(null); nav('setup', 'fromRight') }}
+          onOpen={openExisting} onEdit={editExisting} onHelp={() => setScreen('help')} />
       )}
       {screen === 'help' && <Help onBack={() => setScreen('list')} />}
       {screen === 'setup' && (
-        <SessionSetup enterAnim={enter} onStart={startSession} onCancel={() => nav('list', 'fromLeft')} />
+        <SessionSetup enterAnim={enter} initial={editSession ?? undefined} editingActive={!!editSession}
+          onStart={startSession} onCancel={() => { setEditSession(null); nav('list', 'fromLeft') }} />
       )}
       {screen === 'timer' && session && (
         <Timer

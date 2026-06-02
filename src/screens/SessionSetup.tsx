@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import type { Item, NRCColor, Segment, Session } from '../types'
+import type { Group, Item, NRCColor, Segment, Session } from '../types'
 import { NRC_ORDER, NRC_NUM, NRC_HEX, NRC_TEXT, NRC_LABEL } from '../constants'
 import { itemsOf, lapsOf } from '../timer/timer'
 import { useSwipe } from '../hooks/useSwipe'
@@ -18,9 +18,9 @@ function fmtPace(sec: number, meters: number): string {
   return `${Math.floor(perKm / 60)}:${String(perKm % 60).padStart(2, '0')}/km`
 }
 
-/** 統一步進器：−、可直接輸入（內部字串、失焦套用）、＋；linked=被連動更新時閃一下 */
-function Stepper({ value, step, min, onChange, linked }: {
-  value: number; step: number; min: number; onChange: (v: number) => void; linked?: boolean
+/** 統一步進器：−、可直接輸入（內部字串、失焦套用）、＋；linked=被連動更新時閃一下；disabled=唯讀鎖定 */
+function Stepper({ value, step, min, onChange, linked, disabled }: {
+  value: number; step: number; min: number; onChange: (v: number) => void; linked?: boolean; disabled?: boolean
 }) {
   const [text, setText] = useState(String(value))
   const [flash, setFlash] = useState(false)
@@ -42,20 +42,21 @@ function Stepper({ value, step, min, onChange, linked }: {
     onChange(n); setText(String(n))
   }
   return (
-    <div className="stepper">
-      <button onClick={() => onChange(Math.max(min, value - step))}>−</button>
-      <input ref={inputRef} type="text" inputMode="numeric" pattern="[0-9]*" value={text}
+    <div className={`stepper${disabled ? ' locked' : ''}`}>
+      <button disabled={disabled} onClick={() => onChange(Math.max(min, value - step))}>−</button>
+      <input ref={inputRef} type="text" inputMode="numeric" pattern="[0-9]*" value={text} readOnly={disabled}
         className={flash ? 'flash' : ''}
         onFocus={(e) => e.target.select()}
         onChange={(e) => setText(e.target.value.replace(/[^0-9]/g, ''))}
         onBlur={(e) => commit(e.target.value)} />
-      <button onClick={() => onChange(value + step)}>＋</button>
+      <button disabled={disabled} onClick={() => onChange(value + step)}>＋</button>
     </div>
   )
 }
 
 interface Props {
   initial?: Session
+  editingActive?: boolean    // 編輯進行中課程：鎖定距離/場地/結構，只改目標/休息/趟數，保留已跑進度
   enterAnim?: '' | 'fromRight' | 'fromLeft'
   onStart: (session: Session) => void
   onCancel: () => void
@@ -89,7 +90,7 @@ function summaryOf(segments: Segment[]): string {
   return segments.map(segLabel).join(' ')
 }
 
-export function SessionSetup({ initial, enterAnim = '', onStart, onCancel }: Props) {
+export function SessionSetup({ initial, editingActive = false, enterAnim = '', onStart, onCancel }: Props) {
   const [today] = useState(() => new Date().toLocaleDateString('zh-TW'))
   const [name, setName] = useState(initial?.name ?? today)
   const [nameTouched, setNameTouched] = useState(!!initial)
@@ -106,6 +107,22 @@ export function SessionSetup({ initial, enterAnim = '', onStart, onCancel }: Pro
   const planSummary = summaryOf(segments)
   // 每組每圈加秒 × 此距離圈數 = 各組之間在「整段距離」上累加的秒數
   const gapTotal = (it: Item) => (it.gapSec ?? 0) * lapsOf(it.meters, lapMeters)
+
+  // 編輯進行中：某組在某段已完成的趟數（趟數不可改到比這少）
+  const lapsPerRep = (seg: Segment) => Math.max(1, itemsOf(seg).reduce((a, it) => a + lapsOf(it.meters, lapMeters), 0))
+  const doneRepsInSeg = (g: Group, seg: Segment) => {
+    const si = segments.findIndex((s) => s.id === seg.id)
+    let done = g.reps.length
+    for (let k = 0; k < si; k++) done -= (g.segReps?.[segments[k].id] ?? segments[k].reps) * lapsPerRep(segments[k])
+    const lpr = lapsPerRep(seg)
+    return Math.ceil(Math.max(0, Math.min(done, (g.segReps?.[seg.id] ?? seg.reps) * lpr)) / lpr)
+  }
+  const repFloorSeg = (seg: Segment) =>
+    editingActive && initial ? Math.max(0, ...initial.groups.map((g) => doneRepsInSeg(g, seg))) : 1
+  const repFloorGroup = (c: NRCColor, seg: Segment) => {
+    const g = initial?.groups.find((x) => x.color === c)
+    return editingActive && g ? doneRepsInSeg(g, seg) : 0
+  }
 
   // 改場地一圈 → 所有項目的「每組每圈＋」一律重設為 round(場地/100)（含手調過的，依使用者要求）
   const changeLapMeters = (v: number) => {
@@ -168,6 +185,17 @@ export function SessionSetup({ initial, enterAnim = '', onStart, onCancel }: Pro
   const activeCount = NRC_ORDER.filter((c) => cfg[c].on).length
 
   const start = () => {
+    // 編輯進行中：只更新 plan 與各組設定，保留每組已跑進度(reps/狀態/計時)，以顏色對應
+    if (editingActive && initial) {
+      const groups = initial.groups.map((g) => ({
+        ...g,
+        segReps: { ...cfg[g.color].segReps },
+        segTarget: { ...cfg[g.color].segTarget },
+        segRest: { ...cfg[g.color].segRest },
+      }))
+      onStart({ ...initial, name: name.trim() || '未命名課程', plan: { segments, lapMeters }, groups })
+      return
+    }
     const groups = NRC_ORDER.filter((c) => cfg[c].on).map((c) => ({
       id: uid(), color: c, number: NRC_NUM[c],
       segReps: { ...cfg[c].segReps }, segTarget: { ...cfg[c].segTarget }, segRest: { ...cfg[c].segRest },
@@ -187,7 +215,7 @@ export function SessionSetup({ initial, enterAnim = '', onStart, onCancel }: Pro
     <div className={`app${enterAnim ? ' enter-' + enterAnim : ''}`} {...swipe}>
       <div className="topbar">
         <button className="btn" onClick={onCancel}>←</button>
-        <h1>課程設定</h1>
+        <h1>{editingActive ? '編輯課程（只改未跑）' : '課程設定'}</h1>
       </div>
 
       <div className="sec-block">
@@ -199,9 +227,9 @@ export function SessionSetup({ initial, enterAnim = '', onStart, onCancel }: Pro
       <div className="sec-block">
         <div className="label">操作場地一圈</div>
         <div className="field-row">
-          <Stepper value={lapMeters} step={50} min={50} onChange={changeLapMeters} />
+          <Stepper value={lapMeters} step={50} min={50} onChange={changeLapMeters} disabled={editingActive} />
           <span className="ru">m</span>
-          <span className="field-hint">預設 400；距離會換算成圈數</span>
+          <span className="field-hint">{editingActive ? '進行中不可改場地' : '預設 400；距離會換算成圈數'}</span>
         </div>
       </div>
 
@@ -217,20 +245,21 @@ export function SessionSetup({ initial, enterAnim = '', onStart, onCancel }: Pro
                 <span className="rl" style={{ width: 'auto', fontWeight: 700 }}>
                   項目 {si + 1} · {segLabel(seg)}
                 </span>
-                <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeSegment(seg.id)}>✕ 刪除</button>
+                {!editingActive && <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeSegment(seg.id)}>✕ 刪除</button>}
               </div>
               <div className="field-row">
                 <span className="rl">{multi ? '組數' : '趟數'}</span>
-                <Stepper value={seg.reps} step={1} min={1} onChange={(v) => patchSegment(seg.id, { reps: v })} />
+                <Stepper value={seg.reps} step={1} min={editingActive ? repFloorSeg(seg) : 1} onChange={(v) => patchSegment(seg.id, { reps: v })} />
                 <span className="ru">{multi ? '組' : '趟'}</span>
+                {editingActive && <span className="field-hint">不可少於已完成 {repFloorSeg(seg)} {multi ? '組' : '趟'}</span>}
               </div>
               {items.map((it, ii) => (
                 <div className="item-box" key={it.id}>
                   <div className="field-row">
                     <span className="rl">距離{multi ? ` ${ii + 1}` : ''}</span>
-                    <Stepper value={it.meters} step={100} min={50} onChange={(v) => patchItem(seg.id, it.id, { meters: v })} />
+                    <Stepper value={it.meters} step={100} min={50} onChange={(v) => patchItem(seg.id, it.id, { meters: v })} disabled={editingActive} />
                     <span className="ru">m</span>
-                    {multi && <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeItem(seg.id, it.id)}>✕</button>}
+                    {multi && !editingActive && <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeItem(seg.id, it.id)}>✕</button>}
                     {lapsOf(it.meters, lapMeters) > 1 && <span className="field-hint">＝ {lapsOf(it.meters, lapMeters)} 圈／趟</span>}
                   </div>
                   <div className="field-row">
@@ -285,21 +314,23 @@ export function SessionSetup({ initial, enterAnim = '', onStart, onCancel }: Pro
                   )}
                 </div>
               ))}
-              <button className="btn" onClick={() => addItem(seg.id)}>＋ 加一個距離（組合）</button>
-              {items.length >= 2 && (
+              {!editingActive && <button className="btn" onClick={() => addItem(seg.id)}>＋ 加一個距離（組合）</button>}
+              {!editingActive && items.length >= 2 && (
                 <button className="btn" style={{ marginLeft: 8 }} onClick={() => mirrorSegment(seg.id)}>鏡像(金字塔)</button>
               )}
             </div>
           )
         })}
-        <button className="btn" onClick={addSegment}>＋ 新增項目</button>
+        {!editingActive && <button className="btn" onClick={addSegment}>＋ 新增項目</button>}
       </div>
 
       <div className="sec-block">
         <div className="label">組別（顏色固定對應組號；可展開逐組自訂組數/目標/休息）</div>
+        {editingActive && <div className="sublabel">進行中不可增減組別，僅能調整各組目標/休息/趟數</div>}
         {NRC_ORDER.map((c) => {
           const on = cfg[c].on
           const isOpen = !!expanded[c]
+          if (editingActive && !on) return null   // 編輯進行中：只顯示已啟用的組
           return (
             <div key={c}>
               <div className={`grp-row${on ? '' : ' off'}`}>
@@ -316,7 +347,7 @@ export function SessionSetup({ initial, enterAnim = '', onStart, onCancel }: Pro
                     )}
                   </>
                 )}
-                <button className={`grp-toggle${on ? ' on' : ''}`} onClick={() => toggleColor(c)}>{on ? '啟用' : '未用'}</button>
+                {!editingActive && <button className={`grp-toggle${on ? ' on' : ''}`} onClick={() => toggleColor(c)}>{on ? '啟用' : '未用'}</button>}
               </div>
               {on && isOpen && segments.length > 0 && (
                 <div className="grp-expand-body">
@@ -327,7 +358,7 @@ export function SessionSetup({ initial, enterAnim = '', onStart, onCancel }: Pro
                       <div key={seg.id} style={{ marginBottom: 12 }}>
                         <div className="field-row">
                           <span className="rl" style={{ fontWeight: 700 }}>項目{si + 1} {multi ? '組數' : '趟數'}</span>
-                          <Stepper value={repsFor(c, seg)} step={1} min={0} onChange={(v) => setSegReps(c, seg.id, v)} />
+                          <Stepper value={repsFor(c, seg)} step={1} min={editingActive ? repFloorGroup(c, seg) : 0} onChange={(v) => setSegReps(c, seg.id, v)} />
                         </div>
                         {items.map((it, ii) => (
                           <div key={it.id} className="item-box">
@@ -359,7 +390,7 @@ export function SessionSetup({ initial, enterAnim = '', onStart, onCancel }: Pro
       <div className="bottombar">
         <button className="btn primary" style={{ fontSize: 18, padding: 16 }}
           disabled={activeCount === 0} onClick={start}>
-          開始上課 ▶（{activeCount} 組）
+          {editingActive ? '儲存變更 ✓' : `開始上課 ▶（${activeCount} 組）`}
         </button>
       </div>
     </div>
