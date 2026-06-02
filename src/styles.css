@@ -11,6 +11,7 @@ button { font-family: inherit; color: inherit; }
 
 .app { max-width: 720px; margin: 0 auto; min-height: 100%;
   display: flex; flex-direction: column;
+  touch-action: pan-y;   /* 垂直照常捲動；水平手勢交給 JS(左右滑切頁)，iOS 才不會誤判成捲動而取消 */
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom); }
 /* 撐開中間區，讓底部按鈕列沉到畫面下方（好按、善用空白） */
