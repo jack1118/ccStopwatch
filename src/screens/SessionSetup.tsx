@@ -211,7 +211,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                     <span className="rl">每組＋</span>
                     <Stepper value={it.gapSec ?? 0} step={gapStepOf(it.meters)} min={0} onChange={(v) => patchItem(seg.id, it.id, { gapSec: v })} />
                     <span className="ru">秒</span>
-                    <span className="field-hint">各組依序累加</span>
+                    <span className="field-hint">從黃組起，每多一組依序加這麼多秒（黑＋N、紫＋2N…，N＝此欄秒數）</span>
                   </div>
                   <div className="field-row">
                     <span className="rl">間休</span>
@@ -220,10 +220,9 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                     <span className="field-hint">此距離跑完後的休息</span>
                   </div>
                   {(it.targetSec ?? 0) > 0 && (
-                    <div className="field-row">
-                      <span className="ru" style={{ fontSize: 12 }}>
-                        各組（{it.meters}m）目標：{NRC_ORDER.map((c) => `${NRC_LABEL[c]}${(it.targetSec ?? 0) + (it.gapSec ?? 0) * (NRC_NUM[c] - 1)}`).join('・')}
-                      </span>
+                    <div className="target-preview">
+                      <b>各組目標（{it.meters}m）</b>
+                      {NRC_ORDER.map((c) => ` ${NRC_LABEL[c]}${(it.targetSec ?? 0) + (it.gapSec ?? 0) * (NRC_NUM[c] - 1)}`).join('・')}
                     </div>
                   )}
                 </div>

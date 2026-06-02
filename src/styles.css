@@ -174,6 +174,10 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 /* 課程設定：段落卡片與標籤列 */
 .seg-card { background: #1c1c22; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
 .item-box { border-left: 3px solid #34343e; padding-left: 10px; margin: 8px 0; }
+/* 各組目標一覽：與欄位說明明顯區隔的小區塊 */
+.target-preview { margin: 14px 0 2px; background: #101015; border: 1px solid #2a2a32;
+  border-radius: 9px; padding: 9px 11px; font-size: 13px; color: #d7d7dd; line-height: 1.7; }
+.target-preview b { color: #fff; font-weight: 800; }
 .field-row { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; flex-wrap: wrap; }
 .field-row:last-child { margin-bottom: 0; }
 .field-row .rl { width: 84px; flex: 0 0 auto; font-size: 14px; color: #cfcfd4; }
