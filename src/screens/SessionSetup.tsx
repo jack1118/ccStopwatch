@@ -56,13 +56,14 @@ function initGroupCfg(initial?: Session): Record<NRCColor, GroupCfg> {
   return cfg
 }
 
+function segLabel(seg: Segment): string {
+  const items = itemsOf(seg)
+  return items.length > 1
+    ? `(${items.map((i) => `${i.meters}m`).join('+')})×${seg.reps}`
+    : `${items[0].meters}m×${seg.reps}`
+}
 function summaryOf(segments: Segment[]): string {
-  return segments.map((seg) => {
-    const items = itemsOf(seg)
-    return items.length > 1
-      ? `(${items.map((i) => `${i.meters}m`).join('+')})×${seg.reps}`
-      : `${items[0].meters}m×${seg.reps}`
-  }).join(' ')
+  return segments.map(segLabel).join(' ')
 }
 
 export function SessionSetup({ initial, onStart, onCancel }: Props) {
@@ -174,7 +175,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
             <div className="seg-card" key={seg.id}>
               <div className="field-row">
                 <span className="rl" style={{ width: 'auto', fontWeight: 700 }}>
-                  段落 {si + 1}{multi ? `（組合 ${items.length} 個距離）` : ''}
+                  段落 {si + 1} · {segLabel(seg)}
                 </span>
                 <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeSegment(seg.id)}>✕ 刪除</button>
               </div>
@@ -192,9 +193,15 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                     {multi && <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeItem(seg.id, it.id)}>✕</button>}
                   </div>
                   <div className="field-row">
-                    <span className="rl">目標秒</span>
+                    <span className="rl">距離目標</span>
                     <Stepper value={it.targetSec ?? 0} step={1} min={0} onChange={(v) => patchItem(seg.id, it.id, { targetSec: v })} />
-                    <span className="ru">秒（0＝不設）</span>
+                    <span className="ru">秒（完成 {it.meters}m；0＝不設）</span>
+                  </div>
+                  <div className="field-row">
+                    <span className="rl">每圈目標</span>
+                    <Stepper value={Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} step={1} min={0}
+                      onChange={(v) => patchItem(seg.id, it.id, { targetSec: Math.round(v * it.meters / lapMeters) })} />
+                    <span className="ru">秒／圈（每 {lapMeters}m；與上方連動）</span>
                   </div>
                   <div className="field-row">
                     <span className="rl">每組＋</span>
@@ -209,7 +216,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                   {(it.targetSec ?? 0) > 0 && (
                     <div className="field-row">
                       <span className="ru" style={{ fontSize: 12 }}>
-                        各組目標秒：{NRC_ORDER.map((c) => `${NRC_LABEL[c]}${(it.targetSec ?? 0) + (it.gapSec ?? 0) * (NRC_NUM[c] - 1)}`).join('・')}
+                        各組（{it.meters}m）目標：{NRC_ORDER.map((c) => `${NRC_LABEL[c]}${(it.targetSec ?? 0) + (it.gapSec ?? 0) * (NRC_NUM[c] - 1)}`).join('・')}
                       </span>
                     </div>
                   )}
@@ -263,7 +270,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                           <div key={it.id} className="item-box">
                             <div className="rl" style={{ width: 'auto', marginBottom: 4 }}>距離{multi ? ` ${ii + 1}` : ''} · {it.meters}m</div>
                             <div className="field-row">
-                              <span className="rl">目標秒</span>
+                              <span className="rl">距離目標</span>
                               <Stepper value={targetFor(c, it)} step={1} min={0} onChange={(v) => setItemTarget(c, it.id, v)} />
                               <span className="ru">秒</span>
                             </div>
