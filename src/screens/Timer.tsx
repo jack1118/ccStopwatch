@@ -7,14 +7,16 @@ import { GroupCard } from '../components/GroupCard'
 import { useNow } from '../hooks/useNow'
 import { useWakeLock } from '../hooks/useWakeLock'
 import { beep, tapFeedback, isTapSoundOn, setTapSound } from '../sound'
+import { useSwipe } from '../hooks/useSwipe'
 
 interface Props {
   session: Session
+  enterAnim?: '' | 'fromRight' | 'fromLeft'
   onExit: () => void
   onFinish: (session: Session) => void
 }
 
-export function Timer({ session, onExit, onFinish }: Props) {
+export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
   const [state, dispatch] = useReducer(timerReducer, session, initTimerState)
   const anyActive = state.session.groups.some((g) => g.state === 'running' || g.state === 'resting')
   const now = useNow(true)
@@ -59,8 +61,11 @@ export function Timer({ session, onExit, onFinish }: Props) {
     if (remaining < bestRemaining) { bestRemaining = remaining; nextRunId = g.id }
   }
 
+  // 向左滑 → 看結果（向右不接，避免運動中誤觸退出）
+  const swipe = useSwipe({ onLeft: () => onFinish(state.session) })
+
   return (
-    <div className="app">
+    <div className={`app${enterAnim ? ' enter-' + enterAnim : ''}`} {...swipe}>
       <div className="topbar">
         <button className="btn" onClick={onExit}>←</button>
         <h1>{state.session.name}</h1>

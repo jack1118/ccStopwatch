@@ -8,22 +8,26 @@ import { Results } from './screens/Results'
 import { Help } from './screens/Help'
 
 type Screen = 'list' | 'setup' | 'timer' | 'results' | 'help'
+type Enter = '' | 'fromRight' | 'fromLeft'   // 滑入方向（左右滑動切頁用）
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('list')
   const [session, setSession] = useState<Session | null>(null)
+  const [enter, setEnter] = useState<Enter>('')
+
+  const nav = (next: Screen, anim: Enter = '') => { setEnter(anim); setScreen(next) }
 
   const openExisting = (id: string) => {
     const s = loadSession(id)
     if (!s) return
     setSession(s)
-    setScreen(s.status === 'done' ? 'results' : 'timer')
+    nav(s.status === 'done' ? 'results' : 'timer')
   }
 
   const startSession = (s: Session) => {
     saveSession(s)
     setSession(s)
-    setScreen('timer')
+    nav('timer')
   }
 
   return (
@@ -38,14 +42,16 @@ export default function App() {
       {screen === 'timer' && session && (
         <Timer
           session={session}
+          enterAnim={enter}
           onExit={() => setScreen('list')}
-          onFinish={(s) => { setSession(s); setScreen('results') }}
+          onFinish={(s) => { setSession(s); nav('results', 'fromRight') }}   // 碼表→結果：從右滑入
         />
       )}
       {screen === 'results' && session && (
         <Results
           session={session}
-          onExit={() => setScreen(session.status === 'active' ? 'timer' : 'list')}
+          enterAnim={enter}
+          onExit={() => nav(session.status === 'active' ? 'timer' : 'list', 'fromLeft')}  // 結果→返回：從左滑入
           onUpdate={(s) => { saveSession(s); setSession(s) }}
         />
       )}

@@ -53,11 +53,25 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
         zIndex: 5,
       }
     : undefined
-  const startPress = () => {
+  const startXY = useRef({ x: 0, y: 0 })
+  const moved = useRef(false)        // 手指滑動超過門檻 → 取消點擊/長按（讓翻頁滑動不誤觸）
+  const startPress = (e: React.PointerEvent) => {
     downAt.current = Date.now()
+    startXY.current = { x: e.clientX, y: e.clientY }
+    moved.current = false
     setPressed(true)
     ringTimer.current = window.setTimeout(() => setHolding(true), TAP_MAX)
     holdTimer.current = window.setTimeout(() => { setHolding(false); onStop(g.id) }, HOLD_MS)
+  }
+  const onMove = (e: React.PointerEvent) => {
+    if (moved.current) return
+    if (Math.abs(e.clientX - startXY.current.x) > 12 || Math.abs(e.clientY - startXY.current.y) > 12) {
+      moved.current = true
+      if (ringTimer.current) clearTimeout(ringTimer.current)
+      if (holdTimer.current) clearTimeout(holdTimer.current)
+      setHolding(false)
+      setPressed(false)
+    }
   }
   const endPress = (action?: () => void) => {
     const dur = Date.now() - downAt.current
@@ -65,11 +79,12 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
     if (holdTimer.current) clearTimeout(holdTimer.current)
     setHolding(false)
     setPressed(false)
-    if (dur < TAP_MAX && action) { tapFlash(); action() }
+    if (!moved.current && dur < TAP_MAX && action) { tapFlash(); action() }
   }
   const pressedCls = pressed ? ' pressed' : ''
   const pressProps = (action: () => void) => ({
     onPointerDown: startPress,
+    onPointerMove: onMove,
     onPointerUp: () => endPress(action),
     onPointerLeave: () => endPress(),
     onPointerCancel: () => endPress(),

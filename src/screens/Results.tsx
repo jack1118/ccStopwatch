@@ -6,14 +6,16 @@ import { sessionToCsv } from '../export/csv'
 import { downloadPng, downloadText } from '../export/screenshot'
 import { fmtClockStr } from '../format'
 import { buildLapPlan } from '../timer/timer'
+import { useSwipe } from '../hooks/useSwipe'
 
 interface Props {
   session: Session
+  enterAnim?: '' | 'fromRight' | 'fromLeft'
   onExit: () => void
   onUpdate: (session: Session) => void   // 編輯學員名單後存回
 }
 
-export function Results({ session, onExit, onUpdate }: Props) {
+export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
   const [visible, setVisible] = useState<Set<string>>(
     () => new Set(session.groups.map((g) => g.id)),
   )
@@ -49,8 +51,11 @@ export function Results({ session, onExit, onUpdate }: Props) {
   const distAt = (i: number) => refLaps[i]?.meters ?? null
   const detail = session.groups.find((g) => g.id === detailId)
 
+  // 向右滑 → 在詳細頁先返回總表，否則返回上一頁
+  const swipe = useSwipe({ onRight: () => (detailId ? setDetailId(null) : onExit()) })
+
   return (
-    <div className="app">
+    <div className={`app${enterAnim ? ' enter-' + enterAnim : ''}`} {...swipe}>
       <div className="topbar">
         <button className="btn" onClick={onExit}>←</button>
         <h1>分段成績 — {session.name}</h1>
