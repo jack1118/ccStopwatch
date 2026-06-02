@@ -163,21 +163,23 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .pill { padding: 4px 11px; border-radius: 8px; font-weight: 800; font-size: 15px; }
 
 /* 距離 / 趟數 / 休息 統一步進器：−、可直接輸入、＋ */
-.stepper { display: inline-flex; align-items: center; border-radius: 10px; overflow: hidden; }
+.stepper { display: inline-flex; align-items: center; border-radius: 10px; overflow: hidden; flex: 0 0 auto; }
 .stepper button { width: 40px; height: 40px; font-size: 24px; font-weight: 800;
-  background: #2c2c2e; border: 0; color: #fff; line-height: 1; }
+  background: #2c2c2e; border: 0; color: #fff; line-height: 1; flex: 0 0 auto; }
 .stepper button:active { background: #3a3a3e; }
-.stepper input { width: 62px; height: 40px; text-align: center; font-size: 19px;
-  font-weight: 800; background: #15151a; border: 0; color: #fff; }
+.stepper input { width: 80px; height: 40px; text-align: center; font-size: 19px;
+  font-weight: 800; background: #15151a; border: 0; color: #fff; flex: 0 0 auto; }
 .stepper .val { min-width: 48px; text-align: center; font-size: 19px; font-weight: 800; }
 
 /* 課程設定：段落卡片與標籤列 */
 .seg-card { background: #1c1c22; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
 .item-box { border-left: 3px solid #34343e; padding-left: 10px; margin: 8px 0; }
-.field-row { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+.field-row { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; flex-wrap: wrap; }
 .field-row:last-child { margin-bottom: 0; }
-.field-row .rl { width: 92px; font-size: 14px; color: #cfcfd4; }
-.field-row .ru { font-size: 14px; color: #9a9aa0; }
+.field-row .rl { width: 84px; flex: 0 0 auto; font-size: 14px; color: #cfcfd4; }
+.field-row .ru { flex: 0 0 auto; font-size: 14px; color: #9a9aa0; }
+/* 較長的說明：獨立一行小灰字，不與步進器搶寬度 */
+.field-hint { flex-basis: 100%; width: 100%; font-size: 11.5px; color: #8a8a90; margin: 1px 0 0; }
 
 /* 課程設定：色塊開關 */
 .grp-toggle { margin-left: auto; font-size: 13px; font-weight: 700;

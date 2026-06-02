@@ -162,7 +162,8 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
         <div className="label">操作場地一圈</div>
         <div className="field-row">
           <Stepper value={lapMeters} step={50} min={50} onChange={setLapMeters} />
-          <span className="ru">m（預設 400；距離換算成圈數）</span>
+          <span className="ru">m</span>
+          <span className="field-hint">預設 400；距離會換算成圈數</span>
         </div>
       </div>
 
@@ -189,29 +190,34 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                   <div className="field-row">
                     <span className="rl">距離{multi ? ` ${ii + 1}` : ''}</span>
                     <Stepper value={it.meters} step={100} min={50} onChange={(v) => patchItem(seg.id, it.id, { meters: v })} />
-                    <span className="ru">m{lapsOf(it.meters, lapMeters) > 1 ? `（${lapsOf(it.meters, lapMeters)}圈）` : ''}</span>
+                    <span className="ru">m</span>
                     {multi && <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeItem(seg.id, it.id)}>✕</button>}
+                    {lapsOf(it.meters, lapMeters) > 1 && <span className="field-hint">＝ {lapsOf(it.meters, lapMeters)} 圈／趟</span>}
                   </div>
                   <div className="field-row">
                     <span className="rl">距離目標</span>
                     <Stepper value={it.targetSec ?? 0} step={1} min={0} onChange={(v) => patchItem(seg.id, it.id, { targetSec: v })} />
-                    <span className="ru">秒（完成 {it.meters}m；0＝不設）</span>
+                    <span className="ru">秒</span>
+                    <span className="field-hint">完成 {it.meters}m 的時間（0＝不設）</span>
                   </div>
                   <div className="field-row">
                     <span className="rl">每圈目標</span>
                     <Stepper value={Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} step={1} min={0}
                       onChange={(v) => patchItem(seg.id, it.id, { targetSec: Math.round(v * it.meters / lapMeters) })} />
-                    <span className="ru">秒／圈（每 {lapMeters}m；與上方連動）</span>
+                    <span className="ru">秒/圈</span>
+                    <span className="field-hint">每 {lapMeters}m；與上方連動</span>
                   </div>
                   <div className="field-row">
                     <span className="rl">每組＋</span>
                     <Stepper value={it.gapSec ?? 0} step={gapStepOf(it.meters)} min={0} onChange={(v) => patchItem(seg.id, it.id, { gapSec: v })} />
-                    <span className="ru">秒（依序累加）</span>
+                    <span className="ru">秒</span>
+                    <span className="field-hint">各組依序累加</span>
                   </div>
                   <div className="field-row">
                     <span className="rl">間休</span>
                     <Stepper value={it.restSec} step={5} min={0} onChange={(v) => patchItem(seg.id, it.id, { restSec: v })} />
-                    <span className="ru">秒（此距離後）</span>
+                    <span className="ru">秒</span>
+                    <span className="field-hint">此距離跑完後的休息</span>
                   </div>
                   {(it.targetSec ?? 0) > 0 && (
                     <div className="field-row">
