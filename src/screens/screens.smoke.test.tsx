@@ -2,7 +2,15 @@ import { it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { SessionSetup } from './SessionSetup'
 import { Results } from './Results'
+import { Help } from './Help'
 import type { Session } from '../types'
+
+it('Help 使用說明正常渲染', () => {
+  render(<Help onBack={vi.fn()} />)
+  expect(screen.getByText('使用說明')).toBeInTheDocument()
+  expect(screen.getByText('快速開始')).toBeInTheDocument()
+  expect(screen.getByText('計時操作')).toBeInTheDocument()
+})
 
 it('SessionSetup 正常渲染（含場地一圈、課表、預設5組）', () => {
   render(<SessionSetup onStart={vi.fn()} onCancel={vi.fn()} />)

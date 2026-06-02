@@ -5,8 +5,9 @@ import { SessionList } from './screens/SessionList'
 import { SessionSetup } from './screens/SessionSetup'
 import { Timer } from './screens/Timer'
 import { Results } from './screens/Results'
+import { Help } from './screens/Help'
 
-type Screen = 'list' | 'setup' | 'timer' | 'results'
+type Screen = 'list' | 'setup' | 'timer' | 'results' | 'help'
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('list')
@@ -28,8 +29,9 @@ export default function App() {
   return (
     <>
       {screen === 'list' && (
-        <SessionList onNew={() => setScreen('setup')} onOpen={openExisting} />
+        <SessionList onNew={() => setScreen('setup')} onOpen={openExisting} onHelp={() => setScreen('help')} />
       )}
+      {screen === 'help' && <Help onBack={() => setScreen('list')} />}
       {screen === 'setup' && (
         <SessionSetup onStart={startSession} onCancel={() => setScreen('list')} />
       )}

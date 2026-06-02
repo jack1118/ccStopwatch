@@ -5,9 +5,10 @@ import { listSessions, deleteSession } from '../storage/storage'
 interface Props {
   onNew: () => void
   onOpen: (id: string) => void
+  onHelp: () => void
 }
 
-export function SessionList({ onNew, onOpen }: Props) {
+export function SessionList({ onNew, onOpen, onHelp }: Props) {
   const [items, setItems] = useState<SessionMeta[]>([])
   useEffect(() => setItems(listSessions()), [])
 
@@ -21,6 +22,7 @@ export function SessionList({ onNew, onOpen }: Props) {
     <div className="app">
       <div className="topbar">
         <h1>跑班碼表</h1>
+        <button className="btn" onClick={onHelp}>ⓘ 說明</button>
       </div>
       <div className="list">
         {items.length === 0 && (
