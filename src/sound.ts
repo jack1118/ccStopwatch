@@ -2,7 +2,13 @@ let ctx: AudioContext | null = null
 function audio(): AudioContext {
   const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
   ctx = ctx ?? new AC()
+  if (ctx.state === 'suspended') void ctx.resume()   // iOS 預設 suspended，需在使用者手勢內 resume
   return ctx
+}
+
+/** 第一次使用者互動時呼叫，解鎖 iOS 音訊 */
+export function unlockAudio(): void {
+  try { audio() } catch { /* 略過 */ }
 }
 
 /** 休息到點提示音＋震動 */
@@ -29,7 +35,7 @@ function iosSwitch(): HTMLInputElement {
   if (swInput) return swInput
   const label = document.createElement('label')
   label.setAttribute('aria-hidden', 'true')
-  label.style.cssText = 'position:fixed;top:-100px;left:-100px;width:0;height:0;opacity:0;pointer-events:none'
+  label.style.cssText = 'position:fixed;top:-200px;left:-200px;opacity:0;pointer-events:none'
   const input = document.createElement('input')
   input.type = 'checkbox'
   input.setAttribute('switch', '')   // Safari 專屬 switch
@@ -68,6 +74,7 @@ function clickSound(): void {
 /** 點擊回饋：iOS 觸覺(17.4+) ＋ Android 震動 ＋（可選）點擊音效 */
 export function tapFeedback(): void {
   try { navigator.vibrate?.(18) } catch { /* 略過 */ }
-  try { iosSwitch().checked = !iosSwitch().checked } catch { /* 略過 */ }
+  // iOS：用 .click() 切換隱藏的 switch 才會觸發系統觸覺（程式改 .checked 無效）
+  try { iosSwitch().click() } catch { /* 略過 */ }
   if (isTapSoundOn()) clickSound()
 }
