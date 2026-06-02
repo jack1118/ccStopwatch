@@ -25,6 +25,7 @@ function Stepper({ value, step, min, onChange, linked }: {
   const inputRef = useRef<HTMLInputElement>(null)
   const mounted = useRef(false)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 外部 value 變動時同步顯示字串（被連動更新）
     setText(String(value))
     if (!mounted.current) { mounted.current = true; return }
     if (linked && inputRef.current && document.activeElement !== inputRef.current) {
@@ -105,6 +106,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
 
   useEffect(() => {
     if (nameTouched) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 課名未手動改過時，跟著課表摘要自動帶入
     setName(`${today}${planSummary ? ` ${planSummary}` : ''}`)
   }, [planSummary, nameTouched, today])
 

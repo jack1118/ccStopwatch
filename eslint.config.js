@@ -18,5 +18,9 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // 中文 UI 文字刻意使用全形空白「　」排版（字串/樣板/JSX 文字內）
+      'no-irregular-whitespace': ['error', { skipStrings: true, skipTemplates: true, skipJSXText: true }],
+    },
   },
 ])

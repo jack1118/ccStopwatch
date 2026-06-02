@@ -55,6 +55,9 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
     : undefined
   const startXY = useRef({ x: 0, y: 0 })
   const moved = useRef(false)        // 手指滑動超過門檻 → 取消點擊/長按（讓翻頁滑動不誤觸）
+  /* eslint-disable react-hooks/purity, react-hooks/refs --
+     以下 startPress/onMove/endPress/pressProps 皆為指標事件處理器，只在使用者互動時執行(非 render 期間)，
+     React Compiler 的 purity/refs 規則在此屬誤判 */
   const startPress = (e: React.PointerEvent) => {
     downAt.current = Date.now()
     startXY.current = { x: e.clientX, y: e.clientY }
@@ -89,6 +92,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
     onPointerLeave: () => endPress(),
     onPointerCancel: () => endPress(),
   })
+  /* eslint-enable react-hooks/purity, react-hooks/refs */
   const HoldRing = holding ? <span className="hold-ring" /> : null
 
   // 復原也用長按（白色寬線繞圓框），避免誤觸
