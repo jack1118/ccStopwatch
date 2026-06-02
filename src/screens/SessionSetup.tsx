@@ -82,9 +82,11 @@ function initGroupCfg(initial?: Session): Record<NRCColor, GroupCfg> {
 
 function segLabel(seg: Segment): string {
   const items = itemsOf(seg)
-  return items.length > 1
+  const base = items.length > 1
     ? `(${items.map((i) => `${i.meters}m`).join('+')})×${seg.reps}`
     : `${items[0].meters}m×${seg.reps}`
+  const rest = items[items.length - 1].restSec   // 該段組間休
+  return rest > 0 ? `${base} r${rest}s` : base
 }
 function summaryOf(segments: Segment[]): string {
   return segments.map(segLabel).join(' ')
