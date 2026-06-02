@@ -27,7 +27,8 @@ button { font-family: inherit; color: inherit; }
 .nw { white-space: nowrap; }
 /* 點擊視覺回饋：按下時縮一下＋微亮，給「點到了」的感覺 */
 .lapface, .restwrap, .startbtn { transition: transform .08s ease, filter .08s ease; }
-.lapface:active, .restwrap:active, .startbtn:active { transform: scale(.97); filter: brightness(1.12); }
+.lapface:active, .restwrap:active, .startbtn:active,
+.lapface.pressed, .restwrap.pressed, .startbtn.pressed { transform: scale(.96); filter: brightness(1.14); }
 .btn, .stepper button, .seg-toggle button, .corner button, .grp-toggle, .grp-expand, .chip {
   transition: transform .08s ease; }
 .btn:active, .stepper button:active, .seg-toggle button:active, .corner button:active,

@@ -6,6 +6,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 // GitHub Pages 專案站台部署在 /ccStopwatch/ 子路徑；開發時用根路徑。
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/ccStopwatch/' : '/',
+  define: {
+    __BUILD__: JSON.stringify(new Date().toISOString().replace('T', ' ').slice(0, 16)),
+  },
   plugins: [
     react(),
     VitePWA({

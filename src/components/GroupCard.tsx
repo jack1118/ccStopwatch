@@ -36,8 +36,10 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
   const ringTimer = useRef<number | undefined>(undefined)
   const holdTimer = useRef<number | undefined>(undefined)
   const [holding, setHolding] = useState(false)
+  const [pressed, setPressed] = useState(false)   // 點擊視覺回饋（JS 驅動，iOS 可靠）
   const startPress = () => {
     downAt.current = Date.now()
+    setPressed(true)
     ringTimer.current = window.setTimeout(() => setHolding(true), TAP_MAX)
     holdTimer.current = window.setTimeout(() => { setHolding(false); onStop(g.id) }, HOLD_MS)
   }
@@ -46,8 +48,10 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
     if (ringTimer.current) clearTimeout(ringTimer.current)
     if (holdTimer.current) clearTimeout(holdTimer.current)
     setHolding(false)
+    setPressed(false)
     if (dur < TAP_MAX && action) action()
   }
+  const pressedCls = pressed ? ' pressed' : ''
   const pressProps = (action: () => void) => ({
     onPointerDown: startPress,
     onPointerUp: () => endPress(action),
@@ -82,7 +86,9 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
     return (
       <div className={`card${big ? ' big' : ''}${hint ? ' blink' : ''}`} data-testid="card" style={cardStyle}>
         <div className="ctop">{Title}<span className="tag">{hint ? '👉 換這組' : '未開始'}</span></div>
-        <button className="startbtn" onClick={() => onStart(g.id)}>▶ 開始</button>
+        <button className={`startbtn${pressedCls}`} onClick={() => onStart(g.id)}
+          onPointerDown={() => setPressed(true)} onPointerUp={() => setPressed(false)}
+          onPointerLeave={() => setPressed(false)} onPointerCancel={() => setPressed(false)}>▶ 開始</button>
         <div className="cmeta">{lapPlan.length > 0 ? `共 ${lapPlan.length} 圈` : '純碼表'}</div>
       </div>
     )
@@ -119,7 +125,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
           <span className="reptag">第<b className="bignum">{setNo}</b>{cur ? cur.unit : '圈'}{tagSuffix}</span>
         </div>
         {Corner}
-        <button className="lapface" data-testid="lap-body"
+        <button className={`lapface${pressedCls}`} data-testid="lap-body"
           {...pressProps(() => (ticking ? onLap(g.id) : onStart(g.id)))}
           style={{ paddingLeft: big ? 12 : 6 }}>
           {cur?.target != null && <div className="targetline">目標 <b className="metaval">{fmtClockStr(cur.target)}</b></div>}
@@ -169,7 +175,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
         </span>
       </div>
       {Corner}
-      <button className="restwrap" data-testid="next-body" {...pressProps(() => onNext(g.id))}>
+      <button className={`restwrap${pressedCls}`} data-testid="next-body" {...pressProps(() => onNext(g.id))}>
         <span className="rest-vlabel">{restLabel}</span>
         <div className="rest-main">
           <Clock totalSec={restSec} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone={tone} />
