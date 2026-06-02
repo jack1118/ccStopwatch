@@ -28,7 +28,19 @@ it('跑步中顯示 Clock，點主體觸發 onLap', async () => {
   expect(onLap).toHaveBeenCalledWith('g1')
 })
 
-it('休息超時：卡片維持綠色、出現 over 標記', () => {
+it('休息倒數：未到點顯示剩餘秒數倒數', () => {
+  // 目標休 90s、已休 30s → 倒數剩 60s = 1:00
+  const g = {
+    ...base, state: 'resting' as const, restStartTs: 0,
+    reps: [{ index: 0, runSec: 115, restSec: 0 }],
+  }
+  render(<GroupCard group={g} plan={plan} now={30000} big
+    onStart={vi.fn()} onLap={vi.fn()} onNext={vi.fn()} onUndo={vi.fn()} onStop={vi.fn()} />)
+  expect(screen.getByTestId('clock-sec').textContent).toBe('00')   // 1:00 倒數
+})
+
+it('休息超時：卡片維持綠色、主時鐘轉成 +往上加（紅）', () => {
+  // 目標休 90s、已休 104s → 超時 +0:14
   const g = {
     ...base, state: 'resting' as const, restStartTs: 0,
     reps: [{ index: 0, runSec: 115, restSec: 0 }],
@@ -37,9 +49,9 @@ it('休息超時：卡片維持綠色、出現 over 標記', () => {
     onStart={vi.fn()} onLap={vi.fn()} onNext={vi.fn()} onUndo={vi.fn()} onStop={vi.fn()} />)
   const card = screen.getByTestId('card')
   expect(card.className).toContain('resting')             // 仍是休息卡（綠底由 inline style 設定，未改紅）
-  const overTag = screen.getByText('+14s')                // 超時僅以紅色標記呈現
-  expect(overTag).toBeInTheDocument()
-  expect(overTag.className).toContain('over')
+  const plus = screen.getByText('+')                      // 超時以「+」紅字呈現
+  expect(plus.className).toContain('over')
+  expect(screen.getByTestId('clock-sec').textContent).toBe('14')   // +0:14 超時往上加
 })
 
 it('休息中點整個碼表區即觸發 onNext（出發下一趟）', async () => {

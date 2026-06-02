@@ -61,8 +61,8 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
     if (remaining < bestRemaining) { bestRemaining = remaining; nextRunId = g.id }
   }
 
-  // 向左滑 → 看結果（向右不接，避免運動中誤觸退出）
-  const swipe = useSwipe({ onLeft: () => onFinish(state.session) })
+  // 向左滑 → 看結果；向右滑 → 回清單
+  const swipe = useSwipe({ onLeft: () => onFinish(state.session), onRight: onExit })
 
   return (
     <div className={`app${enterAnim ? ' enter-' + enterAnim : ''}`} {...swipe}>

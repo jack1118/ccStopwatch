@@ -32,6 +32,8 @@ export function useSwipe({ onLeft, onRight }: Opts) {
   return {
     onPointerDown: (e: ReactPointerEvent) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return
+      // 從可水平捲動的區域(如成績總表)開始 → 讓它捲動，不翻頁
+      if ((e.target as Element | null)?.closest?.('[data-hscroll]')) { start.current = null; return }
       start.current = { x: e.clientX, y: e.clientY, t: Date.now() }
       last.current = { x: e.clientX, y: e.clientY }
     },

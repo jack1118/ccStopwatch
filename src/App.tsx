@@ -21,7 +21,7 @@ export default function App() {
     const s = loadSession(id)
     if (!s) return
     setSession(s)
-    nav(s.status === 'done' ? 'results' : 'timer')
+    nav(s.status === 'done' ? 'results' : 'timer', 'fromRight')   // 開啟課程＝往內走，從右滑入
   }
 
   const startSession = (s: Session) => {
@@ -33,7 +33,7 @@ export default function App() {
   return (
     <>
       {screen === 'list' && (
-        <SessionList onNew={() => setScreen('setup')} onOpen={openExisting} onHelp={() => setScreen('help')} />
+        <SessionList enterAnim={enter} onNew={() => setScreen('setup')} onOpen={openExisting} onHelp={() => setScreen('help')} />
       )}
       {screen === 'help' && <Help onBack={() => setScreen('list')} />}
       {screen === 'setup' && (
@@ -43,7 +43,7 @@ export default function App() {
         <Timer
           session={session}
           enterAnim={enter}
-          onExit={() => setScreen('list')}
+          onExit={() => nav('list', 'fromLeft')}                            // 碼表→清單：從左滑入
           onFinish={(s) => { setSession(s); nav('results', 'fromRight') }}   // 碼表→結果：從右滑入
         />
       )}

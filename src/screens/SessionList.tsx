@@ -1,16 +1,21 @@
 import { useEffect, useState } from 'react'
 import type { SessionMeta } from '../types'
 import { listSessions, deleteSession } from '../storage/storage'
+import { useSwipe } from '../hooks/useSwipe'
 
 interface Props {
+  enterAnim?: '' | 'fromRight' | 'fromLeft'
   onNew: () => void
   onOpen: (id: string) => void
   onHelp: () => void
 }
 
-export function SessionList({ onNew, onOpen, onHelp }: Props) {
+export function SessionList({ enterAnim = '', onNew, onOpen, onHelp }: Props) {
   const [items, setItems] = useState<SessionMeta[]>([])
   useEffect(() => setItems(listSessions()), [])
+
+  // 向左滑 → 開啟最近一筆課程（清單⇄碼表）
+  const swipe = useSwipe({ onLeft: () => { if (items[0]) onOpen(items[0].id) } })
 
   const remove = (id: string, name: string) => {
     if (!window.confirm(`確定要刪除課程「${name}」嗎？此動作無法復原。`)) return
@@ -19,7 +24,7 @@ export function SessionList({ onNew, onOpen, onHelp }: Props) {
   }
 
   return (
-    <div className="app">
+    <div className={`app${enterAnim ? ' enter-' + enterAnim : ''}`} {...swipe}>
       <div className="topbar">
         <h1>跑班碼表</h1>
         <button className="btn" onClick={onHelp}>ⓘ 說明</button>

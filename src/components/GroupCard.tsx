@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import type { Group, Plan } from '../types'
 import { NRC_HEX, NRC_TEXT, NRC_LABEL } from '../constants'
 import { elapsedSec, buildLapPlan, paceTone } from '../timer/timer'
-import { fmtClockStr, fmtOverflow } from '../format'
+import { fmtClockStr } from '../format'
 import { Clock } from './Clock'
 
 interface Props {
@@ -145,6 +145,10 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
     const runSec = ticking ? elapsedSec(g.runStartTs as number, now) : 0
     const ref = cur?.target ?? g.targetPaceSec ?? (lastRep ? lastRep.runSec : null)
     const tone = paceTone(runSec, ref, 10)   // 剩 10 秒內轉橘、超過轉紅
+    // 跑燈進度環：外框填滿，繞滿一圈＝該趟目標時間；超過→整圈轉紅持續閃
+    const hasRef = ticking && ref != null && ref > 0
+    const runDeg = hasRef ? Math.min(1, runSec / (ref as number)) * 360 : 0
+    const runOver = hasRef && runSec > (ref as number)
     const setNo = cur?.setNo ?? idx + 1
     const tagSuffix = cur
       ? `${cur.lapsInItem > 1 ? ` ${cur.lapInItem}/${cur.lapsInItem}圈` : ''}　${cur.meters}m`
@@ -170,6 +174,10 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
             </div>
           )}
         </button>
+        {hasRef && (
+          <span className={`run-ring${runOver ? ' over' : ''}`}
+            style={{ ['--deg' as string]: `${runDeg}deg` } as React.CSSProperties} />
+        )}
         {HoldRing}{UndoRing}
       </div>
     )
@@ -190,25 +198,35 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
   const restSec = g.restStartTs != null ? elapsedSec(g.restStartTs, now) : 0
   const target = lapPlan[doneIdx]?.restAfter ?? 0
   const tone = paceTone(restSec, target > 0 ? target : null, 10)   // 剩 10 秒內轉橘、超過轉紅
-  const overTxt = fmtOverflow(restSec, target)
   const pct = target > 0 ? Math.min(100, (restSec / target) * 100) : 0
   const goNow = target > 0 && restSec >= target - 3   // 最後 3 秒起 →「Go」＋綠光催促，呼吸停
+  // 倒數模式：有目標休息時顯示剩餘並倒數；到 0 後顯示超時 +往上加（紅）。無目標→照舊往上計時
+  const restOver = target > 0 && restSec > target
+  const restShown = target > 0 ? (restOver ? restSec - target : target - restSec) : restSec
+  // 同步呼吸：所有休息卡的動畫相位錨定同一 4.5s 全域時鐘 → 一起吸吐、不各自為政
+  const bDelay = g.restStartTs != null ? -(g.restStartTs % 4500) : 0
   // 休息不變暗：維持鮮明組色，靠左側大「趟休」＋進度條＋出發提示來區分
   return (
     <div className={`card resting${big ? ' big' : ''}${goNow ? ' blink' : ''}`} data-testid="card"
-      style={{ ...cardStyle, ...flashStyle }}>
+      style={{ ...cardStyle, ...flashStyle, ['--bdelay' as string]: `${bDelay}ms` } as React.CSSProperties}>
       <div className="ctop">
         {Title}
         <span className="reptag">
           第<b className="bignum">{justSetNo}</b>{justUnit}
-          {tone === 'over' && <b className="bignum over-text" style={{ marginLeft: 4 }}>{overTxt}</b>}
         </span>
       </div>
       {Corner}
       <button className={`restwrap${pressedCls}`} data-testid="next-body" {...pressProps(() => onNext(g.id))}>
         <span className="rest-vlabel">{restLabel}</span>
         <div className="rest-main">
-          <Clock totalSec={restSec} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone={tone} />
+          {restOver ? (
+            <span className="overclock">
+              <span className="over-text" style={{ fontSize: big ? 40 : 26, fontWeight: 900, lineHeight: .9 }}>+</span>
+              <Clock totalSec={restShown} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone="over" />
+            </span>
+          ) : (
+            <Clock totalSec={restShown} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone={tone} />
+          )}
           <span className={`restbar${tone === 'over' ? ' over' : ''}`}><i style={{ width: `${pct}%` }} /></span>
           <span className="gobtn">
             <span className="nw">▶ {goNow ? <b className="go-word">Go</b> : '準備出發'} 第<b className="bignum">{nextSetNo}</b>{nextUnit}</span>

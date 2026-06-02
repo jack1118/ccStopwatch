@@ -38,10 +38,12 @@ export interface PlannedLap {
   lapsInItem: number  // 此距離共幾圈
 }
 
-function targetForItem(item: Item, group: Group): number | null {
+function targetForItem(item: Item, group: Group, lapMeters: number): number | null {
   const own = group.segTarget?.[item.id]
   if (own != null && own > 0) return own
-  if (item.targetSec && item.targetSec > 0) return item.targetSec + (item.gapSec ?? 0) * (group.number - 1)
+  // gapSec 是「每組每圈」加秒 → 乘上此距離的圈數，再依組號累加
+  if (item.targetSec && item.targetSec > 0)
+    return item.targetSec + (item.gapSec ?? 0) * lapsOf(item.meters, lapMeters) * (group.number - 1)
   return null
 }
 
@@ -63,7 +65,7 @@ export function buildLapPlan(plan: Plan, group: Group): PlannedLap[] {
     for (let r = 0; r < reps; r++) {
       setNo++
       for (const item of items) {
-        const base = targetForItem(item, group)
+        const base = targetForItem(item, group, L)
         const restSec = group.segRest?.[item.id] ?? item.restSec
         const lpr = lapsOf(item.meters, L)
         let remaining = item.meters

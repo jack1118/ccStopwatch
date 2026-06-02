@@ -7,7 +7,14 @@ const uid = () => crypto.randomUUID()
 const DEFAULT_ON: NRCColor[] = ['yellow', 'black', 'purple', 'blue', 'green']
 
 const newItem = (meters: number, restSec: number): Item =>
-  ({ id: uid(), meters, restSec, targetSec: Math.round((96 * meters) / 400), gapSec: Math.max(1, Math.round(meters / 100)) })
+  ({ id: uid(), meters, restSec, targetSec: Math.round((96 * meters) / 400), gapSec: 2 })   // gapSec=每組每圈加秒
+
+// 配速：秒數 ÷ (距離/1000) → 每公里 m:ss
+function fmtPace(sec: number, meters: number): string {
+  if (!sec || !meters) return ''
+  const perKm = Math.round((sec * 1000) / meters)
+  return `${Math.floor(perKm / 60)}:${String(perKm % 60).padStart(2, '0')}/km`
+}
 
 /** 統一步進器：−、可直接輸入（內部字串、失焦套用）、＋；linked=被連動更新時閃一下 */
 function Stepper({ value, step, min, onChange, linked }: {
@@ -93,7 +100,8 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
   const setMode = (id: string, m: 'dist' | 'lap') => setTargetMode((p) => ({ ...p, [id]: m }))
 
   const planSummary = summaryOf(segments)
-  const gapStepOf = (meters: number) => Math.max(1, Math.round(meters / 100))   // 每 100m = 1 秒級距
+  // 每組每圈加秒 × 此距離圈數 = 各組之間在「整段距離」上累加的秒數
+  const gapTotal = (it: Item) => (it.gapSec ?? 0) * lapsOf(it.meters, lapMeters)
 
   useEffect(() => {
     if (nameTouched) return
@@ -136,7 +144,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
 
   const repsFor = (c: NRCColor, seg: Segment) => cfg[c].segReps[seg.id] ?? seg.reps
   const targetFor = (c: NRCColor, it: Item) =>
-    cfg[c].segTarget[it.id] ?? ((it.targetSec ?? 0) > 0 ? (it.targetSec ?? 0) + (it.gapSec ?? 0) * (NRC_NUM[c] - 1) : 0)
+    cfg[c].segTarget[it.id] ?? ((it.targetSec ?? 0) > 0 ? (it.targetSec ?? 0) + gapTotal(it) * (NRC_NUM[c] - 1) : 0)
   const restFor = (c: NRCColor, it: Item) => cfg[c].segRest[it.id] ?? it.restSec
   const totalReps = (c: NRCColor) => segments.reduce((s, seg) => s + repsFor(c, seg), 0)
   const totalLaps = (c: NRCColor) =>
@@ -222,7 +230,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                       <Stepper value={it.targetSec ?? 0} step={1} min={0}
                         onChange={(v) => patchItem(seg.id, it.id, { targetSec: v })} />
                       <span className="ru">秒</span>
-                      <span className="field-hint">完成 {it.meters}m；≈ 每圈 {Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} 秒（0＝不設）</span>
+                      <span className="field-hint">完成 {it.meters}m；≈ 每圈 {Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} 秒{(it.targetSec ?? 0) > 0 ? ` · 配速 ${fmtPace(it.targetSec ?? 0, it.meters)}` : ''}（0＝不設）</span>
                     </div>
                   ) : (
                     <div className="field-row">
@@ -230,15 +238,15 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                       <Stepper value={Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} step={1} min={0}
                         onChange={(v) => patchItem(seg.id, it.id, { targetSec: Math.round(v * it.meters / lapMeters) })} />
                       <span className="ru">秒/圈</span>
-                      <span className="field-hint">每 {lapMeters}m；≈ 完成 {it.meters}m {it.targetSec ?? 0} 秒（0＝不設）</span>
+                      <span className="field-hint">每 {lapMeters}m；≈ 完成 {it.meters}m {it.targetSec ?? 0} 秒{(it.targetSec ?? 0) > 0 ? ` · 配速 ${fmtPace(it.targetSec ?? 0, it.meters)}` : ''}（0＝不設）</span>
                     </div>
                   )}
                   {(it.targetSec ?? 0) > 0 && (
                     <div className="field-row">
-                      <span className="rl">每組＋</span>
-                      <Stepper value={it.gapSec ?? 0} step={gapStepOf(it.meters)} min={0} onChange={(v) => patchItem(seg.id, it.id, { gapSec: v })} />
-                      <span className="ru">秒</span>
-                      <span className="field-hint">各組配速差（黑、紫…逐組累加）</span>
+                      <span className="rl">每組每圈＋</span>
+                      <Stepper value={it.gapSec ?? 0} step={1} min={0} onChange={(v) => patchItem(seg.id, it.id, { gapSec: v })} />
+                      <span className="ru">秒/圈</span>
+                      <span className="field-hint">各組配速差，每圈加秒×圈數逐組累加（黑、紫…）</span>
                     </div>
                   )}
                   <div className="field-row">
@@ -254,7 +262,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                   {(it.targetSec ?? 0) > 0 && (
                     <div className="target-preview">
                       <b>各組目標（{it.meters}m）</b>
-                      {NRC_ORDER.map((c) => ` ${NRC_LABEL[c]}${(it.targetSec ?? 0) + (it.gapSec ?? 0) * (NRC_NUM[c] - 1)}`).join('・')}
+                      {NRC_ORDER.map((c) => ` ${NRC_LABEL[c]}${(it.targetSec ?? 0) + gapTotal(it) * (NRC_NUM[c] - 1)}`).join('・')}
                     </div>
                   )}
                 </div>

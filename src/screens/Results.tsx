@@ -76,6 +76,7 @@ export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
 
       {!detail && (
         <div className="panel">
+          <div className="splits-scroll" data-hscroll>
           <table className="splits">
             <thead>
               <tr>
@@ -111,6 +112,7 @@ export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
               })}
             </tbody>
           </table>
+          </div>
           <p style={{ color: '#777', fontSize: 11, textAlign: 'center', marginTop: 8 }}>點一列看單組詳細</p>
         </div>
       )}

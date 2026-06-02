@@ -11,9 +11,11 @@ button { font-family: inherit; color: inherit; }
 
 .app { max-width: 720px; margin: 0 auto; min-height: 100%;
   display: flex; flex-direction: column;
-  touch-action: pan-y;   /* 垂直照常捲動；水平手勢交給 JS(左右滑切頁)，iOS 才不會誤判成捲動而取消 */
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom); }
+/* 翻頁滑動：水平手勢交給 JS，垂直照常捲動。註：touch-action 不放 .app(會擋住子層表格的水平捲動)，
+   改放實際滑動區(碼表格線)。結果頁靠 useSwipe 的 pointercancel 後備偵測，表格另立水平捲動容器。 */
+.timer-grid { touch-action: pan-y; }
 /* 撐開中間區，讓底部按鈕列沉到畫面下方（好按、善用空白） */
 .spacer { flex: 1; }
 
@@ -96,6 +98,18 @@ button { font-family: inherit; color: inherit; }
   animation: fillring 1.25s linear forwards;
 }
 
+/* 進行中跑燈進度環：外框填滿,繞滿=該趟目標時間;超過→整圈轉紅持續閃 */
+.run-ring { position: absolute; inset: 0; border-radius: 16px; pointer-events: none; z-index: 4;
+  padding: 4px;
+  background: conic-gradient(var(--ring-lit, rgba(255,255,255,.92)) var(--deg, 0deg), rgba(255,255,255,.16) 0);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+.run-ring.over { --ring-lit: #FF2D1A; --deg: 360deg; animation: ringpulse .7s ease-in-out infinite; }
+@keyframes ringpulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
 /* 上趟（過去）/ Next（接下來）兩種視覺區隔的資訊 chip */
 .metarow { display: flex; justify-content: space-between; align-items: center;
   gap: 6px; margin-top: 4px; }
@@ -174,11 +188,14 @@ button.restwrap { background: transparent; border: 0; color: inherit;
   100% { opacity: .35; transform: scale(.94); }
 }
 @media (prefers-reduced-motion: no-preference) {
+  /* animation-delay 用 --bdelay(GroupCard 依 restStartTs 算)錨定全域 4.5s 相位 → 所有休息卡同步呼吸 */
   .card.resting:not(.blink) {
     animation: restBreatheGlow 4.5s cubic-bezier(.45,0,.55,1) infinite;
+    animation-delay: var(--bdelay, 0ms);
   }
   .card.resting:not(.blink) .rest-vlabel {
     animation: restBreatheText 4.5s cubic-bezier(.45,0,.55,1) infinite;
+    animation-delay: var(--bdelay, 0ms);
     transform-origin: center center;
   }
 }
@@ -190,6 +207,8 @@ button.restwrap { background: transparent; border: 0; color: inherit;
   text-shadow: 0 2px 5px rgba(0,0,0,.55), 0 0 3px rgba(0,0,0,.55);
   -webkit-text-stroke: 1.2px rgba(0,0,0,.34); }
 .clock .min { opacity: .82; margin-right: 1px; }
+/* 趟休超時：+ 號與倒數時鐘並排對齊 */
+.overclock { display: inline-flex; align-items: baseline; gap: 1px; }
 .clock .sec { transform-origin: center bottom; }
 .clock .sec.tick { animation: tick .9s ease-out; }
 @keyframes tick { 0% { transform: scale(1.16); } 18% { transform: scale(1); } 100% { transform: scale(1); } }
@@ -276,9 +295,14 @@ button.restwrap { background: transparent; border: 0; color: inherit;
   background: #26262e; padding: 4px 9px; border-radius: 14px; border: 0; }
 .chip.off { opacity: .35; }
 .dot { width: 10px; height: 10px; border-radius: 50%; }
+/* 趟數多→水平捲動，組別欄凍結在左 */
+.splits-scroll { overflow-x: auto; touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch; }
 table.splits { width: 100%; border-collapse: collapse; font-size: 12px; }
 table.splits th, table.splits td { padding: 5px 6px; text-align: center;
-  border-bottom: 1px solid #2a2a32; }
+  border-bottom: 1px solid #2a2a32; white-space: nowrap; }
+/* 凍結最左「組別」欄：水平捲動時組名永遠看得到 */
+table.splits th:first-child, table.splits td:first-child {
+  position: sticky; left: 0; z-index: 1; background: #15151a; text-align: left; }
 .bestcell { color: #34c759; font-weight: 700; }
 .bottombar { display: flex; gap: 8px; padding: 10px 12px; }
 .bottombar .btn { flex: 1; }
