@@ -42,9 +42,17 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
   const tapFlash = () => {
     setFlash(true)
     if (flashT.current) clearTimeout(flashT.current)
-    flashT.current = window.setTimeout(() => setFlash(false), 140)
+    flashT.current = window.setTimeout(() => setFlash(false), 220)
   }
-  const flashStyle = flash ? { filter: 'brightness(1.65)' } : undefined
+  // 點擊瞬間：爆亮 + 放大彈一下 + 白色外光暈，極為明顯
+  const flashStyle = flash
+    ? {
+        filter: 'brightness(2.6) saturate(1.25)',
+        transform: 'scale(1.07)',
+        boxShadow: '0 0 0 5px rgba(255,255,255,.98), 0 0 40px 12px rgba(255,255,255,.8)',
+        zIndex: 5,
+      }
+    : undefined
   const startPress = () => {
     downAt.current = Date.now()
     setPressed(true)
@@ -174,7 +182,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
   // 休息不變暗：維持鮮明組色，靠左側大「趟休」＋進度條＋出發提示來區分
   return (
     <div className={`card resting${big ? ' big' : ''}${readyToGo ? ' blink' : ''}`} data-testid="card"
-      style={cardStyle}>
+      style={{ ...cardStyle, ...flashStyle }}>
       <div className="ctop">
         {Title}
         <span className="reptag">

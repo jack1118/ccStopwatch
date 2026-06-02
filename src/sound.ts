@@ -26,12 +26,15 @@ export function beep(): void {
     o.start()
     o.stop(c.currentTime + 0.26)
   } catch { /* 略過 */ }
-  try { navigator.vibrate?.(200) } catch { /* 略過 */ }
+  // 休息到點＝鬧鈴：Android 連續強震；iOS 連續觸覺（web 無法調震幅，只能靠時長/連發）
+  try { navigator.vibrate?.([400, 120, 400, 120, 400]) } catch { /* 略過 */ }
+  try { iosHaptic(6) } catch { /* 略過 */ }
 }
 
 // ── iOS 觸覺 hack：點擊 <label>（內含 <input type="checkbox" switch>）→ iOS 17.4+ 觸發系統觸覺 ──
+// web 在 iOS 沒有震動 API，唯一可用的是 switch 切換的「固定強度」系統觸覺；要更強只能連發多次。
 let hapticLabel: HTMLLabelElement | null = null
-function iosHaptic(): void {
+function iosHaptic(times = 3): void {
   if (!hapticLabel) {
     const label = document.createElement('label')
     label.setAttribute('aria-hidden', 'true')
@@ -43,7 +46,10 @@ function iosHaptic(): void {
     document.body.appendChild(label)
     hapticLabel = label
   }
-  hapticLabel.click()   // 點 label → 連動切換 switch → 系統觸覺
+  hapticLabel.click()                  // 第一發立即（在使用者手勢內，iOS 才允許觸覺）
+  for (let i = 1; i < times; i++) {
+    setTimeout(() => hapticLabel?.click(), i * 45)   // 連發 → 強烈「噠噠噠」連震感
+  }
 }
 
 // ── 點擊音效開關（存 localStorage，預設開） ──
@@ -74,7 +80,7 @@ function clickSound(): void {
 
 /** 點擊回饋：iOS 觸覺(17.4+) ＋ Android 震動 ＋（可選）點擊音效 */
 export function tapFeedback(): void {
-  try { navigator.vibrate?.(18) } catch { /* 略過 */ }
-  try { iosHaptic() } catch { /* 略過 */ }   // iOS 點 label 觸發系統觸覺
+  try { navigator.vibrate?.([55, 35, 55]) } catch { /* 略過 */ }   // Android：雙脈衝最有感
+  try { iosHaptic(3) } catch { /* 略過 */ }                          // iOS：連發 3 次觸覺
   if (isTapSoundOn()) clickSound()
 }
