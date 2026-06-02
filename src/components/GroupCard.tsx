@@ -145,6 +145,9 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
   const nextSetNo = nextLap?.setNo ?? justSetNo + 1
   const nextUnit = nextLap?.unit ?? '趟'
   const nextMeters = nextLap?.meters
+  // 休息類型：同一組內距離間＝趟休；組與組之間＝組休（單一距離一律趟休）
+  const within = !!(nextLap && justLap && nextLap.setNo === justLap.setNo)
+  const restLabel = within ? '趟休' : justUnit === '組' ? '組休' : '趟休'
   const restSec = g.restStartTs != null ? elapsedSec(g.restStartTs, now) : 0
   const target = lapPlan[doneIdx]?.restAfter ?? 0
   const tone = paceTone(restSec, target > 0 ? target : null, 5)
@@ -156,7 +159,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
       <div className="ctop">
         {Title}
         <span className="reptag">
-          第<b className="bignum">{justSetNo}</b>{justUnit} 休息
+          第<b className="bignum">{justSetNo}</b>{justUnit} {restLabel}
           {tone === 'over' && <b className="over-text" style={{ marginLeft: 4 }}>{overTxt}</b>}
         </span>
       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Item, NRCColor, Segment, Session } from '../types'
 import { NRC_ORDER, NRC_NUM, NRC_HEX, NRC_TEXT, NRC_LABEL } from '../constants'
 import { itemsOf, lapsOf } from '../timer/timer'
@@ -9,12 +9,23 @@ const DEFAULT_ON: NRCColor[] = ['yellow', 'black', 'purple', 'blue', 'green']
 const newItem = (meters: number, restSec: number): Item =>
   ({ id: uid(), meters, restSec, targetSec: Math.round((96 * meters) / 400), gapSec: Math.max(1, Math.round(meters / 100)) })
 
-/** 統一步進器：−、可直接輸入（內部字串、失焦套用）、＋ */
-function Stepper({ value, step, min, onChange }: {
-  value: number; step: number; min: number; onChange: (v: number) => void
+/** 統一步進器：−、可直接輸入（內部字串、失焦套用）、＋；linked=被連動更新時閃一下 */
+function Stepper({ value, step, min, onChange, linked }: {
+  value: number; step: number; min: number; onChange: (v: number) => void; linked?: boolean
 }) {
   const [text, setText] = useState(String(value))
-  useEffect(() => { setText(String(value)) }, [value])
+  const [flash, setFlash] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const mounted = useRef(false)
+  useEffect(() => {
+    setText(String(value))
+    if (!mounted.current) { mounted.current = true; return }
+    if (linked && inputRef.current && document.activeElement !== inputRef.current) {
+      setFlash(true)
+      const t = setTimeout(() => setFlash(false), 550)
+      return () => clearTimeout(t)
+    }
+  }, [value, linked])
   const commit = (raw: string) => {
     const digits = raw.replace(/[^0-9]/g, '')
     const n = digits === '' ? min : Math.max(min, Number(digits))
@@ -23,7 +34,8 @@ function Stepper({ value, step, min, onChange }: {
   return (
     <div className="stepper">
       <button onClick={() => onChange(Math.max(min, value - step))}>−</button>
-      <input type="text" inputMode="numeric" pattern="[0-9]*" value={text}
+      <input ref={inputRef} type="text" inputMode="numeric" pattern="[0-9]*" value={text}
+        className={flash ? 'flash' : ''}
         onFocus={(e) => e.target.select()}
         onChange={(e) => setText(e.target.value.replace(/[^0-9]/g, ''))}
         onBlur={(e) => commit(e.target.value)} />
@@ -194,30 +206,40 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                     {multi && <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeItem(seg.id, it.id)}>✕</button>}
                     {lapsOf(it.meters, lapMeters) > 1 && <span className="field-hint">＝ {lapsOf(it.meters, lapMeters)} 圈／趟</span>}
                   </div>
-                  <div className="field-row">
-                    <span className="rl">距離目標</span>
-                    <Stepper value={it.targetSec ?? 0} step={1} min={0} onChange={(v) => patchItem(seg.id, it.id, { targetSec: v })} />
-                    <span className="ru">秒</span>
-                    <span className="field-hint">完成 {it.meters}m 的時間（0＝不設）</span>
+                  <div className="linked-box">
+                    <div className="field-row">
+                      <span className="rl">距離目標</span>
+                      <Stepper value={it.targetSec ?? 0} step={1} min={0} linked
+                        onChange={(v) => patchItem(seg.id, it.id, { targetSec: v })} />
+                      <span className="ru">秒</span>
+                      <span className="field-hint">完成 {it.meters}m 的時間（0＝不設）</span>
+                    </div>
+                    <div className="linked-sep"><span className="arrow">⇅</span> 兩者連動，改一個另一個自動換算</div>
+                    <div className="field-row">
+                      <span className="rl">每圈目標</span>
+                      <Stepper value={Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} step={1} min={0} linked
+                        onChange={(v) => patchItem(seg.id, it.id, { targetSec: Math.round(v * it.meters / lapMeters) })} />
+                      <span className="ru">秒/圈</span>
+                      <span className="field-hint">每 {lapMeters}m</span>
+                    </div>
                   </div>
-                  <div className="field-row">
-                    <span className="rl">每圈目標</span>
-                    <Stepper value={Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} step={1} min={0}
-                      onChange={(v) => patchItem(seg.id, it.id, { targetSec: Math.round(v * it.meters / lapMeters) })} />
-                    <span className="ru">秒/圈</span>
-                    <span className="field-hint">每 {lapMeters}m；與上方連動</span>
-                  </div>
-                  <div className="field-row">
-                    <span className="rl">每組＋</span>
-                    <Stepper value={it.gapSec ?? 0} step={gapStepOf(it.meters)} min={0} onChange={(v) => patchItem(seg.id, it.id, { gapSec: v })} />
-                    <span className="ru">秒</span>
-                    <span className="field-hint">從黃組起，每多一組依序加這麼多秒（黑＋N、紫＋2N…，N＝此欄秒數）</span>
-                  </div>
+                  {(it.targetSec ?? 0) > 0 && (
+                    <div className="field-row">
+                      <span className="rl">每組＋</span>
+                      <Stepper value={it.gapSec ?? 0} step={gapStepOf(it.meters)} min={0} onChange={(v) => patchItem(seg.id, it.id, { gapSec: v })} />
+                      <span className="ru">秒</span>
+                      <span className="field-hint">各組配速差（黑、紫…逐組累加）</span>
+                    </div>
+                  )}
                   <div className="field-row">
                     <span className="rl">間休</span>
                     <Stepper value={it.restSec} step={5} min={0} onChange={(v) => patchItem(seg.id, it.id, { restSec: v })} />
                     <span className="ru">秒</span>
-                    <span className="field-hint">此距離跑完後的休息</span>
+                    <span className="field-hint">
+                      {multi && ii === items.length - 1
+                        ? '此距離後＝組與組之間的休息（組休）'
+                        : '此距離跑完後的休息'}
+                    </span>
                   </div>
                   {(it.targetSec ?? 0) > 0 && (
                     <div className="target-preview">
