@@ -37,6 +37,14 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
   const holdTimer = useRef<number | undefined>(undefined)
   const [holding, setHolding] = useState(false)
   const [pressed, setPressed] = useState(false)   // 點擊視覺回饋（JS 驅動，iOS 可靠）
+  const [flash, setFlash] = useState(false)       // 點擊時整卡閃亮一下（明顯脈衝）
+  const flashT = useRef<number | undefined>(undefined)
+  const tapFlash = () => {
+    setFlash(true)
+    if (flashT.current) clearTimeout(flashT.current)
+    flashT.current = window.setTimeout(() => setFlash(false), 140)
+  }
+  const flashStyle = flash ? { filter: 'brightness(1.65)' } : undefined
   const startPress = () => {
     downAt.current = Date.now()
     setPressed(true)
@@ -49,7 +57,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
     if (holdTimer.current) clearTimeout(holdTimer.current)
     setHolding(false)
     setPressed(false)
-    if (dur < TAP_MAX && action) action()
+    if (dur < TAP_MAX && action) { tapFlash(); action() }
   }
   const pressedCls = pressed ? ' pressed' : ''
   const pressProps = (action: () => void) => ({
@@ -84,9 +92,9 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
 
   if (g.state === 'idle') {
     return (
-      <div className={`card${big ? ' big' : ''}${hint ? ' blink' : ''}`} data-testid="card" style={cardStyle}>
+      <div className={`card${big ? ' big' : ''}${hint ? ' blink' : ''}`} data-testid="card" style={{ ...cardStyle, ...flashStyle }}>
         <div className="ctop">{Title}<span className="tag">{hint ? '👉 換這組' : '未開始'}</span></div>
-        <button className={`startbtn${pressedCls}`} onClick={() => onStart(g.id)}
+        <button className={`startbtn${pressedCls}`} onClick={() => { tapFlash(); onStart(g.id) }}
           onPointerDown={() => setPressed(true)} onPointerUp={() => setPressed(false)}
           onPointerLeave={() => setPressed(false)} onPointerCancel={() => setPressed(false)}>▶ 開始</button>
         <div className="cmeta">{lapPlan.length > 0 ? `共 ${lapPlan.length} 圈` : '純碼表'}</div>
@@ -119,7 +127,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
       ? `${cur.lapsInItem > 1 ? ` ${cur.lapInItem}/${cur.lapsInItem}圈` : ''}　${cur.meters}m`
       : ''
     return (
-      <div className={`card${big ? ' big' : ''}${hint ? ' blink' : ''}`} data-testid="card" style={cardStyle}>
+      <div className={`card${big ? ' big' : ''}${hint ? ' blink' : ''}`} data-testid="card" style={{ ...cardStyle, ...flashStyle }}>
         <div className="ctop">
           {Title}
           <span className="reptag">第<b className="bignum">{setNo}</b>{cur ? cur.unit : '圈'}{tagSuffix}</span>

@@ -38,7 +38,8 @@ button { font-family: inherit; color: inherit; }
 
 .card { border-radius: 16px; padding: 8px 10px; position: relative;
   display: flex; flex-direction: column; min-height: 120px; overflow: hidden;
-  border: 1px solid rgba(255,255,255,.14); word-break: keep-all; }
+  border: 1px solid rgba(255,255,255,.14); word-break: keep-all;
+  transition: filter .12s ease; }
 .card.big { min-height: 200px; }
 .targetline { font-size: 13px; font-weight: 700; opacity: .95; text-align: left;
   padding-left: 8px; margin-top: 2px; }
