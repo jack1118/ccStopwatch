@@ -32,6 +32,17 @@ export function darkenHex(hex: string, f: number): string {
   return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
 }
 
+/** 混色：回傳 a 佔 t、b 佔 (1−t) 的顏色（用於休息卡「深底＋一點組色」的乾淨表面） */
+export function blendHex(a: string, b: string, t: number): string {
+  const pa = parseInt(a.slice(1), 16)
+  const pb = parseInt(b.slice(1), 16)
+  const mix = (sa: number, sb: number) => Math.round(sa * t + sb * (1 - t))
+  const r = mix((pa >> 16) & 255, (pb >> 16) & 255)
+  const g = mix((pa >> 8) & 255, (pb >> 8) & 255)
+  const bl = mix(pa & 255, pb & 255)
+  return `#${((1 << 24) + (r << 16) + (g << 8) + bl).toString(16).slice(1)}`
+}
+
 export const NRC_LABEL: Record<NRCColor, string> = {
   yellow: '黃', black: '黑', purple: '紫', blue: '藍', green: '綠', red: '紅',
 }

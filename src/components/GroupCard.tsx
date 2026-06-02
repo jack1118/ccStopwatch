@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import type { Group, Plan } from '../types'
-import { NRC_HEX, NRC_TEXT, NRC_LABEL, darkenHex } from '../constants'
+import { NRC_HEX, NRC_TEXT, NRC_LABEL, NRC_CHART, blendHex } from '../constants'
 import { elapsedSec, buildLapPlan, paceTone } from '../timer/timer'
 import { fmtClockStr, fmtOverflow } from '../format'
 import { Clock } from './Clock'
@@ -155,8 +155,9 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
   const pct = target > 0 ? Math.min(100, (restSec / target) * 100) : 0
   const readyToGo = target > 0 && restSec >= target
   const goNow = target > 0 && restSec >= target - 3   // 最後 3 秒起 → 「Go」
-  // 休息中只壓暗底色、文字/數字維持全亮（可讀）；到點要出發(readyToGo)恢復原色並閃燈
-  const restBg = readyToGo ? NRC_HEX[g.color] : darkenHex(NRC_HEX[g.color], 0.5)
+  // 休息中：深底＋約 28% 組色的乾淨表面（非壓暗飽和色）；到點要出發(readyToGo)恢復原色並閃燈
+  const restBg = readyToGo ? NRC_HEX[g.color] : blendHex(NRC_HEX[g.color], '#15151a', 0.28)
+  const vlabelColor = readyToGo ? NRC_TEXT[g.color] : NRC_CHART[g.color]   // 直書組色用鮮亮版
   return (
     <div className={`card resting${big ? ' big' : ''}${readyToGo ? ' blink' : ''}`} data-testid="card"
       style={{ ...cardStyle, background: restBg }}>
@@ -169,12 +170,12 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
       </div>
       {Corner}
       <button className="restwrap" data-testid="next-body" {...pressProps(() => onNext(g.id))}>
-        <span className="rest-vlabel">{restLabel}</span>
+        <span className="rest-vlabel" style={{ color: vlabelColor }}>{restLabel}</span>
         <div className="rest-main">
           <Clock totalSec={restSec} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone={tone} />
           <span className={`restbar${tone === 'over' ? ' over' : ''}`}><i style={{ width: `${pct}%` }} /></span>
           <span className="gobtn">
-            ▶ {goNow ? <b className="go-word">Go</b> : '準備出發'} 第<b className="bignum">{nextSetNo}</b>{nextUnit}{nextMeters ? ` · ${nextMeters}m` : ''}
+            ▶ {goNow ? <b className="go-word">Go</b> : '準備出發'} 第<b className="bignum">{nextSetNo}</b>{nextUnit}{nextMeters ? `　${nextMeters}m` : ''}
           </span>
         </div>
       </button>
