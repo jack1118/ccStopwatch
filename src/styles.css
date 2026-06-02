@@ -25,6 +25,13 @@ button { font-family: inherit; color: inherit; }
 /* ── 計時網格 ── */
 .timer-grid { display: grid; gap: 8px; padding: 8px; flex: 1; grid-auto-rows: 1fr; }
 .nw { white-space: nowrap; }
+/* 點擊視覺回饋：按下時縮一下＋微亮，給「點到了」的感覺 */
+.lapface, .restwrap, .startbtn { transition: transform .08s ease, filter .08s ease; }
+.lapface:active, .restwrap:active, .startbtn:active { transform: scale(.97); filter: brightness(1.12); }
+.btn, .stepper button, .seg-toggle button, .corner button, .grp-toggle, .grp-expand, .chip {
+  transition: transform .08s ease; }
+.btn:active, .stepper button:active, .seg-toggle button:active, .corner button:active,
+.grp-toggle:active, .grp-expand:active, .chip:active { transform: scale(.94); }
 .timer-grid.cols-1 { grid-template-columns: 1fr; }
 .timer-grid.cols-2 { grid-template-columns: 1fr 1fr; }
 

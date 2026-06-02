@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useRef } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
 import type { Session } from '../types'
 import { timerReducer, initTimerState } from '../timer/reducer'
 import { elapsedSec, buildLapPlan } from '../timer/timer'
@@ -6,7 +6,7 @@ import { saveSession } from '../storage/storage'
 import { GroupCard } from '../components/GroupCard'
 import { useNow } from '../hooks/useNow'
 import { useWakeLock } from '../hooks/useWakeLock'
-import { beep, vibrateTap } from '../sound'
+import { beep, tapFeedback, isTapSoundOn, setTapSound } from '../sound'
 
 interface Props {
   session: Session
@@ -19,6 +19,7 @@ export function Timer({ session, onExit, onFinish }: Props) {
   const anyActive = state.session.groups.some((g) => g.state === 'running' || g.state === 'resting')
   const now = useNow(true)
   useWakeLock(anyActive)
+  const [soundOn, setSoundOn] = useState(isTapSoundOn())
 
   // 持久化
   useEffect(() => { saveSession(state.session) }, [state.session])
@@ -63,6 +64,10 @@ export function Timer({ session, onExit, onFinish }: Props) {
       <div className="topbar">
         <button className="btn" onClick={onExit}>←</button>
         <h1>{state.session.name}</h1>
+        <button className="btn" aria-label="點擊音效開關"
+          onClick={() => { const v = !soundOn; setTapSound(v); setSoundOn(v) }}>
+          {soundOn ? '🔊' : '🔇'}
+        </button>
         <button className="btn" onClick={() => onFinish(state.session)}>結果</button>
       </div>
       <div className={`timer-grid cols-${cols}`}>
@@ -70,9 +75,9 @@ export function Timer({ session, onExit, onFinish }: Props) {
           <GroupCard
             key={g.id} group={g} plan={state.session.plan} now={now} big={big}
             hint={g.id === nextStartId || g.id === nextRunId}
-            onStart={(id) => { vibrateTap(); dispatch({ type: 'START', groupId: id, now: Date.now() }) }}
-            onLap={(id) => { vibrateTap(); dispatch({ type: 'LAP', groupId: id, now: Date.now() }) }}
-            onNext={(id) => { vibrateTap(); dispatch({ type: 'NEXT', groupId: id, now: Date.now() }) }}
+            onStart={(id) => { tapFeedback(); dispatch({ type: 'START', groupId: id, now: Date.now() }) }}
+            onLap={(id) => { tapFeedback(); dispatch({ type: 'LAP', groupId: id, now: Date.now() }) }}
+            onNext={(id) => { tapFeedback(); dispatch({ type: 'NEXT', groupId: id, now: Date.now() }) }}
             onUndo={(id) => dispatch({ type: 'UNDO', groupId: id, now: Date.now() })}
             onStop={(id) => dispatch({ type: 'STOP', groupId: id, now: Date.now() })}
           />
