@@ -29,20 +29,21 @@ export function beep(): void {
   try { navigator.vibrate?.(200) } catch { /* 略過 */ }
 }
 
-// ── iOS 觸覺 hack：隱藏的 <input type="checkbox" switch>，切換時 iOS 17.4+ 會觸發系統觸覺 ──
-let swInput: HTMLInputElement | null = null
-function iosSwitch(): HTMLInputElement {
-  if (swInput) return swInput
-  const label = document.createElement('label')
-  label.setAttribute('aria-hidden', 'true')
-  label.style.cssText = 'position:fixed;top:-200px;left:-200px;opacity:0;pointer-events:none'
-  const input = document.createElement('input')
-  input.type = 'checkbox'
-  input.setAttribute('switch', '')   // Safari 專屬 switch
-  label.appendChild(input)
-  document.body.appendChild(label)
-  swInput = input
-  return input
+// ── iOS 觸覺 hack：點擊 <label>（內含 <input type="checkbox" switch>）→ iOS 17.4+ 觸發系統觸覺 ──
+let hapticLabel: HTMLLabelElement | null = null
+function iosHaptic(): void {
+  if (!hapticLabel) {
+    const label = document.createElement('label')
+    label.setAttribute('aria-hidden', 'true')
+    label.style.cssText = 'position:absolute;left:-9999px;top:0;width:1px;height:1px'
+    const input = document.createElement('input')
+    input.type = 'checkbox'
+    input.setAttribute('switch', '')   // Safari 專屬 switch（iOS 17.4+）
+    label.appendChild(input)
+    document.body.appendChild(label)
+    hapticLabel = label
+  }
+  hapticLabel.click()   // 點 label → 連動切換 switch → 系統觸覺
 }
 
 // ── 點擊音效開關（存 localStorage，預設開） ──
@@ -74,7 +75,6 @@ function clickSound(): void {
 /** 點擊回饋：iOS 觸覺(17.4+) ＋ Android 震動 ＋（可選）點擊音效 */
 export function tapFeedback(): void {
   try { navigator.vibrate?.(18) } catch { /* 略過 */ }
-  // iOS：用 .click() 切換隱藏的 switch 才會觸發系統觸覺（程式改 .checked 無效）
-  try { iosSwitch().click() } catch { /* 略過 */ }
+  try { iosHaptic() } catch { /* 略過 */ }   // iOS 點 label 觸發系統觸覺
   if (isTapSoundOn()) clickSound()
 }
