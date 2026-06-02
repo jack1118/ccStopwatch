@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import type { Group, Plan } from '../types'
-import { NRC_HEX, NRC_TEXT, NRC_LABEL } from '../constants'
+import { NRC_HEX, NRC_TEXT, NRC_LABEL, darkenHex } from '../constants'
 import { elapsedSec, buildLapPlan, paceTone } from '../timer/timer'
 import { fmtClockStr, fmtOverflow } from '../format'
 import { Clock } from './Clock'
@@ -107,7 +107,7 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
     const ticking = g.runStartTs != null            // false = 復原後暫停，需點一下才開始
     const runSec = ticking ? elapsedSec(g.runStartTs as number, now) : 0
     const ref = cur?.target ?? g.targetPaceSec ?? (lastRep ? lastRep.runSec : null)
-    const tone = paceTone(runSec, ref, 3)
+    const tone = paceTone(runSec, ref, 10)   // 剩 10 秒內轉橘、超過轉紅
     const setNo = cur?.setNo ?? idx + 1
     const tagSuffix = cur
       ? `${cur.lapsInItem > 1 ? ` ${cur.lapInItem}/${cur.lapsInItem}圈` : ''}　${cur.meters}m`
@@ -150,24 +150,30 @@ export function GroupCard({ group: g, plan, now, big, hint, onStart, onLap, onNe
   const restLabel = within ? '趟休' : justUnit === '組' ? '組休' : '趟休'
   const restSec = g.restStartTs != null ? elapsedSec(g.restStartTs, now) : 0
   const target = lapPlan[doneIdx]?.restAfter ?? 0
-  const tone = paceTone(restSec, target > 0 ? target : null, 5)
+  const tone = paceTone(restSec, target > 0 ? target : null, 10)   // 剩 10 秒內轉橘、超過轉紅
   const overTxt = fmtOverflow(restSec, target)
   const pct = target > 0 ? Math.min(100, (restSec / target) * 100) : 0
   const readyToGo = target > 0 && restSec >= target
+  const goNow = target > 0 && restSec >= target - 3   // 最後 3 秒起 → 「Go」
+  // 休息中只壓暗底色、文字/數字維持全亮（可讀）；到點要出發(readyToGo)恢復原色並閃燈
+  const restBg = readyToGo ? NRC_HEX[g.color] : darkenHex(NRC_HEX[g.color], 0.5)
   return (
-    <div className={`card resting${big ? ' big' : ''}${readyToGo ? ' blink' : ''}`} data-testid="card" style={cardStyle}>
+    <div className={`card resting${big ? ' big' : ''}${readyToGo ? ' blink' : ''}`} data-testid="card"
+      style={{ ...cardStyle, background: restBg }}>
       <div className="ctop">
         {Title}
         <span className="reptag">
           第<b className="bignum">{justSetNo}</b>{justUnit} {restLabel}
-          {tone === 'over' && <b className="over-text" style={{ marginLeft: 4 }}>{overTxt}</b>}
+          {tone === 'over' && <b className="bignum over-text" style={{ marginLeft: 4 }}>{overTxt}</b>}
         </span>
       </div>
       {Corner}
       <button className="restwrap" data-testid="next-body" {...pressProps(() => onNext(g.id))}>
         <Clock totalSec={restSec} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone={tone} />
         <span className={`restbar${tone === 'over' ? ' over' : ''}`}><i style={{ width: `${pct}%` }} /></span>
-        <span className="gobtn">▶ 準備出發 第<b className="bignum">{nextSetNo}</b>{nextUnit}{nextMeters ? ` · ${nextMeters}m` : ''}</span>
+        {goNow
+          ? <span className="gobtn go-now">Go！</span>
+          : <span className="gobtn">▶ 準備出發 第<b className="bignum">{nextSetNo}</b>{nextUnit}{nextMeters ? ` · ${nextMeters}m` : ''}</span>}
       </button>
       <div className="cmeta restmeta">{lastRep ? `剛跑 ${fmtClockStr(lastRep.runSec)}` : ''}{target > 0 ? `　目標休 ${target}s` : ''}</div>
       {HoldRing}{UndoRing}

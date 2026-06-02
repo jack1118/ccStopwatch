@@ -23,6 +23,15 @@ export const NRC_TEXT: Record<NRCColor, string> = {
   blue: '#ffffff', green: '#ffffff', red: '#ffffff',
 }
 
+/** 把 #RRGGBB 各通道乘上 f（<1 變暗），用於休息卡片的深色底 */
+export function darkenHex(hex: string, f: number): string {
+  const n = parseInt(hex.slice(1), 16)
+  const r = Math.round(((n >> 16) & 255) * f)
+  const g = Math.round(((n >> 8) & 255) * f)
+  const b = Math.round((n & 255) * f)
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
+}
+
 export const NRC_LABEL: Record<NRCColor, string> = {
   yellow: '黃', black: '黑', purple: '紫', blue: '藍', green: '綠', red: '紅',
 }

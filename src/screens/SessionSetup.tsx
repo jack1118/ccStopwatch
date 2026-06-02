@@ -88,6 +88,9 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
   const [cfg, setCfg] = useState<Record<NRCColor, GroupCfg>>(() => initGroupCfg(initial))
   const [lapMeters, setLapMeters] = useState(initial?.plan.lapMeters ?? 400)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  const [targetMode, setTargetMode] = useState<Record<string, 'dist' | 'lap'>>({})
+  const modeOf = (id: string) => targetMode[id] ?? 'dist'
+  const setMode = (id: string, m: 'dist' | 'lap') => setTargetMode((p) => ({ ...p, [id]: m }))
 
   const planSummary = summaryOf(segments)
   const gapStepOf = (meters: number) => Math.max(1, Math.round(meters / 100))   // 每 100m = 1 秒級距
@@ -206,23 +209,30 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                     {multi && <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeItem(seg.id, it.id)}>✕</button>}
                     {lapsOf(it.meters, lapMeters) > 1 && <span className="field-hint">＝ {lapsOf(it.meters, lapMeters)} 圈／趟</span>}
                   </div>
-                  <div className="linked-box">
-                    <div className="field-row">
-                      <span className="rl">距離目標</span>
-                      <Stepper value={it.targetSec ?? 0} step={1} min={0} linked
-                        onChange={(v) => patchItem(seg.id, it.id, { targetSec: v })} />
-                      <span className="ru">秒</span>
-                      <span className="field-hint">完成 {it.meters}m 的時間（0＝不設）</span>
-                    </div>
-                    <div className="linked-sep"><span className="arrow">⇅</span> 兩者連動，改一個另一個自動換算</div>
-                    <div className="field-row">
-                      <span className="rl">每圈目標</span>
-                      <Stepper value={Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} step={1} min={0} linked
-                        onChange={(v) => patchItem(seg.id, it.id, { targetSec: Math.round(v * it.meters / lapMeters) })} />
-                      <span className="ru">秒/圈</span>
-                      <span className="field-hint">每 {lapMeters}m</span>
+                  <div className="field-row">
+                    <span className="rl">目標</span>
+                    <div className="seg-toggle">
+                      <button className={modeOf(it.id) === 'dist' ? 'on' : ''} onClick={() => setMode(it.id, 'dist')}>以距離</button>
+                      <button className={modeOf(it.id) === 'lap' ? 'on' : ''} onClick={() => setMode(it.id, 'lap')}>以每圈</button>
                     </div>
                   </div>
+                  {modeOf(it.id) === 'dist' ? (
+                    <div className="field-row">
+                      <span className="rl">距離目標</span>
+                      <Stepper value={it.targetSec ?? 0} step={1} min={0}
+                        onChange={(v) => patchItem(seg.id, it.id, { targetSec: v })} />
+                      <span className="ru">秒</span>
+                      <span className="field-hint">完成 {it.meters}m；≈ 每圈 {Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} 秒（0＝不設）</span>
+                    </div>
+                  ) : (
+                    <div className="field-row">
+                      <span className="rl">每圈目標</span>
+                      <Stepper value={Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} step={1} min={0}
+                        onChange={(v) => patchItem(seg.id, it.id, { targetSec: Math.round(v * it.meters / lapMeters) })} />
+                      <span className="ru">秒/圈</span>
+                      <span className="field-hint">每 {lapMeters}m；≈ 完成 {it.meters}m {it.targetSec ?? 0} 秒（0＝不設）</span>
+                    </div>
+                  )}
                   {(it.targetSec ?? 0) > 0 && (
                     <div className="field-row">
                       <span className="rl">每組＋</span>
