@@ -5,3 +5,7 @@ dist/
 *.log
 *.stackdump
 .DS_Store
+
+# Playwright/test screenshots (root-level captures)
+/*.png
+/*.jpeg
