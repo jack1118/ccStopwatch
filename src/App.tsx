@@ -33,11 +33,11 @@ export default function App() {
   return (
     <>
       {screen === 'list' && (
-        <SessionList enterAnim={enter} onNew={() => setScreen('setup')} onOpen={openExisting} onHelp={() => setScreen('help')} />
+        <SessionList enterAnim={enter} onNew={() => nav('setup', 'fromRight')} onOpen={openExisting} onHelp={() => setScreen('help')} />
       )}
       {screen === 'help' && <Help onBack={() => setScreen('list')} />}
       {screen === 'setup' && (
-        <SessionSetup onStart={startSession} onCancel={() => setScreen('list')} />
+        <SessionSetup enterAnim={enter} onStart={startSession} onCancel={() => nav('list', 'fromLeft')} />
       )}
       {screen === 'timer' && session && (
         <Timer

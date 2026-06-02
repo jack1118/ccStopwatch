@@ -2,12 +2,14 @@ import { useState, useEffect, useRef } from 'react'
 import type { Item, NRCColor, Segment, Session } from '../types'
 import { NRC_ORDER, NRC_NUM, NRC_HEX, NRC_TEXT, NRC_LABEL } from '../constants'
 import { itemsOf, lapsOf } from '../timer/timer'
+import { useSwipe } from '../hooks/useSwipe'
 
 const uid = () => crypto.randomUUID()
 const DEFAULT_ON: NRCColor[] = ['yellow', 'black', 'purple', 'blue', 'green']
 
-const newItem = (meters: number, restSec: number): Item =>
-  ({ id: uid(), meters, restSec, targetSec: Math.round((96 * meters) / 400), gapSec: 2 })   // gapSec=每組每圈加秒
+const gapPerLap = (lapMeters: number) => Math.max(1, Math.round(lapMeters / 100))   // 每圈 100m 加 1 秒
+const newItem = (meters: number, restSec: number, lapMeters = 400): Item =>
+  ({ id: uid(), meters, restSec, targetSec: Math.round((96 * meters) / 400), gapSec: gapPerLap(lapMeters) })
 
 // 配速：秒數 ÷ (距離/1000) → 每公里 m:ss
 function fmtPace(sec: number, meters: number): string {
@@ -54,6 +56,7 @@ function Stepper({ value, step, min, onChange, linked }: {
 
 interface Props {
   initial?: Session
+  enterAnim?: '' | 'fromRight' | 'fromLeft'
   onStart: (session: Session) => void
   onCancel: () => void
 }
@@ -86,12 +89,12 @@ function summaryOf(segments: Segment[]): string {
   return segments.map(segLabel).join(' ')
 }
 
-export function SessionSetup({ initial, onStart, onCancel }: Props) {
+export function SessionSetup({ initial, enterAnim = '', onStart, onCancel }: Props) {
   const [today] = useState(() => new Date().toLocaleDateString('zh-TW'))
   const [name, setName] = useState(initial?.name ?? today)
   const [nameTouched, setNameTouched] = useState(!!initial)
   const [segments, setSegments] = useState<Segment[]>(
-    initial?.plan.segments ?? [{ id: uid(), reps: 10, items: [newItem(400, 90)] }],
+    initial?.plan.segments ?? [{ id: uid(), reps: 10, items: [newItem(400, 90, initial?.plan.lapMeters ?? 400)] }],
   )
   const [cfg, setCfg] = useState<Record<NRCColor, GroupCfg>>(() => initGroupCfg(initial))
   const [lapMeters, setLapMeters] = useState(initial?.plan.lapMeters ?? 400)
@@ -104,6 +107,16 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
   // 每組每圈加秒 × 此距離圈數 = 各組之間在「整段距離」上累加的秒數
   const gapTotal = (it: Item) => (it.gapSec ?? 0) * lapsOf(it.meters, lapMeters)
 
+  // 改場地一圈 → 所有項目的「每組每圈＋」一律重設為 round(場地/100)（含手調過的，依使用者要求）
+  const changeLapMeters = (v: number) => {
+    setLapMeters(v)
+    const g = gapPerLap(v)
+    setSegments((s) => s.map((seg) => ({ ...seg, items: itemsOf(seg).map((it) => ({ ...it, gapSec: g })) })))
+  }
+
+  // 向右滑 → 跳確認後返回清單（表單未存檔，確認避免誤觸丟失）
+  const swipe = useSwipe({ onRight: () => { if (window.confirm('放棄此課程設定並返回？')) onCancel() } })
+
   useEffect(() => {
     if (nameTouched) return
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 課名未手動改過時，跟著課表摘要自動帶入
@@ -111,13 +124,13 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
   }, [planSummary, nameTouched, today])
 
   // 段落（組合）操作
-  const addSegment = () => setSegments((s) => [...s, { id: uid(), reps: 8, items: [newItem(400, 90)] }])
+  const addSegment = () => setSegments((s) => [...s, { id: uid(), reps: 8, items: [newItem(400, 90, lapMeters)] }])
   const removeSegment = (id: string) => setSegments((s) => s.filter((seg) => seg.id !== id))
   const patchSegment = (id: string, patch: Partial<Segment>) =>
     setSegments((s) => s.map((seg) => (seg.id === id ? { ...seg, ...patch } : seg)))
   const addItem = (segId: string) =>
     setSegments((s) => s.map((seg) => seg.id === segId
-      ? { ...seg, items: [...itemsOf(seg), newItem(200, 60)] } : seg))
+      ? { ...seg, items: [...itemsOf(seg), newItem(200, 60, lapMeters)] } : seg))
   const removeItem = (segId: string, itemId: string) =>
     setSegments((s) => s.map((seg) => seg.id === segId
       ? { ...seg, items: itemsOf(seg).filter((it) => it.id !== itemId) } : seg))
@@ -171,7 +184,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
   }
 
   return (
-    <div className="app">
+    <div className={`app${enterAnim ? ' enter-' + enterAnim : ''}`} {...swipe}>
       <div className="topbar">
         <button className="btn" onClick={onCancel}>←</button>
         <h1>課程設定</h1>
@@ -186,14 +199,15 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
       <div className="sec-block">
         <div className="label">操作場地一圈</div>
         <div className="field-row">
-          <Stepper value={lapMeters} step={50} min={50} onChange={setLapMeters} />
+          <Stepper value={lapMeters} step={50} min={50} onChange={changeLapMeters} />
           <span className="ru">m</span>
           <span className="field-hint">預設 400；距離會換算成圈數</span>
         </div>
       </div>
 
       <div className="sec-block">
-        <div className="label">共用課表（項目可為組合，如 (400m+200m)×8；可留空＝純碼表）</div>
+        <div className="label">共用課表</div>
+        <div className="sublabel">項目可為組合，如 (400m+200m)×8；可留空＝純碼表</div>
         {segments.map((seg, si) => {
           const items = itemsOf(seg)
           const multi = items.length > 1
@@ -232,7 +246,8 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                       <Stepper value={it.targetSec ?? 0} step={1} min={0}
                         onChange={(v) => patchItem(seg.id, it.id, { targetSec: v })} />
                       <span className="ru">秒</span>
-                      <span className="field-hint">完成 {it.meters}m；≈ 每圈 {Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} 秒{(it.targetSec ?? 0) > 0 ? ` · 配速 ${fmtPace(it.targetSec ?? 0, it.meters)}` : ''}（0＝不設）</span>
+                      {(it.targetSec ?? 0) > 0 && <span className="pace-pill">{fmtPace(it.targetSec ?? 0, it.meters)}</span>}
+                      <span className="field-hint">完成 {it.meters}m；≈ 每圈 {Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} 秒（0＝不設）</span>
                     </div>
                   ) : (
                     <div className="field-row">
@@ -240,7 +255,8 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                       <Stepper value={Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} step={1} min={0}
                         onChange={(v) => patchItem(seg.id, it.id, { targetSec: Math.round(v * it.meters / lapMeters) })} />
                       <span className="ru">秒/圈</span>
-                      <span className="field-hint">每 {lapMeters}m；≈ 完成 {it.meters}m {it.targetSec ?? 0} 秒{(it.targetSec ?? 0) > 0 ? ` · 配速 ${fmtPace(it.targetSec ?? 0, it.meters)}` : ''}（0＝不設）</span>
+                      {(it.targetSec ?? 0) > 0 && <span className="pace-pill">{fmtPace(it.targetSec ?? 0, it.meters)}</span>}
+                      <span className="field-hint">每 {lapMeters}m；≈ 完成 {it.meters}m {it.targetSec ?? 0} 秒（0＝不設）</span>
                     </div>
                   )}
                   {(it.targetSec ?? 0) > 0 && (
@@ -253,7 +269,7 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                   )}
                   <div className="field-row">
                     <span className="rl">間休</span>
-                    <Stepper value={it.restSec} step={5} min={0} onChange={(v) => patchItem(seg.id, it.id, { restSec: v })} />
+                    <Stepper value={it.restSec} step={10} min={0} onChange={(v) => patchItem(seg.id, it.id, { restSec: v })} />
                     <span className="ru">秒</span>
                     <span className="field-hint">
                       {multi && ii === items.length - 1
@@ -320,10 +336,11 @@ export function SessionSetup({ initial, onStart, onCancel }: Props) {
                               <span className="rl">距離目標</span>
                               <Stepper value={targetFor(c, it)} step={1} min={0} onChange={(v) => setItemTarget(c, it.id, v)} />
                               <span className="ru">秒</span>
+                              {targetFor(c, it) > 0 && <span className="pace-pill">{fmtPace(targetFor(c, it), it.meters)}</span>}
                             </div>
                             <div className="field-row">
                               <span className="rl">間休</span>
-                              <Stepper value={restFor(c, it)} step={5} min={0} onChange={(v) => setItemRest(c, it.id, v)} />
+                              <Stepper value={restFor(c, it)} step={10} min={0} onChange={(v) => setItemRest(c, it.id, v)} />
                               <span className="ru">秒</span>
                             </div>
                           </div>

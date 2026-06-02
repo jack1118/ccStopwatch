@@ -149,7 +149,8 @@ button { font-family: inherit; color: inherit; }
 button.restwrap { background: transparent; border: 0; color: inherit;
   width: 100%; cursor: pointer; }
 .rest-main { flex: 1; min-width: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 5px; }
+  align-items: center; justify-content: center; gap: 5px;
+  padding-right: 34px; }   /* 右側避讓：倒數數字整體左移，不頂到右上角復原鈕 */
 .rest-vlabel { flex: 0 0 auto; writing-mode: vertical-rl; text-orientation: upright;
   font-size: 28px; font-weight: 900; letter-spacing: 8px; line-height: 1;
   text-shadow: 0 1px 3px rgba(0,0,0,.5); }
@@ -237,6 +238,7 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .badge-live::before { content: '● '; }
 .sec-block { padding: 10px 14px; }
 .sec-block .label { font-size: 14px; color: #b3b3b9; font-weight: 700; margin-bottom: 8px; }
+.sec-block .sublabel { font-size: 12px; color: #8a8a90; line-height: 1.45; margin: -4px 0 8px; }
 .seg-row, .grp-row { background: #1c1c22; border-radius: 12px; padding: 11px 12px;
   display: flex; align-items: center; gap: 9px; margin-bottom: 8px; font-size: 16px; }
 .grp-row.off { opacity: .42; }
@@ -277,6 +279,9 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .field-row .ru { flex: 0 0 auto; font-size: 14px; color: #9a9aa0; }
 /* 較長的說明：獨立一行小灰字，不與步進器搶寬度 */
 .field-hint { flex-basis: 100%; width: 100%; font-size: 11.5px; color: #8a8a90; margin: 1px 0 0; }
+/* 配速膠囊：醒目顯示每公里配速 */
+.pace-pill { flex: 0 0 auto; font-size: 12.5px; font-weight: 800; color: #062c33;
+  background: #4fd6e8; padding: 1px 9px; border-radius: 999px; white-space: nowrap; margin-left: 4px; }
 
 /* 課程設定：色塊開關 */
 .grp-toggle { margin-left: auto; font-size: 13px; font-weight: 700;
