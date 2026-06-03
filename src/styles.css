@@ -45,9 +45,11 @@ button { font-family: inherit; color: inherit; }
 /* 字級由 inline 依位數設定；不用 text-stroke(大字會自我交疊出鬼影)，改多層深色陰影做輪廓 */
 .lap-flash-sec { font-weight: 900; line-height: .85;
   text-shadow: 0 0 3px rgba(0,0,0,.9), 0 3px 6px rgba(0,0,0,.85), 0 8px 30px rgba(0,0,0,.6); }
-.lap-flash-label { font-size: 6vw; font-weight: 800; margin-bottom: 2vh; white-space: nowrap;
-  text-shadow: 0 2px 8px rgba(0,0,0,.85), 0 0 3px rgba(0,0,0,.9); }
-@media (min-width: 560px) { .lap-flash-label { font-size: 30px; } }
+/* 組別標籤：深色膠囊底→不管後面卡片什麼顏色都讀得清楚 */
+.lap-flash-label { font-size: 7vw; font-weight: 800; margin-bottom: 2.5vh; white-space: nowrap;
+  background: rgba(0,0,0,.6); padding: 5px 18px; border-radius: 999px;
+  text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+@media (min-width: 560px) { .lap-flash-label { font-size: 32px; } }
 .btn { background: #2c2c2e; border: 0; border-radius: 10px; padding: 9px 14px;
   font-size: 14px; font-weight: 600; }
 .btn.primary { background: #30D158; color: #03260f; }
@@ -194,10 +196,9 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .gobtn .go-word { color: #FF3B30; font-size: 1.8em; font-weight: 900; }
 /* 下方超時 Go：紅字＋淺描邊(比中央輕)，當次要提示 */
 .gobtn .go-word.go-over { text-shadow: 0 1px 3px rgba(0,0,0,.55), 0 0 2px rgba(0,0,0,.5); }
-/* 最後3秒中央大紅倒數 3/2/1/Go：質感比照計時時鐘(黑描邊+陰影)，當主角、與倒數時鐘銜接一致 */
+/* 最後3秒中央大紅倒數 3/2/1/Go：與時鐘一致；用多層陰影(不用描邊→大字不會有鬼影) */
 .go-count { color: #FF3B30; font-weight: 900; line-height: .9; letter-spacing: -2px;
-  text-shadow: 0 2px 5px rgba(0,0,0,.55), 0 0 3px rgba(0,0,0,.55);
-  -webkit-text-stroke: 1.2px rgba(0,0,0,.34); }
+  text-shadow: 0 0 2px rgba(0,0,0,.75), 0 2px 5px rgba(0,0,0,.55), 0 0 4px rgba(0,0,0,.5); }
 /* Ready 與 Go 成對：同字位、略小、冷靜白色（Go 紅＝爆發） */
 .gobtn .ready-word { color: #fff; font-size: 1.4em; font-weight: 900; }
 /* 該按的組：外框閃燈提示（更亮更快） */
@@ -241,11 +242,10 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 }
 
 /* ── 讀秒時鐘 ── */
-/* 所有組別一致：白字 + 深色描邊 + 暈邊陰影（各色背景都看得到立體感） */
+/* 所有組別一致：白字 + 多層深色陰影(不用描邊→大字不會有鬼影；各色背景仍清晰立體) */
 .clock { display: flex; align-items: baseline; font-variant-numeric: tabular-nums;
   font-weight: 900; letter-spacing: -2px; line-height: .9; color: #fff;
-  text-shadow: 0 2px 5px rgba(0,0,0,.55), 0 0 3px rgba(0,0,0,.55);
-  -webkit-text-stroke: 1.2px rgba(0,0,0,.34); }
+  text-shadow: 0 0 2px rgba(0,0,0,.75), 0 2px 5px rgba(0,0,0,.55), 0 0 4px rgba(0,0,0,.5); }
 .clock .min { opacity: .82; margin-right: 1px; }
 /* 趟休超時：時鐘維持置中(與倒數同位置)，「+」絕對定位貼在時鐘左側不佔空間 */
 .overclock { position: relative; display: inline-flex; align-items: baseline; }
