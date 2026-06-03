@@ -37,9 +37,9 @@ export function SplitArea({ group }: { group: Group }) {
         <defs>
           {/* 越上(越快)顏色越濃、越下(越慢)越淡 */}
           <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.85" />
-            <stop offset="55%" stopColor={color} stopOpacity="0.32" />
-            <stop offset="100%" stopColor={color} stopOpacity="0.03" />
+            <stop offset="0%" stopColor={color} stopOpacity="0.95" />
+            <stop offset="55%" stopColor={color} stopOpacity="0.45" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.04" />
           </linearGradient>
         </defs>
         {fracs.map((f, i) => {

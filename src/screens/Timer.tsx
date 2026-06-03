@@ -3,6 +3,7 @@ import type { Session } from '../types'
 import { timerReducer, initTimerState } from '../timer/reducer'
 import { elapsedSec, buildLapPlan } from '../timer/timer'
 import { planSummary } from '../timer/planText'
+import { NRC_HEX, NRC_LABEL } from '../constants'
 import { saveSession } from '../storage/storage'
 import { GroupCard } from '../components/GroupCard'
 import { useNow } from '../hooks/useNow'
@@ -24,6 +25,14 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
   useWakeLock(anyActive)
   const [soundOn, setSoundOn] = useState(isTapSoundOn())
   const [showUndo, setShowUndo] = useState(isUndoBtnOn())
+  // 按圈瞬間全畫面彈出大秒數（給教練喊聲、跑者知道這圈幾秒）
+  const [flash, setFlash] = useState<{ sec: number; color: string; label: string; key: number } | null>(null)
+  const flashKey = useRef(0)
+  useEffect(() => {
+    if (!flash) return
+    const t = setTimeout(() => setFlash(null), 1200)
+    return () => clearTimeout(t)
+  }, [flash])
 
   // 持久化
   useEffect(() => { saveSession(state.session) }, [state.session])
@@ -70,7 +79,7 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
     <div className={`app${enterAnim ? ' enter-' + enterAnim : ''}`} {...swipe}>
       <div className="topbar">
         <button className="btn" onClick={onExit}>←</button>
-        <h1>{planSummary(state.session.plan.segments) || state.session.name}</h1>
+        <h1 className="plan-title">{planSummary(state.session.plan.segments, true) || state.session.name}</h1>
         <button className="btn" aria-label="點擊音效開關"
           onClick={() => { const v = !soundOn; setTapSound(v); setSoundOn(v) }}>
           {soundOn ? '🔊' : '🔇'}
@@ -87,7 +96,16 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
             key={g.id} group={g} plan={state.session.plan} now={now} big={big}
             hint={g.id === nextStartId || g.id === nextRunId} showUndo={showUndo}
             onStart={(id) => { tapFeedback(); dispatch({ type: 'START', groupId: id, now: Date.now() }) }}
-            onLap={(id) => { tapFeedback(); dispatch({ type: 'LAP', groupId: id, now: Date.now() }) }}
+            onLap={(id) => {
+              tapFeedback()
+              const t = Date.now()
+              const grp = state.session.groups.find((x) => x.id === id)
+              if (grp?.runStartTs != null) {
+                setFlash({ sec: elapsedSec(grp.runStartTs, t), color: NRC_HEX[grp.color],
+                  label: `${NRC_LABEL[grp.color]} 第${grp.number}組`, key: flashKey.current++ })
+              }
+              dispatch({ type: 'LAP', groupId: id, now: t })
+            }}
             onNext={(id) => { tapFeedback(); dispatch({ type: 'NEXT', groupId: id, now: Date.now() }) }}
             onUndo={(id) => dispatch({ type: 'UNDO', groupId: id, now: Date.now() })}
             onStop={(id) => dispatch({ type: 'STOP', groupId: id, now: Date.now() })}
@@ -97,6 +115,12 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
       {allDone && (
         <div className="bottombar">
           <button className="btn primary" onClick={() => onFinish(state.session)}>查看分段圖表 →</button>
+        </div>
+      )}
+      {flash && (
+        <div className="lap-flash" key={flash.key} aria-hidden="true">
+          <div className="lap-flash-label" style={{ color: flash.color }}>● {flash.label}</div>
+          <div className="lap-flash-sec" style={{ color: flash.color }}>{flash.sec}</div>
         </div>
       )}
     </div>

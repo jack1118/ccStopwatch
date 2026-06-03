@@ -29,7 +29,28 @@ button { font-family: inherit; color: inherit; }
 }
 
 .topbar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; }
-.topbar h1 { font-size: 18px; margin: 0; flex: 1; }
+.topbar h1 { font-size: 18px; margin: 0; flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* 課表太長單行省略，不佔大區塊 */
+
+/* 按圈瞬間全畫面大秒數（點擊穿透、約1.2s 自動消失，不擋連點） */
+.lap-flash { position: fixed; inset: 0; z-index: 50; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  animation: lapflash 1.2s ease-out forwards; }
+@keyframes lapflash {
+  0% { opacity: 0; transform: scale(.6); }
+  12% { opacity: 1; transform: scale(1); }
+  68% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.06); }
+}
+.lap-flash-sec { font-size: 44vw; font-weight: 900; line-height: .85;
+  -webkit-text-stroke: 2px rgba(0,0,0,.5);
+  text-shadow: 0 8px 30px rgba(0,0,0,.75), 0 0 6px rgba(0,0,0,.85); }
+.lap-flash-label { font-size: 6vw; font-weight: 800; margin-bottom: 2vh; white-space: nowrap;
+  text-shadow: 0 2px 8px rgba(0,0,0,.85), 0 0 3px rgba(0,0,0,.9); }
+@media (min-width: 560px) {
+  .lap-flash-sec { font-size: 240px; }
+  .lap-flash-label { font-size: 30px; }
+}
 .btn { background: #2c2c2e; border: 0; border-radius: 10px; padding: 9px 14px;
   font-size: 14px; font-weight: 600; }
 .btn.primary { background: #30D158; color: #03260f; }

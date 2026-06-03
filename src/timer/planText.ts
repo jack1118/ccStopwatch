@@ -3,23 +3,25 @@ import { itemsOf } from './timer'
 
 const uid = () => globalThis.crypto?.randomUUID?.() ?? `id${Math.random().toString(36).slice(2)}`
 
-// 每段距離標註：p=完成該距離的目標秒、r=間休秒（皆可省）。例 300m p72s r90s
-function itemTokens(it: Item): string {
-  const p = it.targetSec && it.targetSec > 0 ? ` p${it.targetSec}s` : ''
-  const r = it.restSec > 0 ? ` r${it.restSec}s` : ''
+// 每段距離標註：p=完成該距離的目標秒、r=間休秒（皆可省）。compact=去單位(碼表頁簡寫用)
+function itemTokens(it: Item, compact: boolean): string {
+  const u = compact ? '' : 's'
+  const p = it.targetSec && it.targetSec > 0 ? ` p${it.targetSec}${u}` : ''
+  const r = it.restSec > 0 ? ` r${it.restSec}${u}` : ''
   return p + r
 }
 
-/** 單一：600m×10 p96s r90s；組合：(400m p84s r90s+200m r60s)×8 */
-export function segLabel(seg: Segment): string {
+/** 完整：600m×10 p96s r90s；簡寫(compact)：600×10 p96 r90 */
+export function segLabel(seg: Segment, compact = false): string {
   const items = itemsOf(seg)
+  const m = compact ? '' : 'm'
   return items.length > 1
-    ? `(${items.map((i) => `${i.meters}m${itemTokens(i)}`).join('+')})×${seg.reps}`
-    : `${items[0].meters}m×${seg.reps}${itemTokens(items[0])}`
+    ? `(${items.map((i) => `${i.meters}${m}${itemTokens(i, compact)}`).join('+')})×${seg.reps}`
+    : `${items[0].meters}${m}×${seg.reps}${itemTokens(items[0], compact)}`
 }
 
-export function planSummary(segments: Segment[]): string {
-  return segments.map(segLabel).join(' ')
+export function planSummary(segments: Segment[], compact = false): string {
+  return segments.map((s) => segLabel(s, compact)).join(' ')
 }
 
 function parseItem(raw: string, gapSec: number): Item | null {
