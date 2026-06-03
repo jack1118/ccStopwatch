@@ -38,13 +38,13 @@ export function SessionList({ enterAnim = '', onNew, onOpen, onEdit, onHelp }: P
         {items.map((m) => (
           <div className={`item${m.status === 'active' ? ' active' : ''}`} key={m.id}>
             <div style={{ flex: 1 }} onClick={() => onOpen(m.id)}>
-              <div>
-                {m.name}
-                {m.status === 'active' && <span className="badge-live" style={{ marginLeft: 8 }}>進行中</span>}
-              </div>
+              <div className="item-name">{m.name}</div>
               <div className="sub">
-                {new Date(m.createdAt).toLocaleDateString('zh-TW')} · {m.groupCount} 組 ·
-                {m.status === 'done' ? ' 已完成' : ' 點擊繼續計時'}
+                <span className={`status-chip${m.status === 'active' ? ' live' : ''}`}>
+                  {m.status === 'active' ? '● 進行中' : '✓ 已完成'}
+                </span>
+                {' '}{new Date(m.createdAt).toLocaleDateString('zh-TW')} · {m.groupCount} 組
+                {m.status === 'active' ? ' · 點擊繼續計時' : ''}
               </div>
             </div>
             {m.status === 'active' && <button className="btn" onClick={() => onEdit(m.id)}>編輯</button>}

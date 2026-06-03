@@ -174,12 +174,12 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 /* 休息中：只把底色換深（在 GroupCard 計算），文字/數字維持全亮可讀；一眼分辨「暗＝休息、亮＝進行」 */
 /* 最後3秒：只有「Go」放大變紅，其餘字維持 */
 .gobtn .go-word { color: #FF3B30; font-size: 1.8em; font-weight: 900; }
-/* 「Go」更顯眼：清晰深色投影（不用紅光暈，避免紅字外圍糊掉）＋黑色描邊提升對比 */
-.gobtn .go-word.go-emph { text-shadow: 0 2px 4px rgba(0,0,0,.6), 0 0 2px rgba(0,0,0,.7);
-  -webkit-text-stroke: .6px rgba(0,0,0,.35); }
-/* 最後3秒中央大紅倒數 3/2/1/Go */
-.go-count { color: #FF3B30; font-weight: 900; line-height: .9;
-  text-shadow: 0 2px 5px rgba(0,0,0,.45); }
+/* 下方超時 Go：紅字＋淺描邊(比中央輕)，當次要提示 */
+.gobtn .go-word.go-over { text-shadow: 0 1px 3px rgba(0,0,0,.55), 0 0 2px rgba(0,0,0,.5); }
+/* 最後3秒中央大紅倒數 3/2/1/Go：質感比照計時時鐘(黑描邊+陰影)，當主角、與倒數時鐘銜接一致 */
+.go-count { color: #FF3B30; font-weight: 900; line-height: .9; letter-spacing: -2px;
+  text-shadow: 0 2px 5px rgba(0,0,0,.55), 0 0 3px rgba(0,0,0,.55);
+  -webkit-text-stroke: 1.2px rgba(0,0,0,.34); }
 /* Ready 與 Go 成對：同字位、略小、冷靜白色（Go 紅＝爆發） */
 .gobtn .ready-word { color: #fff; font-size: 1.4em; font-weight: 900; }
 /* 該按的組：外框閃燈提示（更亮更快） */
@@ -246,7 +246,11 @@ button.restwrap { background: transparent; border: 0; color: inherit;
   display: flex; align-items: center; gap: 10px; border: 1px solid transparent; }
 .list .item.active { border-color: #30D158; background: #14241a;
   box-shadow: 0 0 0 1px rgba(48,209,88,.35); }
-.list .item .sub { font-size: 12px; opacity: .6; }
+.list .item .item-name { font-size: 15px; font-weight: 700; line-height: 1.35; }
+.list .item .sub { font-size: 12px; color: #8a8a90; margin-top: 3px; }
+/* 狀態晶片：固定在資訊列開頭、獨立於課名(課名長也不會被插斷) */
+.status-chip { font-weight: 800; color: #b3b3b9; }
+.status-chip.live { color: #30D158; }
 /* 使用說明 */
 .help { padding: 4px 14px 24px; }
 .help section { background: #15151a; border: 1px solid #26262e; border-radius: 14px;
@@ -256,8 +260,6 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .help ol, .help ul { margin: 4px 0; padding-left: 20px; }
 .help b { color: #fff; }
 
-.badge-live { color: #30D158; font-weight: 800; font-size: 12px; }
-.badge-live::before { content: '● '; }
 .sec-block { padding: 10px 14px; }
 .sec-block .label { font-size: 14px; color: #b3b3b9; font-weight: 700; margin-bottom: 8px; }
 .sec-block .sublabel { font-size: 12px; color: #8a8a90; line-height: 1.45; margin: -4px 0 8px; }

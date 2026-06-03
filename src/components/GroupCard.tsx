@@ -247,7 +247,11 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
           )}
           <span className={`restbar${tone === 'over' ? ' over' : ''}`}><i style={{ width: `${pct}%` }} /></span>
           <span className="gobtn">
-            <span className="nw">▶ {goNow ? <b className={`go-word${goWord === 'Go' ? ' go-emph' : ''}`}>{goWord}</b> : <b className="ready-word">Ready</b>} 第<b className="bignum">{nextSetNo}</b>{nextUnit}</span>
+            <span className="nw">▶ {!goNow
+              ? <><b className="ready-word">Ready</b>{' '}</>
+              : restOver
+                ? <><b className="go-word go-over">Go</b>{' '}</>
+                : null}第<b className="bignum">{nextSetNo}</b>{nextUnit}</span>
             {nextMeters ? <span className="nw godist">{nextMeters}m</span> : null}
           </span>
         </div>

@@ -104,11 +104,12 @@ export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
                       <span className="dot" style={{ background: NRC_CHART[g.color], display: 'inline-block', marginRight: 6, verticalAlign: 'middle' }} />
                       {NRC_LABEL[g.color]} 第{g.number}組
                     </td>
-                    {g.reps.map((r) => (
-                      <td key={r.index} className={r.runSec === best ? 'bestcell' : ''}>{r.runSec}</td>
-                    ))}
+                    {Array.from({ length: maxReps }).map((_, i) => {
+                      const r = g.reps[i]
+                      return <td key={i} className={r && r.runSec === best ? 'bestcell' : ''}>{r ? r.runSec : '–'}</td>
+                    })}
                     <td>{avg(g)}</td>
-                    <td>{restAvg}s</td>
+                    <td>{restAvg}</td>
                   </tr>
                 )
               })}
@@ -116,7 +117,7 @@ export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
           </table>
           </div>
           <p style={{ color: '#777', fontSize: 11, textAlign: 'center', marginTop: 8 }}>
-            點一列看單組詳細　·　<span className="bestcell">綠</span>＝最快一趟　·　均速＝平均每趟、均休＝平均休息
+            點一列看單組詳細　·　<span className="bestcell">綠</span>＝最快一趟　·　數字＝秒（均速＝平均每趟、均休＝平均休息）
           </p>
         </div>
       )}
