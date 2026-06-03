@@ -1,18 +1,19 @@
 import { it, expect } from 'vitest'
 import { parsePlan, planSummary } from './planText'
 
-it('解析單一段落 1200m×10 p96s r90s（p=每圈配速）', () => {
-  const segs = parsePlan('1200m×10 p96s r90s', 400)!
+it('解析單一段落 300m×10 p72s r90s（p=完成該距離的目標秒）', () => {
+  const segs = parsePlan('300m×10 p72s r90s', 400)!
   expect(segs).toHaveLength(1)
   expect(segs[0].reps).toBe(10)
-  expect(segs[0].items![0].meters).toBe(1200)
-  expect(segs[0].items![0].targetSec).toBe(288)   // 96 × 1200/400
+  expect(segs[0].items![0].meters).toBe(300)
+  expect(segs[0].items![0].targetSec).toBe(72)   // 直接＝72，不換算
   expect(segs[0].items![0].restSec).toBe(90)
 })
 
-it('解析小寫 x 與逗號：1200mx10 p96s, r90s', () => {
-  const segs = parsePlan('1200mx10 p96s, r90s', 400)!
+it('解析小寫 x 與逗號：1200mx10 p288s, r90s', () => {
+  const segs = parsePlan('1200mx10 p288s, r90s', 400)!
   expect(segs[0].items![0].meters).toBe(1200)
+  expect(segs[0].items![0].targetSec).toBe(288)
   expect(segs[0].items![0].restSec).toBe(90)
 })
 
@@ -24,17 +25,22 @@ it('解析組合 (400m p84s r90s+200m r60s)×8', () => {
   expect(segs[0].items![1]).toMatchObject({ meters: 200, targetSec: 0, restSec: 60 })
 })
 
+it('組合可省略 m：(400+200)×8 也能解析', () => {
+  const segs = parsePlan('(400+200)×8', 400)!
+  expect(segs[0].items!.map((i) => i.meters)).toEqual([400, 200])
+})
+
 it('解析多段落', () => {
-  const segs = parsePlan('1200m×10 p96s r90s 600m×5 r120s', 400)!
+  const segs = parsePlan('1200m×10 p288s r90s 600m×5 r120s', 400)!
   expect(segs).toHaveLength(2)
   expect(segs[1].reps).toBe(5)
   expect(segs[1].items![0].meters).toBe(600)
 })
 
 it('會去掉開頭日期再解析', () => {
-  const segs = parsePlan('6/3（三） 1200m×10 p96s r90s', 400)
+  const segs = parsePlan('6/3（三） 300m×10 p72s r90s', 400)
   expect(segs).not.toBeNull()
-  expect(segs![0].items![0].meters).toBe(1200)
+  expect(segs![0].items![0].targetSec).toBe(72)
 })
 
 it('純文字名稱解析失敗回 null', () => {
@@ -43,7 +49,7 @@ it('純文字名稱解析失敗回 null', () => {
 })
 
 it('round-trip：摘要→解析→摘要 一致', () => {
-  const text = '(400m p84s r90s+200m r60s)×8 600m×5 p72s'
+  const text = '(400m p84s r90s+200m r60s)×8 600m×5 p110s'
   const segs = parsePlan(text, 400)!
-  expect(planSummary(segs, 400)).toBe(text)
+  expect(planSummary(segs)).toBe(text)
 })

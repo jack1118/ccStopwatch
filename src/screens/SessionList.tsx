@@ -52,9 +52,6 @@ export function SessionList({ enterAnim = '', onNew, onOpen, onEdit, onHelp }: P
           </div>
         ))}
       </div>
-      <div style={{ textAlign: 'center', fontSize: 11, color: '#5a5a62', padding: '10px 0' }}>
-        版本 {__BUILD__}
-      </div>
       <div className="spacer" />
       <div className="bottombar">
         <button className="btn primary" style={{ fontSize: 17, padding: '14px' }} onClick={onNew}>

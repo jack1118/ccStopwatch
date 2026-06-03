@@ -101,7 +101,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
   const modeOf = (id: string) => targetMode[id] ?? 'dist'
   const setMode = (id: string, m: 'dist' | 'lap') => setTargetMode((p) => ({ ...p, [id]: m }))
 
-  const summaryText = planSummary(segments, lapMeters)
+  const summaryText = planSummary(segments)
   // 每組每圈加秒 × 此距離圈數 = 各組之間在「整段距離」上累加的秒數
   const gapTotal = (it: Item) => (it.gapSec ?? 0) * lapsOf(it.meters, lapMeters)
 
@@ -248,7 +248,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
             <div className="seg-card" key={seg.id}>
               <div className="field-row">
                 <span className="rl" style={{ width: 'auto', fontWeight: 700 }}>
-                  項目 {si + 1} · {segLabel(seg, lapMeters)}
+                  項目 {si + 1} · {segLabel(seg)}
                 </span>
                 {!editingActive && <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeSegment(seg.id)}>✕ 刪除</button>}
               </div>

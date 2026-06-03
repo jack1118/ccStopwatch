@@ -72,6 +72,8 @@ export function Help({ onBack }: Props) {
             <li>想當 app 用：手機瀏覽器選「<b>加入主畫面</b>」，即可全螢幕、離線使用。</li>
           </ul>
         </section>
+
+        <p style={{ opacity: .5, fontSize: 12, textAlign: 'center', marginTop: 8 }}>版本 {__BUILD__}</p>
       </div>
     </div>
   )
