@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import type { Session } from '../types'
 import { NRC_CHART, NRC_LABEL } from '../constants'
 import { LineChart } from '../chart/LineChart'
+import { SplitArea } from '../chart/SplitArea'
 import { sessionToCsv } from '../export/csv'
 import { downloadPng, downloadText } from '../export/screenshot'
 import { fmtClockStr } from '../format'
@@ -89,13 +90,14 @@ export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
                     )}
                   </th>
                 ))}
-                <th>均</th><th>休</th>
+                <th>均跑</th><th>均休</th>
               </tr>
             </thead>
             <tbody>
               {session.groups.map((g) => {
                 const best = g.reps.length ? Math.min(...g.reps.map((r) => r.runSec)) : -1
-                const restTotal = g.reps.reduce((s, r) => s + r.restSec, 0)
+                const restN = g.reps.filter((r) => r.restSec > 0).length
+                const restAvg = restN ? Math.round(g.reps.reduce((s, r) => s + r.restSec, 0) / restN) : 0
                 return (
                   <tr key={g.id} onClick={() => setDetailId(g.id)} style={{ cursor: 'pointer' }}>
                     <td style={{ whiteSpace: 'nowrap' }}>
@@ -106,14 +108,16 @@ export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
                       <td key={r.index} className={r.runSec === best ? 'bestcell' : ''}>{r.runSec}</td>
                     ))}
                     <td>{avg(g)}</td>
-                    <td>{restTotal}s</td>
+                    <td>{restAvg}s</td>
                   </tr>
                 )
               })}
             </tbody>
           </table>
           </div>
-          <p style={{ color: '#777', fontSize: 11, textAlign: 'center', marginTop: 8 }}>點一列看單組詳細</p>
+          <p style={{ color: '#777', fontSize: 11, textAlign: 'center', marginTop: 8 }}>
+            點一列看單組詳細　·　<span className="bestcell">綠</span>＝最快一趟　·　均跑/均休為平均
+          </p>
         </div>
       )}
 
@@ -127,6 +131,7 @@ export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
               placeholder="例：小明、小華、阿德"
               onBlur={(e) => setAthletes(detail.id, e.target.value)} />
           </div>
+          {detail.reps.length > 0 && <SplitArea group={detail} />}
           <table className="splits">
             <thead><tr><th>趟</th>{hasPlan && <th>距離</th>}<th>跑步</th><th>休息</th></tr></thead>
             <tbody>

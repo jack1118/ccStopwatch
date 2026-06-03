@@ -161,15 +161,18 @@ button.restwrap { background: transparent; border: 0; color: inherit;
   background: rgba(255,255,255,.3); overflow: hidden; }
 .restbar i { display: block; height: 100%; background: rgba(255,255,255,.9); }
 .restbar.over i { background: #FF453A; }
-/* 出發提示：去掉底框，只留文字（整張卡片即出發點擊區） */
+/* 出發提示：去掉底框，只留文字（整張卡片即出發點擊區）；固定兩行(距離獨立一行)避免高度跳動 */
 .gobtn { font-size: 14px; font-weight: 800; background: transparent;
-  border: 0; padding: 4px 0; }
+  border: 0; padding: 4px 0; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.gobtn .godist { opacity: .9; }
 /* 標籤後面的數字放大（標籤字維持） */
 .metaval { font-size: 1.4em; font-weight: 800; }
 .resting { outline: 2px dashed rgba(255,255,255,.5); outline-offset: -2px; }
 /* 休息中：只把底色換深（在 GroupCard 計算），文字/數字維持全亮可讀；一眼分辨「暗＝休息、亮＝進行」 */
 /* 最後3秒：只有「Go」放大變紅，其餘字維持 */
 .gobtn .go-word { color: #FF3B30; font-size: 1.8em; font-weight: 900; }
+/* 「Go」加陰影更顯眼（只有 Go，3/2/1 與 Ready 不加） */
+.gobtn .go-word.go-emph { text-shadow: 0 0 10px rgba(255,59,48,.9), 0 2px 4px rgba(0,0,0,.6); }
 /* 最後3秒中央大紅倒數 3/2/1/Go */
 .go-count { color: #FF3B30; font-weight: 900; line-height: .9;
   text-shadow: 0 2px 5px rgba(0,0,0,.45); }
@@ -182,6 +185,13 @@ button.restwrap { background: transparent; border: 0; color: inherit;
         border-color: #4cff78; }
 }
 .card.blink { animation: blinkborder .55s ease-in-out infinite; }
+/* 趟休到點＝紅色閃框（與「下一個該按」的綠色提示區隔；越超時閃越快由 inline animationDuration 控制） */
+@keyframes blinkborder-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,48,0); border-color: rgba(255,255,255,.14); }
+  50% { box-shadow: 0 0 24px 7px rgba(255,59,48,.95), inset 0 0 0 3px #FF3B30;
+        border-color: #FF3B30; }
+}
+.card.blink-go { animation: blinkborder-red .55s ease-in-out infinite; }
 
 /* ── 休息卡呼吸：柔白外光暈 +「趟休」字同步呼吸（4.5s 吸快吐慢，貼近 Apple 睡眠呼吸燈） ── */
 /* 峰值落在 35%：吸氣 ~1.6s 快、吐氣 ~2.9s 慢；快到點/該出發(.blink)時自動停，交給綠光催促 */
@@ -197,11 +207,11 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 }
 @media (prefers-reduced-motion: no-preference) {
   /* animation-delay 用 --bdelay(GroupCard 依 restStartTs 算)錨定全域 4.5s 相位 → 所有休息卡同步呼吸 */
-  .card.resting:not(.blink) {
+  .card.resting:not(.blink):not(.blink-go) {
     animation: restBreatheGlow 4.5s cubic-bezier(.45,0,.55,1) infinite;
     animation-delay: var(--bdelay, 0ms);
   }
-  .card.resting:not(.blink) .rest-vlabel {
+  .card.resting:not(.blink):not(.blink-go) .rest-vlabel {
     animation: restBreatheText 4.5s cubic-bezier(.45,0,.55,1) infinite;
     animation-delay: var(--bdelay, 0ms);
     transform-origin: center center;
@@ -313,11 +323,22 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 /* 趟數多→水平捲動，組別欄凍結在左 */
 .splits-scroll { overflow-x: auto; touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch; }
 table.splits { width: 100%; border-collapse: collapse; font-size: 12px; }
-table.splits th, table.splits td { padding: 5px 6px; text-align: center;
+table.splits th, table.splits td { padding: 7px 8px; text-align: center;
   border-bottom: 1px solid #2a2a32; white-space: nowrap; }
-/* 凍結最左「組別」欄：水平捲動時組名永遠看得到 */
+/* 表頭底色 + 斑馬紋 + 點選列highlight：多欄逐列對照更清楚 */
+table.splits thead th { background: #1c1c22; }
+table.splits tbody tr:nth-child(even) td { background: #1a1a20; }
+table.splits tbody tr:active td { background: #28324a; }
+/* 凍結最左「組別」欄：水平捲動時組名永遠看得到；底色跟著該列(蓋住捲動內容) */
 table.splits th:first-child, table.splits td:first-child {
   position: sticky; left: 0; z-index: 1; background: #15151a; text-align: left; }
+table.splits thead th:first-child { background: #1c1c22; }
+table.splits tbody tr:nth-child(even) td:first-child { background: #1a1a20; }
+table.splits tbody tr:active td:first-child { background: #28324a; }
 .bestcell { color: #34c759; font-weight: 700; }
+/* 單組詳細：填色面積圖上的平均/最佳大字 */
+.area-stat { display: flex; gap: 26px; margin: 4px 0 6px; align-items: baseline; }
+.area-stat b { font-size: 22px; font-weight: 900; }
+.area-stat span { font-size: 11px; color: #9a9aa0; margin-left: 6px; }
 .bottombar { display: flex; gap: 8px; padding: 10px 12px; }
 .bottombar .btn { flex: 1; }

@@ -6,9 +6,9 @@ import { segLabel, planSummary, parsePlan } from '../timer/planText'
 import { useSwipe } from '../hooks/useSwipe'
 
 const WEEKDAY = ['日', '一', '二', '三', '四', '五', '六']
-function todayLabel(): string {          // 田徑慣例：含星期，例 6/3（三）
+function todayLabel(): string {          // 田徑慣例：含星期，例 6/3 (三)（半形括號＋空格）
   const d = new Date()
-  return `${d.getMonth() + 1}/${d.getDate()}（${WEEKDAY[d.getDay()]}）`
+  return `${d.getMonth() + 1}/${d.getDate()} (${WEEKDAY[d.getDay()]})`
 }
 
 const uid = () => crypto.randomUUID()

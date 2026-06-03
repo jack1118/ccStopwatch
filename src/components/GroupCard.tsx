@@ -222,7 +222,7 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
   const bDelay = g.restStartTs != null ? -(g.restStartTs % 4500) : 0
   // 休息不變暗：維持鮮明組色，靠左側大「趟休」＋進度條＋出發提示來區分
   return (
-    <div className={`card resting${big ? ' big' : ''}${goNow ? ' blink' : ''}`} data-testid="card"
+    <div className={`card resting${big ? ' big' : ''}${goNow ? ' blink-go' : ''}`} data-testid="card"
       style={{ ...cardStyle, ...flashStyle, ['--bdelay' as string]: `${bDelay}ms`,
         ...(goNow ? { animationDuration: `${blinkDur}s` } : {}) } as React.CSSProperties}>
       <div className="ctop">
@@ -247,8 +247,8 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
           )}
           <span className={`restbar${tone === 'over' ? ' over' : ''}`}><i style={{ width: `${pct}%` }} /></span>
           <span className="gobtn">
-            <span className="nw">▶ {goNow ? <b className="go-word">{goWord}</b> : <b className="ready-word">Ready</b>} 第<b className="bignum">{nextSetNo}</b>{nextUnit}</span>
-            {nextMeters ? <>{' '}<span className="nw">{nextMeters}m</span></> : null}
+            <span className="nw">▶ {goNow ? <b className={`go-word${goWord === 'Go' ? ' go-emph' : ''}`}>{goWord}</b> : <b className="ready-word">Ready</b>} 第<b className="bignum">{nextSetNo}</b>{nextUnit}</span>
+            {nextMeters ? <span className="nw godist">{nextMeters}m</span> : null}
           </span>
         </div>
       </button>
