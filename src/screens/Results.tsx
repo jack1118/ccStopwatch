@@ -90,7 +90,7 @@ export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
                     )}
                   </th>
                 ))}
-                <th>均</th><th>間休</th>
+                <th>均速</th><th>均休</th>
               </tr>
             </thead>
             <tbody>
@@ -116,7 +116,7 @@ export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
           </table>
           </div>
           <p style={{ color: '#777', fontSize: 11, textAlign: 'center', marginTop: 8 }}>
-            點一列看單組詳細　·　<span className="bestcell">綠</span>＝最快一趟　·　均＝平均每趟、間休＝平均休息
+            點一列看單組詳細　·　<span className="bestcell">綠</span>＝最快一趟　·　均速＝平均每趟、均休＝平均休息
           </p>
         </div>
       )}
