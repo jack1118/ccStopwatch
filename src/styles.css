@@ -333,6 +333,9 @@ table.splits th, table.splits td { padding: 7px 8px; text-align: center;
   border-bottom: 1px solid #2a2a32; white-space: nowrap; }
 /* 表頭底色 + 斑馬紋 + 點選列highlight：多欄逐列對照更清楚 */
 table.splits thead th { background: #1c1c22; }
+/* 均速/均休 表頭直書(由上到下)，欄位更窄、與兩行的距離表頭協調 */
+table.splits th.vhead { writing-mode: vertical-rl; text-orientation: upright;
+  letter-spacing: 1px; white-space: nowrap; vertical-align: middle; padding: 6px 4px; }
 table.splits tbody tr:nth-child(even) td { background: #1a1a20; }
 table.splits tbody tr:active td { background: #28324a; }
 /* 凍結最左「組別」欄：水平捲動時組名永遠看得到；底色跟著該列(蓋住捲動內容) */

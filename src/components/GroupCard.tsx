@@ -241,7 +241,7 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
               <Clock totalSec={restShown} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone="over" />
             </span>
           ) : goNow ? (
-            <span className="go-count" style={{ fontSize: big ? 92 : 56 }}>{goWord}</span>
+            <span className="go-count" style={{ fontSize: big ? 72 : 44 }}>{goWord}</span>
           ) : (
             <Clock totalSec={restShown} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone={tone} />
           )}

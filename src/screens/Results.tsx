@@ -90,7 +90,7 @@ export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
                     )}
                   </th>
                 ))}
-                <th>均速</th><th>均休</th>
+                <th className="vhead">均速</th><th className="vhead">均休</th>
               </tr>
             </thead>
             <tbody>

@@ -35,9 +35,11 @@ export function SplitArea({ group }: { group: Group }) {
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }}
         role="img" aria-label={`第${group.number}組各趟分段`}>
         <defs>
+          {/* 越上(越快)顏色越濃、越下(越慢)越淡 */}
           <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.55" />
-            <stop offset="100%" stopColor={color} stopOpacity="0.04" />
+            <stop offset="0%" stopColor={color} stopOpacity="0.85" />
+            <stop offset="55%" stopColor={color} stopOpacity="0.32" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.03" />
           </linearGradient>
         </defs>
         {fracs.map((f, i) => {
