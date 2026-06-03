@@ -25,6 +25,13 @@ it('解析組合 (400m p84s r90s+200m r60s)×8', () => {
   expect(segs[0].items![1]).toMatchObject({ meters: 200, targetSec: 0, restSec: 60 })
 })
 
+it('p/r 後面的 s 可省略：p72 與 p72s、r90 與 r90s 都可', () => {
+  const a = parsePlan('300m×10 p72 r90', 400)!
+  expect(a[0].items![0]).toMatchObject({ targetSec: 72, restSec: 90 })
+  const b = parsePlan('(400m p84 r90+200m r60)×8', 400)!
+  expect(b[0].items![0]).toMatchObject({ targetSec: 84, restSec: 90 })
+})
+
 it('組合可省略 m：(400+200)×8 也能解析', () => {
   const segs = parsePlan('(400+200)×8', 400)!
   expect(segs[0].items!.map((i) => i.meters)).toEqual([400, 200])
