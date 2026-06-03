@@ -3,7 +3,7 @@ import type { Session } from '../types'
 import { timerReducer, initTimerState } from '../timer/reducer'
 import { elapsedSec, buildLapPlan } from '../timer/timer'
 import { planSummary } from '../timer/planText'
-import { NRC_HEX, NRC_LABEL } from '../constants'
+import { NRC_CHART, NRC_LABEL } from '../constants'
 import { saveSession } from '../storage/storage'
 import { GroupCard } from '../components/GroupCard'
 import { useNow } from '../hooks/useNow'
@@ -101,7 +101,7 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
               const t = Date.now()
               const grp = state.session.groups.find((x) => x.id === id)
               if (grp?.runStartTs != null) {
-                setFlash({ sec: elapsedSec(grp.runStartTs, t), color: NRC_HEX[grp.color],
+                setFlash({ sec: elapsedSec(grp.runStartTs, t), color: NRC_CHART[grp.color],
                   label: `${NRC_LABEL[grp.color]} 第${grp.number}組`, key: flashKey.current++ })
               }
               dispatch({ type: 'LAP', groupId: id, now: t })
@@ -120,7 +120,8 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
       {flash && (
         <div className="lap-flash" key={flash.key} aria-hidden="true">
           <div className="lap-flash-label" style={{ color: flash.color }}>● {flash.label}</div>
-          <div className="lap-flash-sec" style={{ color: flash.color }}>{flash.sec}</div>
+          <div className="lap-flash-sec" style={{ color: flash.color,
+            fontSize: String(flash.sec).length <= 2 ? 'min(56vw, 300px)' : 'min(40vw, 210px)' }}>{flash.sec}</div>
         </div>
       )}
     </div>
