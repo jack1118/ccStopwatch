@@ -2,7 +2,14 @@ import { useState, useEffect, useRef } from 'react'
 import type { Group, Item, NRCColor, Segment, Session } from '../types'
 import { NRC_ORDER, NRC_NUM, NRC_HEX, NRC_TEXT, NRC_LABEL } from '../constants'
 import { itemsOf, lapsOf } from '../timer/timer'
+import { segLabel, planSummary, parsePlan } from '../timer/planText'
 import { useSwipe } from '../hooks/useSwipe'
+
+const WEEKDAY = ['日', '一', '二', '三', '四', '五', '六']
+function todayLabel(): string {          // 田徑慣例：含星期，例 6/3（三）
+  const d = new Date()
+  return `${d.getMonth() + 1}/${d.getDate()}（${WEEKDAY[d.getDay()]}）`
+}
 
 const uid = () => crypto.randomUUID()
 const DEFAULT_ON: NRCColor[] = ['yellow', 'black', 'purple', 'blue', 'green']
@@ -80,19 +87,8 @@ function initGroupCfg(initial?: Session): Record<NRCColor, GroupCfg> {
   return cfg
 }
 
-function segLabel(seg: Segment): string {
-  const items = itemsOf(seg)
-  const r = (it: Item) => (it.restSec > 0 ? ` r${it.restSec}s` : '')   // 每段距離各自的間休
-  return items.length > 1
-    ? `(${items.map((i) => `${i.meters}m${r(i)}`).join('+')})×${seg.reps}`   // 例：(400m r90s+200m r60s)×8
-    : `${items[0].meters}m×${seg.reps}${r(items[0])}`                        // 例：600m×10 r90s
-}
-function summaryOf(segments: Segment[]): string {
-  return segments.map(segLabel).join(' ')
-}
-
 export function SessionSetup({ initial, editingActive = false, enterAnim = '', onStart, onCancel }: Props) {
-  const [today] = useState(() => new Date().toLocaleDateString('zh-TW'))
+  const [today] = useState(todayLabel)
   const [name, setName] = useState(initial?.name ?? today)
   const [nameTouched, setNameTouched] = useState(!!initial)
   const [segments, setSegments] = useState<Segment[]>(
@@ -105,7 +101,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
   const modeOf = (id: string) => targetMode[id] ?? 'dist'
   const setMode = (id: string, m: 'dist' | 'lap') => setTargetMode((p) => ({ ...p, [id]: m }))
 
-  const planSummary = summaryOf(segments)
+  const summaryText = planSummary(segments, lapMeters)
   // 每組每圈加秒 × 此距離圈數 = 各組之間在「整段距離」上累加的秒數
   const gapTotal = (it: Item) => (it.gapSec ?? 0) * lapsOf(it.meters, lapMeters)
 
@@ -138,8 +134,15 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
   useEffect(() => {
     if (nameTouched) return
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 課名未手動改過時，跟著課表摘要自動帶入
-    setName(`${today}${planSummary ? ` ${planSummary}` : ''}`)
-  }, [planSummary, nameTouched, today])
+    setName(`${today}${summaryText ? ` ${summaryText}` : ''}`)
+  }, [summaryText, nameTouched, today])
+
+  // 名稱欄失焦：若輸入符合課表格式則反向解析、連動下面設定（編輯進行中課程時不解析，避免動到結構）
+  const parseNameToPlan = (text: string) => {
+    if (editingActive) return
+    const segs = parsePlan(text, lapMeters)
+    if (segs) setSegments(segs)
+  }
 
   // 段落（組合）操作
   const addSegment = () => setSegments((s) => [...s, { id: uid(), reps: 8, items: [newItem(400, 90, lapMeters)] }])
@@ -220,9 +223,10 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
       </div>
 
       <div className="sec-block">
-        <div className="label">課程名稱（自動帶入課表摘要，可改）</div>
+        <div className="label">課程名稱（自動帶入課表摘要；也可直接打課表如 1200m×10 p96s r90s 連動設定）</div>
         <input className="field wide" value={name}
-          onChange={(e) => { setName(e.target.value); setNameTouched(true) }} />
+          onChange={(e) => { setName(e.target.value); setNameTouched(true) }}
+          onBlur={(e) => parseNameToPlan(e.target.value)} />
       </div>
 
       <div className="sec-block">
@@ -244,7 +248,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
             <div className="seg-card" key={seg.id}>
               <div className="field-row">
                 <span className="rl" style={{ width: 'auto', fontWeight: 700 }}>
-                  項目 {si + 1} · {segLabel(seg)}
+                  項目 {si + 1} · {segLabel(seg, lapMeters)}
                 </span>
                 {!editingActive && <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeSegment(seg.id)}>✕ 刪除</button>}
               </div>
@@ -348,7 +352,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
                     )}
                   </>
                 )}
-                {!editingActive && <button className={`grp-toggle${on ? ' on' : ''}`} onClick={() => toggleColor(c)}>{on ? '啟用' : '未用'}</button>}
+                {!editingActive && <button className={`grp-toggle${on ? ' on' : ''}`} onClick={() => toggleColor(c)}>{on ? '出場' : '不出場'}</button>}
               </div>
               {on && isOpen && segments.length > 0 && (
                 <div className="grp-expand-body">

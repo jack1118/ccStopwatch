@@ -170,6 +170,9 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 /* 休息中：只把底色換深（在 GroupCard 計算），文字/數字維持全亮可讀；一眼分辨「暗＝休息、亮＝進行」 */
 /* 最後3秒：只有「Go」放大變紅，其餘字維持 */
 .gobtn .go-word { color: #FF3B30; font-size: 1.8em; font-weight: 900; }
+/* 最後3秒中央大紅倒數 3/2/1/Go */
+.go-count { color: #FF3B30; font-weight: 900; line-height: .9;
+  text-shadow: 0 2px 5px rgba(0,0,0,.45); }
 /* Ready 與 Go 成對：同字位、略小、冷靜白色（Go 紅＝爆發） */
 .gobtn .ready-word { color: #fff; font-size: 1.4em; font-weight: 900; }
 /* 該按的組：外框閃燈提示（更亮更快） */

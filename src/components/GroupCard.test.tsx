@@ -39,6 +39,20 @@ it('休息倒數：未到點顯示剩餘秒數倒數', () => {
   expect(screen.getByTestId('clock-sec').textContent).toBe('00')   // 1:00 倒數
 })
 
+it('休息最後3秒：中央大字與字位都用紅色倒數數字（剩2秒→2）', () => {
+  // 目標休 90s、已休 88s → 剩 2 秒
+  const g = {
+    ...base, state: 'resting' as const, restStartTs: 0,
+    reps: [{ index: 0, runSec: 96, restSec: 0 }],
+  }
+  render(<GroupCard group={g} plan={plan} now={88000} big
+    onStart={vi.fn()} onLap={vi.fn()} onNext={vi.fn()} onUndo={vi.fn()} onStop={vi.fn()} />)
+  const twos = screen.getAllByText('2')        // 中央 .go-count + 字位 .go-word
+  expect(twos.length).toBeGreaterThanOrEqual(2)
+  expect(twos.some((e) => e.className.includes('go-count'))).toBe(true)
+  expect(twos.some((e) => e.className.includes('go-word'))).toBe(true)
+})
+
 it('休息超時：卡片維持綠色、主時鐘轉成 +往上加（紅）', () => {
   // 目標休 90s、已休 104s → 超時 +0:14
   const g = {

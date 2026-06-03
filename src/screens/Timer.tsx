@@ -2,6 +2,7 @@ import { useEffect, useReducer, useRef, useState } from 'react'
 import type { Session } from '../types'
 import { timerReducer, initTimerState } from '../timer/reducer'
 import { elapsedSec, buildLapPlan } from '../timer/timer'
+import { stripDate } from '../timer/planText'
 import { saveSession } from '../storage/storage'
 import { GroupCard } from '../components/GroupCard'
 import { useNow } from '../hooks/useNow'
@@ -69,7 +70,7 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
     <div className={`app${enterAnim ? ' enter-' + enterAnim : ''}`} {...swipe}>
       <div className="topbar">
         <button className="btn" onClick={onExit}>←</button>
-        <h1>{state.session.name}</h1>
+        <h1>{stripDate(state.session.name)}</h1>
         <button className="btn" aria-label="點擊音效開關"
           onClick={() => { const v = !soundOn; setTapSound(v); setSoundOn(v) }}>
           {soundOn ? '🔊' : '🔇'}

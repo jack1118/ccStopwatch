@@ -215,6 +215,9 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
   // 倒數模式：有目標休息時顯示剩餘並倒數；到 0 後顯示超時 +往上加（紅）。無目標→照舊往上計時
   const restOver = target > 0 && restSec > target
   const restShown = target > 0 ? (restOver ? restSec - target : target - restSec) : restSec
+  // 最後 3 秒：紅色倒數 3→2→1→Go（剩餘秒；到點/超時為 Go）
+  const goRemain = target - restSec
+  const goWord = goRemain > 0 ? String(goRemain) : 'Go'
   // 同步呼吸：所有休息卡的動畫相位錨定同一 4.5s 全域時鐘 → 一起吸吐、不各自為政
   const bDelay = g.restStartTs != null ? -(g.restStartTs % 4500) : 0
   // 休息不變暗：維持鮮明組色，靠左側大「趟休」＋進度條＋出發提示來區分
@@ -237,12 +240,14 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
               <span className="over-plus over-text" style={{ fontSize: big ? 40 : 26 }}>+</span>
               <Clock totalSec={restShown} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone="over" />
             </span>
+          ) : goNow ? (
+            <span className="go-count" style={{ fontSize: big ? 92 : 56 }}>{goWord}</span>
           ) : (
             <Clock totalSec={restShown} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone={tone} />
           )}
           <span className={`restbar${tone === 'over' ? ' over' : ''}`}><i style={{ width: `${pct}%` }} /></span>
           <span className="gobtn">
-            <span className="nw">▶ {goNow ? <b className="go-word">Go</b> : <b className="ready-word">Ready</b>} 第<b className="bignum">{nextSetNo}</b>{nextUnit}</span>
+            <span className="nw">▶ {goNow ? <b className="go-word">{goWord}</b> : <b className="ready-word">Ready</b>} 第<b className="bignum">{nextSetNo}</b>{nextUnit}</span>
             {nextMeters ? <>{' '}<span className="nw">{nextMeters}m</span></> : null}
           </span>
         </div>
