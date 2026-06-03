@@ -167,7 +167,10 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .gobtn .godist { opacity: .9; }
 /* 標籤後面的數字放大（標籤字維持） */
 .metaval { font-size: 1.4em; font-weight: 800; }
-.resting { outline: 2px dashed rgba(255,255,255,.5); outline-offset: -2px; }
+/* 休息中：柔和實線內框（取代原虛線；虛線在 UI 慣例＝placeholder 較不好看） */
+.resting::after { content: ''; position: absolute; inset: 2px; border: 2px solid rgba(255,255,255,.4);
+  border-radius: 14px; pointer-events: none; z-index: 3; }
+.resting.blink-go::after { display: none; }   /* 到點紅閃時不再疊白框，聚焦紅框 */
 /* 休息中：只把底色換深（在 GroupCard 計算），文字/數字維持全亮可讀；一眼分辨「暗＝休息、亮＝進行」 */
 /* 最後3秒：只有「Go」放大變紅，其餘字維持 */
 .gobtn .go-word { color: #FF3B30; font-size: 1.8em; font-weight: 900; }
