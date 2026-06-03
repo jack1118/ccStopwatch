@@ -171,8 +171,9 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 /* 休息中：只把底色換深（在 GroupCard 計算），文字/數字維持全亮可讀；一眼分辨「暗＝休息、亮＝進行」 */
 /* 最後3秒：只有「Go」放大變紅，其餘字維持 */
 .gobtn .go-word { color: #FF3B30; font-size: 1.8em; font-weight: 900; }
-/* 「Go」加陰影更顯眼（只有 Go，3/2/1 與 Ready 不加） */
-.gobtn .go-word.go-emph { text-shadow: 0 0 10px rgba(255,59,48,.9), 0 2px 4px rgba(0,0,0,.6); }
+/* 「Go」更顯眼：清晰深色投影（不用紅光暈，避免紅字外圍糊掉）＋黑色描邊提升對比 */
+.gobtn .go-word.go-emph { text-shadow: 0 2px 4px rgba(0,0,0,.6), 0 0 2px rgba(0,0,0,.7);
+  -webkit-text-stroke: .6px rgba(0,0,0,.35); }
 /* 最後3秒中央大紅倒數 3/2/1/Go */
 .go-count { color: #FF3B30; font-weight: 900; line-height: .9;
   text-shadow: 0 2px 5px rgba(0,0,0,.45); }
