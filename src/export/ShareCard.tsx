@@ -7,7 +7,8 @@ import { TimelineArea } from '../chart/TimelineArea'
 import { SplitArea } from '../chart/SplitArea'
 import { planSummary } from '../timer/planText'
 import { fmtClockStr } from '../format'
-import { ShareCardArt, cardGradient } from './ShareCardArt'
+import { ShareCardArt } from './ShareCardArt'
+import { cardGradient } from './cardGradient'
 import { sharePng } from './screenshot'
 
 interface Props {

@@ -1,16 +1,6 @@
 import { it, expect } from 'vitest'
 import { render } from '@testing-library/react'
-import { ShareCardArt, cardGradient } from './ShareCardArt'
-
-it('cardGradient 多色 → 135deg 多停點', () => {
-  expect(cardGradient(['#E8B800', '#ff5b4d'])).toBe('linear-gradient(135deg, #E8B800, #ff5b4d)')
-})
-
-it('cardGradient 單色 → 補一個深色第二停點', () => {
-  const g = cardGradient(['#E8B800'])
-  expect(g.startsWith('linear-gradient(135deg, #E8B800, #')).toBe(true)
-  expect(g.split(',').length).toBe(3)
-})
+import { ShareCardArt } from './ShareCardArt'
 
 it('無照片：用漸層底並顯示課表/標題/stat', () => {
   const { container, getByText } = render(
