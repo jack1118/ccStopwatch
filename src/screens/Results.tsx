@@ -4,6 +4,7 @@ import { NRC_CHART, NRC_LABEL } from '../constants'
 import { LineChart } from '../chart/LineChart'
 import { SplitArea } from '../chart/SplitArea'
 import { TimelineArea } from '../chart/TimelineArea'
+import { ShareCard } from '../export/ShareCard'
 import { sessionToCsv } from '../export/csv'
 import { downloadPng, downloadText } from '../export/screenshot'
 import { fmtClockStr } from '../format'
@@ -23,6 +24,7 @@ export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
   )
   const [detailId, setDetailId] = useState<string | null>(null)
   const [mode, setMode] = useState<'reps' | 'time'>('time')
+  const [showCard, setShowCard] = useState(false)
   const chartRef = useRef<HTMLDivElement>(null)
   const detailShotRef = useRef<HTMLDivElement>(null)
 
@@ -170,7 +172,13 @@ export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
           if (target) void downloadPng(target,
             detail ? `${session.name}-${NRC_LABEL[detail.color]}${detail.number}.png` : `${session.name}.png`)
         }}>截圖分享</button>
+        <button className="btn" onClick={() => setShowCard(true)}>分享卡</button>
       </div>
+
+      {showCard && (
+        <ShareCard session={session} detail={detail ?? null} mode={mode} visible={visible}
+          onClose={() => setShowCard(false)} />
+      )}
     </div>
   )
 }

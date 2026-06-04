@@ -51,3 +51,19 @@ it('Results 詳細頁預設時間圖,可切換到趟次圖', () => {
   fireEvent.click(screen.getByText('趟次'))
   expect(screen.getByRole('img', { name: /各趟分段/ })).toBeInTheDocument()
 })
+
+it('Results 點分享卡開啟編輯器', () => {
+  const session: Session = {
+    id: 's3', name: '測試3', createdAt: 0, status: 'done',
+    plan: { lapMeters: 400, segments: [{ id: '1', meters: 400, reps: 3, restSec: 90, targetSec: 84, gapSec: 8 }] },
+    groups: [{
+      id: 'g1', color: 'yellow', number: 1, repsOverride: null, targetPaceSec: null,
+      athletes: [], state: 'done', runStartTs: null, restStartTs: null,
+      reps: [{ index: 0, runSec: 84, restSec: 90 }, { index: 1, runSec: 86, restSec: 0 }],
+    }],
+  }
+  render(<Results session={session} onExit={vi.fn()} onUpdate={vi.fn()} />)
+  fireEvent.click(screen.getByText('分享卡'))
+  expect(screen.getByText('限動分享卡')).toBeInTheDocument()
+  expect(screen.getByText('上傳照片')).toBeInTheDocument()
+})
