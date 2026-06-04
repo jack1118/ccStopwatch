@@ -3,7 +3,9 @@ export type NRCColor = 'yellow' | 'black' | 'purple' | 'blue' | 'green' | 'red'
 // 組合段落中的一個距離效能（effort）
 export interface Item {
   id: string
-  meters: number      // 距離（公尺）
+  meters: number      // 距離（公尺）— 唯一數值真相，下游全讀它
+  unit?: 'k'          // 顯示用：有 'k' → 以公里呈現；無 → 公尺
+  paceSecPerKm?: number // 顯示用：有值 → 顯示 @m:ss,且 targetSec 由它推算
   restSec: number     // 跑完此距離後的間休秒數（0 = 不休息，直接接下一個）
   targetSec?: number  // 第1組（黃）此距離的「每圈目標秒」；0/未設 = 不設目標
   gapSec?: number     // 各組依序累加的秒差（黑=+gap、紫=+2gap…）
