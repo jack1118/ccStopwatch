@@ -59,13 +59,13 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
   const gradient = cardGradient(colors)
   // 總覽卡頂部已放課表(無日期)，下方不再重複；單組卡下方放課表摘要
   const planText = detail ? planFull : ''
-  // 總覽(所有組別)預設用內建底圖；單組無上傳則用組色漸層
-  const bg = photoUrl ?? (detail ? null : bgPng)
+  // 無上傳照片時一律用內建底圖 bg.png（總覽與單組相同）
+  const bg = photoUrl ?? bgPng
 
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,.88)', overflowY: 'auto',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 16, boxSizing: 'border-box',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 16, boxSizing: 'border-box',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: 320 }}>
         <h3 style={{ margin: 0 }}>限動分享卡</h3>
@@ -83,10 +83,9 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
         {photoUrl && (
           <button className="btn" onClick={() => setPhotoUrl((p) => { if (p) URL.revokeObjectURL(p); return null })}>回到預設底圖</button>
         )}
-        <input className="field wide" placeholder="加一行字（選填，如：好濕不好吃）"
+        <input className="field wide" style={{ textAlign: 'center' }} placeholder="加一行字（選填，如：好濕不好吃）"
           value={caption} onChange={(e) => setCaption(e.target.value)} />
         <button className="btn primary" onClick={() => { if (cardRef.current) void sharePng(cardRef.current, `${session.name}.png`) }}>分享 / 下載</button>
-        <p style={{ color: '#888', fontSize: 11, textAlign: 'center', margin: 0 }}>沒上傳照片：總覽用內建底圖、單組用組色漸層</p>
       </div>
     </div>
   )
