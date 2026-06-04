@@ -37,3 +37,29 @@ export function toPoints(secs: number[], o: PlotOpts): string {
 function round(n: number): number {
   return Math.round(n * 100) / 100
 }
+
+export interface TimelineSeg {
+  kind: 'run' | 'rest'
+  t0: number     // 起始累計秒
+  t1: number     // 結束累計秒
+  sec: number    // run=runSec（決定高度）；rest=restSec（決定寬度）
+}
+export interface Timeline {
+  totalSec: number
+  segs: TimelineSeg[]
+}
+
+/** 把每趟的 {runSec, restSec} 依序展開成累計時間軸上的 run/rest 段。restSec=0 不產生 rest 段。 */
+export function buildTimeline(reps: { runSec: number; restSec: number }[]): Timeline {
+  const segs: TimelineSeg[] = []
+  let t = 0
+  for (const r of reps) {
+    segs.push({ kind: 'run', t0: t, t1: t + r.runSec, sec: r.runSec })
+    t += r.runSec
+    if (r.restSec > 0) {
+      segs.push({ kind: 'rest', t0: t, t1: t + r.restSec, sec: r.restSec })
+      t += r.restSec
+    }
+  }
+  return { totalSec: t, segs }
+}
