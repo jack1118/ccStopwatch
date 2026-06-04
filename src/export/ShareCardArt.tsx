@@ -1,6 +1,6 @@
 import type { ReactNode, Ref } from 'react'
 
-const W = 270, H = 480
+const W = 270, H = 270   // 1:1 方形（對齊 bg.png 比例）；匯出 pixelRatio 4 → 1080×1080
 
 interface Props {
   photoUrl: string | null
