@@ -223,7 +223,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
       </div>
 
       <div className="sec-block">
-        <div className="label">課程名稱（自動帶入課表摘要；也可直接打課表如 1200m×10 p96s r90s 連動設定）</div>
+        <div className="label">課程名稱（自動帶入課表摘要；也可直接打課表如 1200m×10 p96s r90s、3k@4:10 連動設定）</div>
         <input className="field wide" value={name}
           onChange={(e) => { setName(e.target.value); setNameTouched(true) }}
           onBlur={(e) => parseNameToPlan(e.target.value)} />
