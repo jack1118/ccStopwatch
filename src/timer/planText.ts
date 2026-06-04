@@ -25,16 +25,40 @@ export function planSummary(segments: Segment[], compact = false): string {
 }
 
 function parseItem(raw: string, gapSec: number): Item | null {
-  const m = raw.match(/^\s*(\d+)\s*m?/i)   // 距離在最前；m 可省（組合內可只寫數字）
-  const meters = m ? Number(m[1]) : 0
+  // 距離：先試 Nk(可小數)，再試 Nm(整數，m 可省)
+  const dk = raw.match(/^\s*(\d+(?:\.\d+)?)\s*k/i)
+  const dm = raw.match(/^\s*(\d+)\s*m?/i)
+  let meters = 0
+  let unit: 'k' | undefined
+  if (dk) {
+    meters = Math.round(Number(dk[1]) * 1000)
+    unit = 'k'
+  } else if (dm) {
+    meters = Number(dm[1])
+  }
   if (!meters) return null
-  const p = raw.match(/p\s*(\d+)\s*s?/i)
+
+  const pace = raw.match(/@\s*(\d+):(\d{2})/)   // @每公里配速
+  const p = raw.match(/p\s*(\d+)\s*s?/i)        // 該距離目標秒（含 @p118）
   const r = raw.match(/r\s*(\d+)\s*s?/i)
+  if (pace && p) return null                    // 配速與 p 衝突 → 無效
+
+  let targetSec = 0
+  let paceSecPerKm: number | undefined
+  if (pace) {
+    paceSecPerKm = Number(pace[1]) * 60 + Number(pace[2])
+    targetSec = Math.round((paceSecPerKm * meters) / 1000)
+  } else if (p) {
+    targetSec = Number(p[1])
+  }
+
   return {
     id: uid(),
     meters,
+    ...(unit ? { unit } : {}),
+    ...(paceSecPerKm ? { paceSecPerKm } : {}),
     restSec: r ? Number(r[1]) : 0,
-    targetSec: p ? Number(p[1]) : 0,   // p = 完成此距離的目標秒（直接＝距離目標）
+    targetSec,
     gapSec,
   }
 }
@@ -52,7 +76,11 @@ export function parsePlan(text: string, lapMeters: number): Segment[] | null {
   if (!s) return null
   s = s.replace(/[xX*✕]/g, '×').replace(/[,，]/g, ' ')
   const gapSec = Math.max(1, Math.round(lapMeters / 100))
-  const segRe = /\(([^)]*)\)\s*×\s*(\d+)|(\d+)\s*m\s*×\s*(\d+)((?:\s*[pr]\s*\d+\s*s?)*)/gi
+  const MOD = String.raw`[pr]\s*\d+\s*s?|@\s*(?:p\s*\d+\s*s?|\d+:\d{2})`
+  const segRe = new RegExp(
+    String.raw`\(([^)]*)\)\s*×\s*(\d+)|(\d+(?:\.\d+)?)\s*(k|m)\s*(@\s*(?:p\s*\d+\s*s?|\d+:\d{2}))?(?:\s*×\s*(\d+))?((?:\s*(?:${MOD}))*)`,
+    'gi',
+  )
   const segs: Segment[] = []
   let last = 0
   let mm: RegExpExecArray | null
@@ -64,9 +92,10 @@ export function parsePlan(text: string, lapMeters: number): Segment[] | null {
       if (items.some((it) => !it)) return null
       segs.push({ id: uid(), reps: Number(mm[2]), items: items as Item[] })
     } else {
-      const it = parseItem(`${mm[3]}m ${mm[5] ?? ''}`, gapSec)
+      const raw = `${mm[3]}${mm[4]} ${mm[5] ?? ''} ${mm[7] ?? ''}`
+      const it = parseItem(raw, gapSec)
       if (!it) return null
-      segs.push({ id: uid(), reps: Number(mm[4]), items: [it] })
+      segs.push({ id: uid(), reps: Number(mm[6] ?? 1), items: [it] })
     }
   }
   if (!segs.length || s.slice(last).trim()) return null   // 沒解析到 / 尾端有殘渣

@@ -60,3 +60,41 @@ it('round-trip：摘要→解析→摘要 一致', () => {
   const segs = parsePlan(text, 400)!
   expect(planSummary(segs)).toBe(text)
 })
+
+it('解析 k 公里距離：3k → 3000m、unit=k', () => {
+  const segs = parsePlan('3k×1', 400)!
+  expect(segs[0].items![0].meters).toBe(3000)
+  expect(segs[0].items![0].unit).toBe('k')
+})
+
+it('解析 k 小數：1.6k → 1600m', () => {
+  const segs = parsePlan('1.6k×3', 400)!
+  expect(segs[0].items![0].meters).toBe(1600)
+  expect(segs[0].items![0].unit).toBe('k')
+})
+
+it('解析 @每公里配速：3k@4:10 → paceSecPerKm=250、targetSec=750', () => {
+  const segs = parsePlan('3k@4:10', 400)!
+  expect(segs[0].reps).toBe(1)
+  expect(segs[0].items![0].meters).toBe(3000)
+  expect(segs[0].items![0].paceSecPerKm).toBe(250)
+  expect(segs[0].items![0].targetSec).toBe(750)
+})
+
+it('解析 @p 等同 p：400m@p118 → targetSec=118、無 pace', () => {
+  const segs = parsePlan('400m@p118', 400)!
+  expect(segs[0].items![0].targetSec).toBe(118)
+  expect(segs[0].items![0].paceSecPerKm).toBeUndefined()
+})
+
+it('組合內含 k 與 @：(1k@4:00+400m)×5', () => {
+  const segs = parsePlan('(1k@4:00+400m)×5', 400)!
+  expect(segs[0].reps).toBe(5)
+  expect(segs[0].items![0]).toMatchObject({ meters: 1000, unit: 'k', paceSecPerKm: 240, targetSec: 240 })
+  expect(segs[0].items![1]).toMatchObject({ meters: 400, targetSec: 0 })
+  expect(segs[0].items![1].unit).toBeUndefined()
+})
+
+it('配速與 p 同時出現 → 視為衝突,回 null', () => {
+  expect(parsePlan('3k@4:10 p100', 400)).toBeNull()
+})
