@@ -3,6 +3,7 @@ import type { Session } from '../types'
 import { NRC_CHART, NRC_LABEL } from '../constants'
 import { LineChart } from '../chart/LineChart'
 import { SplitArea } from '../chart/SplitArea'
+import { TimelineArea } from '../chart/TimelineArea'
 import { sessionToCsv } from '../export/csv'
 import { downloadPng, downloadText } from '../export/screenshot'
 import { fmtClockStr } from '../format'
@@ -21,7 +22,9 @@ export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
     () => new Set(session.groups.map((g) => g.id)),
   )
   const [detailId, setDetailId] = useState<string | null>(null)
+  const [mode, setMode] = useState<'reps' | 'time'>('time')
   const chartRef = useRef<HTMLDivElement>(null)
+  const detailShotRef = useRef<HTMLDivElement>(null)
 
   // 以逗號/頓號分隔的字串編輯該組學員，存回 session
   const setAthletes = (groupId: string, text: string) => {
@@ -124,28 +127,38 @@ export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
 
       {detail && (
         <div className="panel">
-          <button className="btn" onClick={() => setDetailId(null)}>← 返回總表</button>
-          <h3>{NRC_LABEL[detail.color]} 第{detail.number}組</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <button className="btn" onClick={() => setDetailId(null)}>← 返回總表</button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className={mode === 'reps' ? 'chip' : 'chip off'} onClick={() => setMode('reps')}>趟次</button>
+              <button className={mode === 'time' ? 'chip' : 'chip off'} onClick={() => setMode('time')}>時間</button>
+            </div>
+          </div>
           <div className="sec-block" style={{ padding: '4px 0' }}>
             <div className="label">學員名單（逗號分隔，可事後補）</div>
             <input className="field wide" defaultValue={detail.athletes.join('、')}
               placeholder="例：小明、小華、阿德"
               onBlur={(e) => setAthletes(detail.id, e.target.value)} />
           </div>
-          {detail.reps.length > 0 && <SplitArea group={detail} />}
-          <table className="splits">
-            <thead><tr><th>趟</th>{hasPlan && <th>距離</th>}<th>跑步</th><th>休息</th></tr></thead>
-            <tbody>
-              {detail.reps.map((r) => (
-                <tr key={r.index}>
-                  <td>{r.index + 1}</td>
-                  {hasPlan && <td>{distAt(r.index) != null ? `${distAt(r.index)}m` : '—'}</td>}
-                  <td>{fmtClockStr(r.runSec)}</td>
-                  <td>{r.restSec}s</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div ref={detailShotRef}>
+            <h3>{NRC_LABEL[detail.color]} 第{detail.number}組</h3>
+            {detail.reps.length > 0 && (mode === 'time'
+              ? <TimelineArea group={detail} />
+              : <SplitArea group={detail} />)}
+            <table className="splits">
+              <thead><tr><th>趟</th>{hasPlan && <th>距離</th>}<th>跑步</th><th>休息</th></tr></thead>
+              <tbody>
+                {detail.reps.map((r) => (
+                  <tr key={r.index}>
+                    <td>{r.index + 1}</td>
+                    {hasPlan && <td>{distAt(r.index) != null ? `${distAt(r.index)}m` : '—'}</td>}
+                    <td>{fmtClockStr(r.runSec)}</td>
+                    <td>{r.restSec}s</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -153,7 +166,9 @@ export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
         <button className="btn" onClick={() =>
           downloadText(sessionToCsv(session), `${session.name}.csv`)}>匯出 CSV</button>
         <button className="btn" onClick={() => {
-          if (chartRef.current) void downloadPng(chartRef.current, `${session.name}.png`)
+          const target = detail ? detailShotRef.current : chartRef.current
+          if (target) void downloadPng(target,
+            detail ? `${session.name}-${NRC_LABEL[detail.color]}${detail.number}.png` : `${session.name}.png`)
         }}>截圖分享</button>
       </div>
     </div>
