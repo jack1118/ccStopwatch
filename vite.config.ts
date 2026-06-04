@@ -14,6 +14,11 @@ export default defineConfig(({ command }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'apple-touch-icon-180x180.png'],
+      workbox: {
+        // 預設 globPatterns 不含 assets 內的 png，需明列；並提高上限讓分享卡內建底圖 bg.png(約2.1MB)離線預快取
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+      },
       manifest: {
         name: '跑班碼表',
         short_name: '跑班碼表',
