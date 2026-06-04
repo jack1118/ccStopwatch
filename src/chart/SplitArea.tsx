@@ -6,7 +6,7 @@ import { fmtClockStr } from '../format'
 const W = 580, H = 190, padL = 44, padR = 14, padT = 12, padB = 24
 
 /** 單組各趟分段填色面積圖（Garmin 風）：快＝上、線下填色漸層、平均參考線、平均/最佳大字 */
-export function SplitArea({ group }: { group: Group }) {
+export function SplitArea({ group, hideStat = false }: { group: Group; hideStat?: boolean }) {
   const secs = group.reps.map((r) => r.runSec)
   if (secs.length === 0) return null
   const { min, max } = yRange(secs)
@@ -28,10 +28,12 @@ export function SplitArea({ group }: { group: Group }) {
 
   return (
     <div>
-      <div className="area-stat">
-        <div><b>{fmtClockStr(avg)}</b><span>平均</span></div>
-        <div><b style={{ color }}>{fmtClockStr(best)}</b><span>最佳</span></div>
-      </div>
+      {!hideStat && (
+        <div className="area-stat">
+          <div><b>{fmtClockStr(avg)}</b><span>平均</span></div>
+          <div><b style={{ color }}>{fmtClockStr(best)}</b><span>最佳</span></div>
+        </div>
+      )}
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }}
         role="img" aria-label={`第${group.number}組各趟分段`}>
         <defs>

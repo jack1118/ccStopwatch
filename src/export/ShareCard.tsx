@@ -10,6 +10,7 @@ import { fmtClockStr } from '../format'
 import { ShareCardArt } from './ShareCardArt'
 import { cardGradient } from './cardGradient'
 import { sharePng } from './screenshot'
+import bgPng from '../assets/bg.png'
 
 interface Props {
   session: Session
@@ -21,7 +22,7 @@ interface Props {
 
 export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
-  const [caption, setCaption] = useState('')
+  const [caption, setCaption] = useState('Just do it')
   const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl) }, [photoUrl])
@@ -37,7 +38,7 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
   let stat: ReactNode
   let colors: string[]
   if (detail) {
-    chart = mode === 'time' ? <TimelineArea group={detail} /> : <SplitArea group={detail} />
+    chart = mode === 'time' ? <TimelineArea group={detail} hideStat /> : <SplitArea group={detail} hideStat />
     const secs = detail.reps.map((r) => r.runSec)
     const avg = secs.length ? Math.round(secs.reduce((a, b) => a + b, 0) / secs.length) : 0
     const best = secs.length ? Math.min(...secs) : 0
@@ -55,7 +56,11 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
     colors = [...new Set((present.length ? present : session.groups).map((g) => NRC_CHART[g.color]))]
   }
   const gradient = cardGradient(colors)
-  const planText = session.plan.segments.length ? planSummary(session.plan.segments) : ''
+  const planFull = session.plan.segments.length ? planSummary(session.plan.segments) : ''
+  // 去重：總覽卡若課名已含課表摘要（常見：課名就是課表）則不再重複顯示
+  const planText = detail ? planFull : (session.name.includes(planFull) ? '' : planFull)
+  // 總覽(所有組別)預設用內建底圖；單組無上傳則用組色漸層
+  const bg = photoUrl ?? (detail ? null : bgPng)
 
   return (
     <div style={{
@@ -67,7 +72,7 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
         <button className="btn" onClick={onClose}>✕</button>
       </div>
 
-      <ShareCardArt rootRef={cardRef} photoUrl={photoUrl} gradient={gradient}
+      <ShareCardArt rootRef={cardRef} photoUrl={bg} gradient={gradient}
         stat={stat} chart={chart} planText={planText} caption={caption} />
 
       <div style={{ width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -76,12 +81,12 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
           <input type="file" accept="image/*" hidden onChange={onPhoto} />
         </label>
         {photoUrl && (
-          <button className="btn" onClick={() => setPhotoUrl((p) => { if (p) URL.revokeObjectURL(p); return null })}>移除照片（用組色底）</button>
+          <button className="btn" onClick={() => setPhotoUrl((p) => { if (p) URL.revokeObjectURL(p); return null })}>回到預設底圖</button>
         )}
         <input className="field wide" placeholder="加一行字（選填，如：好濕不好吃）"
           value={caption} onChange={(e) => setCaption(e.target.value)} />
         <button className="btn primary" onClick={() => { if (cardRef.current) void sharePng(cardRef.current, `${session.name}.png`) }}>分享 / 下載</button>
-        <p style={{ color: '#888', fontSize: 11, textAlign: 'center', margin: 0 }}>沒上傳照片會用該課程組色漸層當底圖</p>
+        <p style={{ color: '#888', fontSize: 11, textAlign: 'center', margin: 0 }}>沒上傳照片：總覽用內建底圖、單組用組色漸層</p>
       </div>
     </div>
   )
