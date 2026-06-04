@@ -98,3 +98,22 @@ it('組合內含 k 與 @：(1k@4:00+400m)×5', () => {
 it('配速與 p 同時出現 → 視為衝突,回 null', () => {
   expect(parsePlan('3k@4:10 p100', 400)).toBeNull()
 })
+
+it('顯示保留 k 與 @配速：3k@4:10 r120 → 3k×1 @4:10 r120s', () => {
+  const segs = parsePlan('3k@4:10 r120', 400)!
+  expect(planSummary(segs)).toBe('3k×1 @4:10 r120s')
+})
+
+it('round-trip：1.6k×3 @4:00', () => {
+  const text = '1.6k×3 @4:00'
+  expect(planSummary(parsePlan(text, 400)!)).toBe(text)
+})
+
+it('round-trip：@p 正規化為 p — 400m@p118 → 400m×1 p118s', () => {
+  expect(planSummary(parsePlan('400m@p118', 400)!)).toBe('400m×1 p118s')
+})
+
+it('round-trip：組合 (1k @4:00+400m)×5', () => {
+  const text = '(1k @4:00+400m)×5'
+  expect(planSummary(parsePlan(text, 400)!)).toBe(text)
+})

@@ -3,21 +3,36 @@ import { itemsOf } from './timer'
 
 const uid = () => globalThis.crypto?.randomUUID?.() ?? `id${Math.random().toString(36).slice(2)}`
 
-// 每段距離標註：p=完成該距離的目標秒、r=間休秒（皆可省）。compact=去單位(碼表頁簡寫用)
-function itemTokens(it: Item, compact: boolean): string {
-  const u = compact ? '' : 's'
-  const p = it.targetSec && it.targetSec > 0 ? ` p${it.targetSec}${u}` : ''
-  const r = it.restSec > 0 ? ` r${it.restSec}${u}` : ''
-  return p + r
+// m:ss（秒補零）；配速顯示用
+function fmtMmss(sec: number): string {
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`
 }
 
-/** 完整：600m×10 p96s r90s；簡寫(compact)：600×10 p96 r90 */
+// 距離標籤：unit='k' → 去尾零的公里（3000→3k、1600→1.6k）；否則公尺（compact 去 m）
+function distLabel(it: Item, compact: boolean): string {
+  if (it.unit === 'k') return `${Number((it.meters / 1000).toFixed(3))}k`
+  return `${it.meters}${compact ? '' : 'm'}`
+}
+
+// 每段標註：@m:ss=每公里配速（優先）/ p=完成該距離目標秒、r=間休秒（皆可省）。compact=去單位
+function itemTokens(it: Item, compact: boolean): string {
+  const u = compact ? '' : 's'
+  const tgt =
+    it.paceSecPerKm && it.paceSecPerKm > 0
+      ? ` @${fmtMmss(it.paceSecPerKm)}`
+      : it.targetSec && it.targetSec > 0
+        ? ` p${it.targetSec}${u}`
+        : ''
+  const r = it.restSec > 0 ? ` r${it.restSec}${u}` : ''
+  return tgt + r
+}
+
+/** 完整：600m×10 p96s r90s；簡寫(compact)：600×10 p96 r90；公里/配速：3k×1 @4:10 r120s */
 export function segLabel(seg: Segment, compact = false): string {
   const items = itemsOf(seg)
-  const m = compact ? '' : 'm'
   return items.length > 1
-    ? `(${items.map((i) => `${i.meters}${m}${itemTokens(i, compact)}`).join('+')})×${seg.reps}`
-    : `${items[0].meters}${m}×${seg.reps}${itemTokens(items[0], compact)}`
+    ? `(${items.map((i) => `${distLabel(i, compact)}${itemTokens(i, compact)}`).join('+')})×${seg.reps}`
+    : `${distLabel(items[0], compact)}×${seg.reps}${itemTokens(items[0], compact)}`
 }
 
 export function planSummary(segments: Segment[], compact = false): string {
