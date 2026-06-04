@@ -33,6 +33,7 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
     setPhotoUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(f) })
   }
 
+  const planFull = session.plan.segments.length ? planSummary(session.plan.segments) : ''
   // 依「目前看的圖」組 chart / stat / 漸層色
   let chart: ReactNode
   let stat: ReactNode
@@ -43,7 +44,7 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
     const avg = secs.length ? Math.round(secs.reduce((a, b) => a + b, 0) / secs.length) : 0
     const best = secs.length ? Math.min(...secs) : 0
     stat = (
-      <div style={{ display: 'flex', gap: 18, alignItems: 'baseline' }}>
+      <div style={{ display: 'flex', gap: 18, alignItems: 'baseline', justifyContent: 'center' }}>
         <div><b style={{ fontSize: 20, fontWeight: 900 }}>{fmtClockStr(avg)}</b><span style={{ fontSize: 10, marginLeft: 5, opacity: .85 }}>平均</span></div>
         <div><b style={{ fontSize: 20, fontWeight: 900, color: NRC_CHART[detail.color] }}>{fmtClockStr(best)}</b><span style={{ fontSize: 10, marginLeft: 5, opacity: .85 }}>最佳</span></div>
       </div>
@@ -51,14 +52,13 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
     colors = [NRC_CHART[detail.color]]
   } else {
     chart = <LineChart groups={session.groups} visible={visible} />
-    stat = <div style={{ fontSize: 16, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{session.name}</div>
+    stat = <div style={{ fontSize: 16, fontWeight: 800, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{planFull || session.name}</div>
     const present = session.groups.filter((g) => visible.has(g.id))
     colors = [...new Set((present.length ? present : session.groups).map((g) => NRC_CHART[g.color]))]
   }
   const gradient = cardGradient(colors)
-  const planFull = session.plan.segments.length ? planSummary(session.plan.segments) : ''
-  // 去重：總覽卡若課名已含課表摘要（常見：課名就是課表）則不再重複顯示
-  const planText = detail ? planFull : (session.name.includes(planFull) ? '' : planFull)
+  // 總覽卡頂部已放課表(無日期)，下方不再重複；單組卡下方放課表摘要
+  const planText = detail ? planFull : ''
   // 總覽(所有組別)預設用內建底圖；單組無上傳則用組色漸層
   const bg = photoUrl ?? (detail ? null : bgPng)
 

@@ -27,7 +27,7 @@ export function ShareCardArt({ photoUrl, gradient, stat, chart, planText, captio
       <div style={{ position: 'absolute', inset: 0,
         background: 'linear-gradient(180deg, rgba(0,0,0,.45) 0%, rgba(0,0,0,.15) 35%, rgba(0,0,0,.2) 65%, rgba(0,0,0,.6) 100%)' }} />
       <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', padding: 16, boxSizing: 'border-box' }}>
-        <div style={{ textShadow: SHADOW }}>{stat}</div>
+        <div style={{ textShadow: SHADOW, textAlign: 'center' }}>{stat}</div>
         <div style={{ marginTop: 10, background: 'rgba(0,0,0,.35)', borderRadius: 12, padding: '8px 6px' }}>{chart}</div>
         {planText && <div style={{ marginTop: 10, fontSize: 15, fontWeight: 800, textAlign: 'center', textShadow: SHADOW }}>{planText}</div>}
         {caption && <div style={{ marginTop: 16, fontSize: 18, fontWeight: 700, lineHeight: 1.3, textAlign: 'center', textShadow: SHADOW, whiteSpace: 'pre-wrap' }}>{caption}</div>}
