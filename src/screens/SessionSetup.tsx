@@ -382,7 +382,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
           : editChip.field === 'distance' ? '距離' : editChip.field === 'target' ? '目標' : '間休'
         const title = `項目 ${si + 1}${multi && editChip.field !== 'reps' ? ` · 距離 ${ii + 1}` : ''} · ${fieldName}`
         return (
-          <EditSheet title={title} field={editChip.field} seg={seg} item={item}
+          <EditSheet key={editChip.key} title={title} field={editChip.field} seg={seg} item={item}
             lapMeters={lapMeters} repMin={editingActive ? repFloorSeg(seg) : 1} distanceLocked={editingActive}
             onPatchItem={(itemId, patch) => patchItem(seg.id, itemId, patch)}
             onPatchSeg={(segId, patch) => patchSegment(segId, patch)}
