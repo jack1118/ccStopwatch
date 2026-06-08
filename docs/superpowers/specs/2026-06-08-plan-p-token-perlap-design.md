@@ -30,7 +30,7 @@
    - `n ≥ 300` → 配速：末兩位＝秒、其餘＝分（`450`→4:50、`500`→5:00、`615`→6:15）。秒須 `< 60`，否則該段視為無效（整串當純文字課名，回 `null`）。
    - `n < 300` → **每圈秒數**。
 3. 換算成 `targetSec`（資料模型不變，仍存 item 整段目標秒）：
-   - 每圈：`targetSec = round(每圈 × lapMeters / 距離)`
+   - 每圈：`targetSec = round(每圈 × 距離 / lapMeters)`（例：p96 在 1200m/400m → 96×1200/400＝288）
    - 配速：`paceSecPerKm = 分×60 + 秒`、`targetSec = round(paceSecPerKm × 距離 / 1000)`，並寫入 `paceSecPerKm`。
 4. `@m:ss` 與 `@p…` 維持原樣（向後相容）。`pace` 與 `p` 同時出現仍視為衝突 → 回 `null`（保留 `planText.ts:59` 現有行為）。
 
