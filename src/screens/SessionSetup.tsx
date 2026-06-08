@@ -197,6 +197,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
           placeholder="可直接打整串課表（如 400m×10 p96s r90s）連動下方設定"
           onChange={(e) => { setName(e.target.value); setNameTouched(true) }}
           onBlur={(e) => parseNameToPlan(e.target.value)} />
+        <PlanChips segments={segments} lapMeters={lapMeters} onChipTap={setEditChip} />
       </div>
 
       <div className="sec-block">
@@ -211,7 +212,6 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
       <div className="sec-block">
         <div className="label">共用課表</div>
         <div className="sublabel">項目可為組合，如 (400m+200m)×8；可留空＝純碼表</div>
-        <PlanChips segments={segments} lapMeters={lapMeters} onChipTap={setEditChip} />
         {segments.map((seg, si) => {
           const items = itemsOf(seg)
           const multi = items.length > 1
