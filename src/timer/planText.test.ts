@@ -215,3 +215,14 @@ it('segChips 組合：兩個項目各自 chip，趟數放尾端', () => {
   expect(chips[chips.length - 1].field).toBe('reps')
   expect(new Set(chips.slice(0, 3).map((c) => c.itemId)).size).toBe(1)
 })
+
+it('segChips 組合相同距離 chip key 仍唯一', () => {
+  const seg = parsePlan('(400m+400m)×8', 400)![0]
+  const chips = segChips(seg, 400)
+  expect(new Set(chips.map((c) => c.key)).size).toBe(chips.length)
+})
+
+it('segChips 距離 chip 顯示 k：1.6k', () => {
+  const seg = parsePlan('1.6k×3', 400)![0]
+  expect(segChips(seg, 400).find((c) => c.field === 'distance')!.label).toBe('1.6k')
+})
