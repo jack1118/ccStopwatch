@@ -52,6 +52,28 @@ it('Results 詳細頁預設時間圖,可切換到趟次圖', () => {
   expect(screen.getByRole('img', { name: /各趟分段/ })).toBeInTheDocument()
 })
 
+it('SessionSetup 名稱欄只帶日期（不含課表摘要）', () => {
+  render(<SessionSetup onStart={vi.fn()} onCancel={vi.fn()} />)
+  const nameInput = screen.getByPlaceholderText(/可直接打整串課表/) as HTMLInputElement
+  expect(nameInput.value).not.toMatch(/×/)
+})
+
+it('SessionSetup 點趟數 chip 開啟編輯彈窗', () => {
+  render(<SessionSetup onStart={vi.fn()} onCancel={vi.fn()} />)
+  fireEvent.click(screen.getByText('×10'))
+  expect(screen.getByText('完成')).toBeInTheDocument()
+  expect(screen.getByRole('dialog')).toBeInTheDocument()
+})
+
+it('SessionSetup 名稱欄打整串課表 → 解析後欄位重置回日期', () => {
+  render(<SessionSetup onStart={vi.fn()} onCancel={vi.fn()} />)
+  const nameInput = screen.getByPlaceholderText(/可直接打整串課表/) as HTMLInputElement
+  fireEvent.change(nameInput, { target: { value: '300m×6 p72s r60s' } })
+  fireEvent.blur(nameInput)
+  expect(screen.getByText('×6')).toBeInTheDocument()
+  expect(nameInput.value).not.toMatch(/×/)
+})
+
 it('Results 點分享卡開啟編輯器', () => {
   const session: Session = {
     id: 's3', name: '測試3', createdAt: 0, status: 'done',

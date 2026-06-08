@@ -3,7 +3,10 @@ import type { Group, Item, NRCColor, Segment, Session } from '../types'
 import { Stepper } from '../components/Stepper'
 import { NRC_ORDER, NRC_NUM, NRC_HEX, NRC_TEXT, NRC_LABEL } from '../constants'
 import { itemsOf, lapsOf } from '../timer/timer'
-import { segLabel, planSummary, parsePlan } from '../timer/planText'
+import { segLabel, parsePlan } from '../timer/planText'
+import type { PlanChip } from '../timer/planText'
+import { PlanChips } from '../components/PlanChips'
+import { EditSheet } from '../components/EditSheet'
 import { useSwipe } from '../hooks/useSwipe'
 
 const WEEKDAY = ['日', '一', '二', '三', '四', '五', '六']
@@ -65,8 +68,8 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
   const [targetMode, setTargetMode] = useState<Record<string, 'dist' | 'lap'>>({})
   const modeOf = (id: string) => targetMode[id] ?? 'lap'
   const setMode = (id: string, m: 'dist' | 'lap') => setTargetMode((p) => ({ ...p, [id]: m }))
+  const [editChip, setEditChip] = useState<PlanChip | null>(null)
 
-  const summaryText = planSummary(segments, lapMeters)
   // 每組每圈加秒 × 此距離圈數 = 各組之間在「整段距離」上累加的秒數
   const gapTotal = (it: Item) => (it.gapSec ?? 0) * lapsOf(it.meters, lapMeters)
 
@@ -98,15 +101,15 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
 
   useEffect(() => {
     if (nameTouched) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 課名未手動改過時，跟著課表摘要自動帶入
-    setName(`${today}${summaryText ? ` ${summaryText}` : ''}`)
-  }, [summaryText, nameTouched, today])
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 課名未手動改過時，預設只放日期（課表交給 chips）
+    setName(today)
+  }, [nameTouched, today])
 
-  // 名稱欄失焦：若輸入符合課表格式則反向解析、連動下面設定（編輯進行中課程時不解析，避免動到結構）
+  // 名稱欄失焦：打整串課表格式 → 解析成 segments（chips 反映）後欄位重置回日期；否則當自訂標籤保留
   const parseNameToPlan = (text: string) => {
     if (editingActive) return
     const segs = parsePlan(text, lapMeters)
-    if (segs) setSegments(segs)
+    if (segs) { setSegments(segs); setName(today); setNameTouched(false) }
   }
 
   // 段落（組合）操作
@@ -188,8 +191,9 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
       </div>
 
       <div className="sec-block">
-        <div className="label">課程名稱（自動帶入課表摘要；也可直接打課表如 1200m×10 p96s r90s、3k@4:10 連動設定）</div>
+        <div className="label">課程名稱（標籤；預設今天日期，可自訂）</div>
         <input className="field wide" value={name}
+          placeholder="可直接打整串課表（如 400m×10 p96s r90s）會自動套用到下方"
           onChange={(e) => { setName(e.target.value); setNameTouched(true) }}
           onBlur={(e) => parseNameToPlan(e.target.value)} />
       </div>
@@ -206,6 +210,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
       <div className="sec-block">
         <div className="label">共用課表</div>
         <div className="sublabel">項目可為組合，如 (400m+200m)×8；可留空＝純碼表</div>
+        <PlanChips segments={segments} lapMeters={lapMeters} onChipTap={setEditChip} />
         {segments.map((seg, si) => {
           const items = itemsOf(seg)
           const multi = items.length > 1
@@ -364,6 +369,29 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
           {editingActive ? '儲存變更 ✓' : `開始上課 ▶（${activeCount} 組）`}
         </button>
       </div>
+
+      {editChip && (() => {
+        const seg = segments.find((s) => s.id === editChip.segId)!
+        const items = itemsOf(seg)
+        const item = editChip.itemId ? items.find((i) => i.id === editChip.itemId)! : items[0]
+        const si = segments.findIndex((s) => s.id === seg.id)
+        const ii = items.findIndex((i) => i.id === item.id)
+        const multi = items.length > 1
+        const fieldName = editChip.field === 'reps' ? (multi ? '組數' : '趟數')
+          : editChip.field === 'distance' ? '距離' : editChip.field === 'target' ? '目標' : '間休'
+        const title = `項目 ${si + 1}${multi && editChip.field !== 'reps' ? ` · 距離 ${ii + 1}` : ''} · ${fieldName}`
+        return (
+          <EditSheet title={title} field={editChip.field} seg={seg} item={item}
+            lapMeters={lapMeters} repMin={editingActive ? repFloorSeg(seg) : 1} distanceLocked={editingActive}
+            onPatchItem={(itemId, patch) => patchItem(seg.id, itemId, patch)}
+            onPatchSeg={(segId, patch) => patchSegment(segId, patch)}
+            onClose={() => {
+              const key = editChip.key
+              setEditChip(null)
+              requestAnimationFrame(() => (document.querySelector(`[data-chipkey="${key}"]`) as HTMLElement | null)?.focus())
+            }} />
+        )
+      })()}
     </div>
   )
 }
