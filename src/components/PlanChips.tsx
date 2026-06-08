@@ -30,14 +30,14 @@ export function PlanChips({ segments, lapMeters, onChipTap }: {
         )
         return (
           <div className="plan-seg" key={seg.id}>
-            {multi && <span className="plan-paren">(</span>}
+            {multi && <span className="plan-paren" aria-hidden="true">(</span>}
             {groups.map((g, gi) => (
               <Fragment key={g[0].itemId ?? gi}>
-                {gi > 0 && <span className="plan-paren">+</span>}
+                {gi > 0 && <span className="plan-paren" aria-hidden="true">+</span>}
                 {g.map(btn)}
               </Fragment>
             ))}
-            {multi && <span className="plan-paren">)</span>}
+            {multi && <span className="plan-paren" aria-hidden="true">)</span>}
             {btn(repsChip)}
           </div>
         )
