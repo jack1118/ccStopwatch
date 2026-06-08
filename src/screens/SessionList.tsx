@@ -39,6 +39,7 @@ export function SessionList({ enterAnim = '', onNew, onOpen, onEdit, onHelp }: P
           <div className={`item${m.status === 'active' ? ' active' : ''}`} key={m.id}>
             <div style={{ flex: 1 }} onClick={() => onOpen(m.id)}>
               <div className="item-name">{m.name}</div>
+              {m.summary && <div className="sub" style={{ opacity: .8 }}>{m.summary}</div>}
               <div className="sub">
                 <span className={`status-chip${m.status === 'active' ? ' live' : ''}`}>
                   {m.status === 'active' ? '● 進行中' : '✓ 已完成'}

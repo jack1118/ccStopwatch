@@ -1,4 +1,5 @@
 import type { Session, SessionMeta } from '../types'
+import { planSummary } from '../timer/planText'
 
 const INDEX_KEY = 'ccsw:index'
 const sessionKey = (id: string) => `ccsw:session:${id}`
@@ -31,6 +32,7 @@ export function saveSession(session: Session): void {
     createdAt: session.createdAt,
     status: session.status,
     groupCount: session.groups.length,
+    summary: planSummary(session.plan.segments, session.plan.lapMeters),
   }
   const index = listSessions().filter((m) => m.id !== session.id)
   index.push(meta)

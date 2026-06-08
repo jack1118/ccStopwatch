@@ -40,4 +40,15 @@ describe('storage', () => {
   it('載入不存在回 null', () => {
     expect(loadSession('nope')).toBeNull()
   })
+
+  it('saveSession 寫入課表摘要 summary 供清單顯示', () => {
+    localStorage.clear()
+    const session: Session = {
+      id: 'x1', name: '週二間歇', createdAt: 1, status: 'active',
+      plan: { lapMeters: 400, segments: [{ id: 's1', reps: 8, items: [{ id: 'i1', meters: 400, restSec: 90, targetSec: 84, gapSec: 0 }] }] },
+      groups: [],
+    }
+    saveSession(session)
+    expect(listSessions()[0].summary).toBe('400m×8 p84s r90s')
+  })
 })
