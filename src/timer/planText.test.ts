@@ -1,19 +1,19 @@
 import { it, expect } from 'vitest'
 import { parsePlan, planSummary } from './planText'
 
-it('解析單一段落 300m×10 p72s r90s（p=完成該距離的目標秒）', () => {
+it('解析單一段落 300m×10 p72s r90s（p=每圈秒，依場地換算）', () => {
   const segs = parsePlan('300m×10 p72s r90s', 400)!
   expect(segs).toHaveLength(1)
   expect(segs[0].reps).toBe(10)
   expect(segs[0].items![0].meters).toBe(300)
-  expect(segs[0].items![0].targetSec).toBe(72)   // 直接＝72，不換算
+  expect(segs[0].items![0].targetSec).toBe(54)   // 72×300/400（每圈72→300m=54）
   expect(segs[0].items![0].restSec).toBe(90)
 })
 
-it('解析小寫 x 與逗號：1200mx10 p288s, r90s', () => {
-  const segs = parsePlan('1200mx10 p288s, r90s', 400)!
+it('解析小寫 x 與逗號：1200mx10 p96s, r90s（每圈96→1200m=288）', () => {
+  const segs = parsePlan('1200mx10 p96s, r90s', 400)!
   expect(segs[0].items![0].meters).toBe(1200)
-  expect(segs[0].items![0].targetSec).toBe(288)
+  expect(segs[0].items![0].targetSec).toBe(288)   // 96×1200/400
   expect(segs[0].items![0].restSec).toBe(90)
 })
 
@@ -27,9 +27,9 @@ it('解析組合 (400m p84s r90s+200m r60s)×8', () => {
 
 it('p/r 後面的 s 可省略：p72 與 p72s、r90 與 r90s 都可', () => {
   const a = parsePlan('300m×10 p72 r90', 400)!
-  expect(a[0].items![0]).toMatchObject({ targetSec: 72, restSec: 90 })
+  expect(a[0].items![0]).toMatchObject({ targetSec: 54, restSec: 90 })   // 72×300/400
   const b = parsePlan('(400m p84 r90+200m r60)×8', 400)!
-  expect(b[0].items![0]).toMatchObject({ targetSec: 84, restSec: 90 })
+  expect(b[0].items![0]).toMatchObject({ targetSec: 84, restSec: 90 })   // 400m=一圈，84不變
 })
 
 it('組合可省略 m：(400+200)×8 也能解析', () => {
@@ -38,7 +38,7 @@ it('組合可省略 m：(400+200)×8 也能解析', () => {
 })
 
 it('解析多段落', () => {
-  const segs = parsePlan('1200m×10 p288s r90s 600m×5 r120s', 400)!
+  const segs = parsePlan('1200m×10 p96s r90s 600m×5 r120s', 400)!
   expect(segs).toHaveLength(2)
   expect(segs[1].reps).toBe(5)
   expect(segs[1].items![0].meters).toBe(600)
@@ -47,7 +47,7 @@ it('解析多段落', () => {
 it('會去掉開頭日期再解析', () => {
   const segs = parsePlan('6/3（三） 300m×10 p72s r90s', 400)
   expect(segs).not.toBeNull()
-  expect(segs![0].items![0].targetSec).toBe(72)
+  expect(segs![0].items![0].targetSec).toBe(54)   // 72×300/400
 })
 
 it('純文字名稱解析失敗回 null', () => {
@@ -87,6 +87,12 @@ it('解析 @p 等同 p：400m@p118 → targetSec=118、無 pace', () => {
   expect(segs[0].items![0].paceSecPerKm).toBeUndefined()
 })
 
+it('@p 等同 p 的每圈語意，多圈距離也換算：1200m@p118（400m場地）→ 354', () => {
+  const segs = parsePlan('1200m@p118', 400)!
+  expect(segs[0].items![0].targetSec).toBe(354)   // 118×1200/400（@p 走 p 的每圈邏輯）
+  expect(segs[0].items![0].paceSecPerKm).toBeUndefined()
+})
+
 it('組合內含 k 與 @：(1k@4:00+400m)×5', () => {
   const segs = parsePlan('(1k@4:00+400m)×5', 400)!
   expect(segs[0].reps).toBe(5)
@@ -116,4 +122,60 @@ it('round-trip：@p 正規化為 p — 400m@p118 → 400m×1 p118s', () => {
 it('round-trip：組合 (1k @4:00+400m)×5', () => {
   const text = '(1k @4:00+400m)×5'
   expect(planSummary(parsePlan(text, 400)!)).toBe(text)
+})
+
+it('p<300 ＝每圈秒：1200m p104（400m場地）→ targetSec=312', () => {
+  const segs = parsePlan('1200m×10 p104 r90', 400)!
+  expect(segs[0].items![0].targetSec).toBe(312)   // 104×1200/400
+  expect(segs[0].items![0].paceSecPerKm).toBeUndefined()
+})
+
+it('p 每圈在單圈距離不變：400m p104 → 104', () => {
+  const segs = parsePlan('400m×10 p104', 400)!
+  expect(segs[0].items![0].targetSec).toBe(104)
+})
+
+it('p 每圈按比例：200m p104（400m場地）→ 52', () => {
+  const segs = parsePlan('200m×10 p104', 400)!
+  expect(segs[0].items![0].targetSec).toBe(52)     // 104×200/400
+})
+
+it('p≥300 ＝配速 mm:ss：p500 → 5:00/km', () => {
+  const segs = parsePlan('1k×3 p500', 400)!
+  expect(segs[0].items![0].paceSecPerKm).toBe(300) // 5:00
+  expect(segs[0].items![0].targetSec).toBe(300)    // 300×1000/1000
+})
+
+it("p 含撇號＝配速（與大小無關）：p4'50 → 4:50/km", () => {
+  const segs = parsePlan("1k×3 p4'50", 400)!
+  expect(segs[0].items![0].paceSecPerKm).toBe(290) // 4:50
+})
+
+it('p 含冒號＝配速：p4:50 → 4:50/km', () => {
+  const segs = parsePlan('1k×3 p4:50', 400)!
+  expect(segs[0].items![0].paceSecPerKm).toBe(290)
+})
+
+it('邊界 p300 ＝配速 3:00/km（≥300 歸配速）', () => {
+  const segs = parsePlan('1k×3 p300', 400)!
+  expect(segs[0].items![0].paceSecPerKm).toBe(180) // 3:00
+})
+
+it('p230 落在模糊帶但 <300 → 仍判每圈：400m p230 → 230', () => {
+  const segs = parsePlan('400m×3 p230', 400)!
+  expect(segs[0].items![0].targetSec).toBe(230)
+  expect(segs[0].items![0].paceSecPerKm).toBeUndefined()
+})
+
+it('配速秒位非法（≥60）→ 回 null：p470（4:70）', () => {
+  expect(parsePlan('1k×3 p470', 400)).toBeNull()
+})
+
+it('round-trip：每圈 p 在多圈距離 1200m×10 p96s r90s', () => {
+  const text = '1200m×10 p96s r90s'
+  expect(planSummary(parsePlan(text, 400)!)).toBe(text)   // 96→288→96
+})
+
+it('p 配速顯示正規化為 @m:ss：p500 → 1k×3 @5:00', () => {
+  expect(planSummary(parsePlan('1k×3 p500', 400)!)).toBe('1k×3 @5:00')
 })

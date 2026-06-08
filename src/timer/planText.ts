@@ -14,32 +14,33 @@ function distLabel(it: Item, compact: boolean): string {
   return `${it.meters}${compact ? '' : 'm'}`
 }
 
-// 每段標註：@m:ss=每公里配速（優先）/ p=完成該距離目標秒、r=間休秒（皆可省）。compact=去單位
-function itemTokens(it: Item, compact: boolean): string {
+// 每段標註：@m:ss=每公里配速（優先）/ p=每圈秒、r=間休秒（皆可省）。compact=去單位
+function itemTokens(it: Item, lapMeters: number, compact: boolean): string {
   const u = compact ? '' : 's'
-  const tgt =
-    it.paceSecPerKm && it.paceSecPerKm > 0
-      ? ` @${fmtMmss(it.paceSecPerKm)}`
-      : it.targetSec && it.targetSec > 0
-        ? ` p${it.targetSec}${u}`
-        : ''
+  let tgt = ''
+  if (it.paceSecPerKm && it.paceSecPerKm > 0) {
+    tgt = ` @${fmtMmss(it.paceSecPerKm)}`
+  } else if (it.targetSec && it.targetSec > 0) {
+    const perLap = Math.round((it.targetSec * lapMeters) / it.meters)   // 整段秒 → 每圈秒
+    tgt = ` p${perLap}${u}`
+  }
   const r = it.restSec > 0 ? ` r${it.restSec}${u}` : ''
   return tgt + r
 }
 
 /** 完整：600m×10 p96s r90s；簡寫(compact)：600×10 p96 r90；公里/配速：3k×1 @4:10 r120s */
-export function segLabel(seg: Segment, compact = false): string {
+export function segLabel(seg: Segment, lapMeters = 400, compact = false): string {
   const items = itemsOf(seg)
   return items.length > 1
-    ? `(${items.map((i) => `${distLabel(i, compact)}${itemTokens(i, compact)}`).join('+')})×${seg.reps}`
-    : `${distLabel(items[0], compact)}×${seg.reps}${itemTokens(items[0], compact)}`
+    ? `(${items.map((i) => `${distLabel(i, compact)}${itemTokens(i, lapMeters, compact)}`).join('+')})×${seg.reps}`
+    : `${distLabel(items[0], compact)}×${seg.reps}${itemTokens(items[0], lapMeters, compact)}`
 }
 
-export function planSummary(segments: Segment[], compact = false): string {
-  return segments.map((s) => segLabel(s, compact)).join(' ')
+export function planSummary(segments: Segment[], lapMeters = 400, compact = false): string {
+  return segments.map((s) => segLabel(s, lapMeters, compact)).join(' ')
 }
 
-function parseItem(raw: string, gapSec: number): Item | null {
+function parseItem(raw: string, gapSec: number, lapMeters: number): Item | null {
   // 距離：先試 Nk(可小數)，再試 Nm(整數，m 可省)
   const dk = raw.match(/^\s*(\d+(?:\.\d+)?)\s*k/i)
   const dm = raw.match(/^\s*(\d+)\s*m?/i)
@@ -53,10 +54,10 @@ function parseItem(raw: string, gapSec: number): Item | null {
   }
   if (!meters) return null
 
-  const pace = raw.match(/@\s*(\d+):(\d{2})/)   // @每公里配速
-  const p = raw.match(/p\s*(\d+)\s*s?/i)        // 該距離目標秒（含 @p118）
+  const pace = raw.match(/@\s*(\d+):(\d{2})/)                                  // @每公里配速
+  const p = raw.match(/p\s*(\d+)(?:\s*['’:]\s*(\d{1,2}))?\s*s?/i)              // p：每圈秒 / 配速（含 @p118）
   const r = raw.match(/r\s*(\d+)\s*s?/i)
-  if (pace && p) return null                    // 配速與 p 衝突 → 無效
+  if (pace && p) return null                                                  // 配速與 p 衝突 → 無效
 
   let targetSec = 0
   let paceSecPerKm: number | undefined
@@ -64,7 +65,21 @@ function parseItem(raw: string, gapSec: number): Item | null {
     paceSecPerKm = Number(pace[1]) * 60 + Number(pace[2])
     targetSec = Math.round((paceSecPerKm * meters) / 1000)
   } else if (p) {
-    targetSec = Number(p[1])
+    const n = Number(p[1])
+    if (p[2] != null) {                                                       // p4'50 / p4:50 → 配速
+      const sec = Number(p[2])
+      if (sec >= 60) return null
+      paceSecPerKm = n * 60 + sec
+      targetSec = Math.round((paceSecPerKm * meters) / 1000)
+    } else if (n >= 300) {                                                    // 純數字 ≥300 → 配速 mmss
+      const min = Math.floor(n / 100)
+      const sec = n % 100
+      if (sec >= 60) return null
+      paceSecPerKm = min * 60 + sec
+      targetSec = Math.round((paceSecPerKm * meters) / 1000)
+    } else {                                                                  // <300 → 每圈秒
+      targetSec = Math.round((n * meters) / lapMeters)
+    }
   }
 
   return {
@@ -91,7 +106,7 @@ export function parsePlan(text: string, lapMeters: number): Segment[] | null {
   if (!s) return null
   s = s.replace(/[xX*✕]/g, '×').replace(/[,，]/g, ' ')
   const gapSec = Math.max(1, Math.round(lapMeters / 100))
-  const MOD = String.raw`[pr]\s*\d+\s*s?|@\s*(?:p\s*\d+\s*s?|\d+:\d{2})`
+  const MOD = String.raw`p\s*\d+(?:\s*['’:]\s*\d{1,2})?\s*s?|r\s*\d+\s*s?|@\s*(?:p\s*\d+\s*s?|\d+:\d{2})`
   const segRe = new RegExp(
     String.raw`\(([^)]*)\)\s*×\s*(\d+)|(\d+(?:\.\d+)?)\s*(k|m)\s*(@\s*(?:p\s*\d+\s*s?|\d+:\d{2}))?(?:\s*×\s*(\d+))?((?:\s*(?:${MOD}))*)`,
     'gi',
@@ -103,12 +118,12 @@ export function parsePlan(text: string, lapMeters: number): Segment[] | null {
     if (s.slice(last, mm.index).trim()) return null     // 段落間有無法解析的殘渣
     last = segRe.lastIndex
     if (mm[1] != null) {
-      const items = mm[1].split('+').map((part) => parseItem(part, gapSec))
+      const items = mm[1].split('+').map((part) => parseItem(part, gapSec, lapMeters))
       if (items.some((it) => !it)) return null
       segs.push({ id: uid(), reps: Number(mm[2]), items: items as Item[] })
     } else {
       const raw = `${mm[3]}${mm[4]} ${mm[5] ?? ''} ${mm[7] ?? ''}`
-      const it = parseItem(raw, gapSec)
+      const it = parseItem(raw, gapSec, lapMeters)
       if (!it) return null
       segs.push({ id: uid(), reps: Number(mm[6] ?? 1), items: [it] })
     }

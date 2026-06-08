@@ -79,7 +79,7 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
     <div className={`app${enterAnim ? ' enter-' + enterAnim : ''}`} {...swipe}>
       <div className="topbar">
         <button className="btn" onClick={onExit}>←</button>
-        <h1 className="plan-title">{planSummary(state.session.plan.segments, true) || state.session.name}</h1>
+        <h1 className="plan-title">{planSummary(state.session.plan.segments, state.session.plan.lapMeters, true) || state.session.name}</h1>
         <button className="btn" aria-label="點擊音效開關"
           onClick={() => { const v = !soundOn; setTapSound(v); setSoundOn(v) }}>
           {soundOn ? '🔊' : '🔇'}

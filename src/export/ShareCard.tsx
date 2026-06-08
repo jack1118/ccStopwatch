@@ -33,7 +33,7 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
     setPhotoUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(f) })
   }
 
-  const planFull = session.plan.segments.length ? planSummary(session.plan.segments) : ''
+  const planFull = session.plan.segments.length ? planSummary(session.plan.segments, session.plan.lapMeters) : ''
   // 依「目前看的圖」組 chart / stat / 漸層色
   let chart: ReactNode
   let stat: ReactNode
