@@ -46,9 +46,9 @@ export function Help({ onBack }: Props) {
             <li><b>目標</b>：可填「距離目標」或「每圈目標」（兩者連動）；「<b>每組每圈＋</b>」讓各組每圈依序加秒（黃→黑→紫…變慢；改場地會重算）。</li>
             <li>各組可<b>展開</b>逐項自訂組數／目標／休息。課表可留空＝純碼表。</li>
             <li><b>用課程名稱直接打課表</b>：在名稱欄輸入後點別處（失焦）即自動套用。<br />
-              格式：<code>距離×趟數 p完成秒 r間休秒</code>。距離可用 <code>m</code> 或 <code>k</code>（公里，可小數，如 <code>3k</code>、<code>1.6k</code>）。
-              如 <code>1200m×10 p288s r90s</code>、組合 <code>(400m p84s r90s+200m r60s)×8</code>。
-              也可用 <code>@每公里配速</code>，如 <code>3k@4:10</code>（每公里 4:10 跑 3k）；<code>@p</code> 等同 p，如 <code>400m@p118</code>。
+              格式：<code>距離×趟數 p每圈秒 r間休秒</code>。距離可用 <code>m</code> 或 <code>k</code>（公里，可小數，如 <code>3k</code>、<code>1.6k</code>）。
+              如 <code>1200m×10 p96s r90s</code>（每圈 96 秒）、組合 <code>(400m p84s r90s+200m r60s)×8</code>。
+              <code>p</code> 小於 300＝每圈秒；<code>p</code> 大於等於 300 或含 <code>'</code>／<code>:</code>＝每公里配速，如 <code>p500</code>、<code>p4'50</code>（5:00、4:50/km）。也可用 <code>@每公里配速</code>，如 <code>3k@4:10</code>；<code>@p</code> 等同 p。
               （p、r 可省，s 可省，m 在組合內可省）</li>
           </ul>
         </section>
