@@ -98,7 +98,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
   const [lapMeters, setLapMeters] = useState(initial?.plan.lapMeters ?? 400)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [targetMode, setTargetMode] = useState<Record<string, 'dist' | 'lap'>>({})
-  const modeOf = (id: string) => targetMode[id] ?? 'dist'
+  const modeOf = (id: string) => targetMode[id] ?? 'lap'
   const setMode = (id: string, m: 'dist' | 'lap') => setTargetMode((p) => ({ ...p, [id]: m }))
 
   const summaryText = planSummary(segments, lapMeters)
@@ -369,9 +369,10 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
                           <div key={it.id} className="item-box">
                             <div className="rl" style={{ width: 'auto', marginBottom: 4 }}>距離{multi ? ` ${ii + 1}` : ''} · {it.meters}m</div>
                             <div className="field-row">
-                              <span className="rl">距離目標</span>
-                              <Stepper value={targetFor(c, it)} step={1} min={0} onChange={(v) => setItemTarget(c, it.id, v)} />
-                              <span className="ru">秒</span>
+                              <span className="rl">每圈目標</span>
+                              <Stepper value={Math.round(targetFor(c, it) * lapMeters / it.meters)} step={1} min={0}
+                                onChange={(v) => setItemTarget(c, it.id, Math.round(v * it.meters / lapMeters))} />
+                              <span className="ru">秒/圈</span>
                               {targetFor(c, it) > 0 && <span className="pace-pill">{fmtPace(targetFor(c, it), it.meters)}</span>}
                             </div>
                             <div className="field-row">
