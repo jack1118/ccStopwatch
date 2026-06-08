@@ -1,5 +1,5 @@
 import { it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import { SessionSetup } from './SessionSetup'
 import { Results } from './Results'
 import { Help } from './Help'
@@ -72,6 +72,13 @@ it('SessionSetup 名稱欄打整串課表 → 解析後欄位重置回日期', (
   fireEvent.blur(nameInput)
   expect(screen.getByText('×6')).toBeInTheDocument()
   expect(nameInput.value).not.toMatch(/×/)
+})
+
+it('SessionSetup 由 chip 開 sheet 改趟數 → chip 即時更新（共用同一份 state）', () => {
+  render(<SessionSetup onStart={vi.fn()} onCancel={vi.fn()} />)
+  fireEvent.click(screen.getByText('×10'))
+  fireEvent.click(within(screen.getByRole('dialog')).getByText('＋'))
+  expect(screen.getByText('×11')).toBeInTheDocument()
 })
 
 it('Results 點分享卡開啟編輯器', () => {

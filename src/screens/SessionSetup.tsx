@@ -371,9 +371,10 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
       </div>
 
       {editChip && (() => {
-        const seg = segments.find((s) => s.id === editChip.segId)!
-        const items = itemsOf(seg)
-        const item = editChip.itemId ? items.find((i) => i.id === editChip.itemId)! : items[0]
+        const seg = segments.find((s) => s.id === editChip.segId)   // 邊界：sheet 開著時若該段/項被移除 → 收掉 sheet，不崩潰
+        const items = seg ? itemsOf(seg) : []
+        const item = editChip.itemId ? items.find((i) => i.id === editChip.itemId) : items[0]
+        if (!seg || !item) return null
         const si = segments.findIndex((s) => s.id === seg.id)
         const ii = items.findIndex((i) => i.id === item.id)
         const multi = items.length > 1
