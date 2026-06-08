@@ -369,3 +369,12 @@ table.splits tbody tr:active td:first-child { background: #28324a; }
 .area-stat span { font-size: 11px; color: #9a9aa0; margin-left: 6px; }
 .bottombar { display: flex; gap: 8px; padding: 10px 12px; }
 .bottombar .btn { flex: 1; }
+
+/* ── 底部編輯彈窗 ── */
+.sheet-backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.6);
+  display: flex; align-items: flex-end; justify-content: center; }
+.sheet { width: 100%; max-width: 480px; background: #15151a; border-radius: 18px 18px 0 0;
+  padding: 18px 18px calc(18px + env(safe-area-inset-bottom)); box-sizing: border-box; }
+.sheet h3 { margin: 0 0 14px; font-size: 16px; }
+.sheet .field-row { margin: 6px 0; }
+.sheet .sheet-done { margin-top: 16px; width: 100%; }
