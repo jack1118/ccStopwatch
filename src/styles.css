@@ -378,3 +378,11 @@ table.splits tbody tr:active td:first-child { background: #28324a; }
 .sheet h3 { margin: 0 0 14px; font-size: 16px; }
 .sheet .field-row { margin: 6px 0; }
 .sheet .sheet-done { margin-top: 16px; width: 100%; }
+
+/* ── 課表可點 chip 列 ── */
+.plan-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0 10px; }
+.plan-seg { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.plan-chip { min-height: 44px; padding: 8px 13px; font-size: 15px; font-weight: 700;
+  background: #26262e; color: #fff; border: 1px solid #3a3a42; border-radius: 14px; }
+.plan-chip.empty { font-weight: 500; opacity: .6; border-style: dashed; }
+.plan-paren { opacity: .6; font-size: 15px; }
