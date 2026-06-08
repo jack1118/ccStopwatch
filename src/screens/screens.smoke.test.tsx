@@ -31,7 +31,7 @@ it('Results 正常渲染（含每圈距離、圖表、明細）', () => {
     }],
   }
   render(<Results session={session} onExit={vi.fn()} onUpdate={vi.fn()} />)
-  expect(screen.getByText(/分段成績/)).toBeInTheDocument()
+  expect(screen.getByText('測試')).toBeInTheDocument()   // 標題＝課程名稱（已移除「分段成績—」前綴）
   expect(screen.getByRole('img', { name: '各組分段折線圖' })).toBeInTheDocument()
 })
 

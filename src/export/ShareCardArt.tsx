@@ -1,5 +1,5 @@
 import type { ReactNode, Ref } from 'react'
-import { FitText } from './FitText'
+import { FitText } from '../components/FitText'
 
 const W = 270, H = 270   // 1:1 方形（對齊 bg.png 比例）；匯出 pixelRatio 4 → 1080×1080
 

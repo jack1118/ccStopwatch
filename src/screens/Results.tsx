@@ -10,6 +10,7 @@ import { downloadPng, downloadText } from '../export/screenshot'
 import { fmtClockStr } from '../format'
 import { buildLapPlan } from '../timer/timer'
 import { useSwipe } from '../hooks/useSwipe'
+import { FitText } from '../components/FitText'
 
 interface Props {
   session: Session
@@ -64,7 +65,9 @@ export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
     <div className={`app${enterAnim ? ' enter-' + enterAnim : ''}`} {...swipe}>
       <div className="topbar">
         <button className="btn" onClick={onExit}>←</button>
-        <h1>分段成績 — {session.name}</h1>
+        <h1 style={{ whiteSpace: 'normal', overflow: 'visible' }}>
+          <FitText text={session.name} max={18} min={13} maxHeight={48} style={{ textAlign: 'left', fontWeight: 700 }} />
+        </h1>
       </div>
 
       <div className="panel" ref={chartRef}>
