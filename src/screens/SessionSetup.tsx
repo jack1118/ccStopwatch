@@ -3,7 +3,7 @@ import type { Group, Item, NRCColor, Segment, Session } from '../types'
 import { Stepper } from '../components/Stepper'
 import { NRC_ORDER, NRC_NUM, NRC_HEX, NRC_TEXT, NRC_LABEL } from '../constants'
 import { itemsOf, lapsOf } from '../timer/timer'
-import { segLabel, parsePlan } from '../timer/planText'
+import { segLabel, planSummary, parsePlan } from '../timer/planText'
 import type { PlanChip } from '../timer/planText'
 import { PlanChips } from '../components/PlanChips'
 import { EditSheet } from '../components/EditSheet'
@@ -99,17 +99,18 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
   // 向右滑 → 跳確認後返回清單（表單未存檔，確認避免誤觸丟失）
   const swipe = useSwipe({ onRight: () => { if (window.confirm('放棄此課程設定並返回？')) onCancel() } })
 
+  const summaryText = planSummary(segments, lapMeters)
   useEffect(() => {
     if (nameTouched) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 課名未手動改過時，預設只放日期（課表交給 chips）
-    setName(today)
-  }, [nameTouched, today])
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 課名未手動改過時，跟著「日期 課表摘要」自動帶入並隨 chips 連動
+    setName(`${today}${summaryText ? ` ${summaryText}` : ''}`)
+  }, [summaryText, nameTouched, today])
 
-  // 名稱欄失焦：打整串課表格式 → 解析成 segments（chips 反映）後欄位重置回日期；否則當自訂標籤保留
+  // 名稱欄失焦：打整串課表格式 → 解析成 segments（chips 連動），並讓名稱回到自動連動（重新帶入新摘要）；非課表字串則當自訂標籤保留
   const parseNameToPlan = (text: string) => {
     if (editingActive) return
     const segs = parsePlan(text, lapMeters)
-    if (segs) { setSegments(segs); setName(today); setNameTouched(false) }
+    if (segs) { setSegments(segs); setNameTouched(false) }
   }
 
   // 段落（組合）操作
@@ -191,9 +192,9 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
       </div>
 
       <div className="sec-block">
-        <div className="label">課程名稱（標籤；預設今天日期，可自訂）</div>
+        <div className="label">課程名稱（自動帶入「日期 課表摘要」並隨下方連動；可改成自訂標籤）</div>
         <input className="field wide" value={name}
-          placeholder="可直接打整串課表（如 400m×10 p96s r90s）會自動套用到下方"
+          placeholder="可直接打整串課表（如 400m×10 p96s r90s）連動下方設定"
           onChange={(e) => { setName(e.target.value); setNameTouched(true) }}
           onBlur={(e) => parseNameToPlan(e.target.value)} />
       </div>

@@ -68,5 +68,4 @@ export interface SessionMeta {
   createdAt: number
   status: 'active' | 'done'
   groupCount: number
-  summary?: string
 }

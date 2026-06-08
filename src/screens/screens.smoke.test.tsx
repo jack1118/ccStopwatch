@@ -52,10 +52,10 @@ it('Results 詳細頁預設時間圖,可切換到趟次圖', () => {
   expect(screen.getByRole('img', { name: /各趟分段/ })).toBeInTheDocument()
 })
 
-it('SessionSetup 名稱欄只帶日期（不含課表摘要）', () => {
+it('SessionSetup 名稱欄自動帶入 日期+課表摘要（隨 chips 連動）', () => {
   render(<SessionSetup onStart={vi.fn()} onCancel={vi.fn()} />)
   const nameInput = screen.getByPlaceholderText(/可直接打整串課表/) as HTMLInputElement
-  expect(nameInput.value).not.toMatch(/×/)
+  expect(nameInput.value).toMatch(/×10/)   // 預設 400m×10 摘要帶入名稱
 })
 
 it('SessionSetup 點趟數 chip 開啟編輯彈窗', () => {
@@ -65,13 +65,13 @@ it('SessionSetup 點趟數 chip 開啟編輯彈窗', () => {
   expect(screen.getByRole('dialog')).toBeInTheDocument()
 })
 
-it('SessionSetup 名稱欄打整串課表 → 解析後欄位重置回日期', () => {
+it('SessionSetup 名稱欄打整串課表 → chips 連動且名稱重新帶入新摘要', () => {
   render(<SessionSetup onStart={vi.fn()} onCancel={vi.fn()} />)
   const nameInput = screen.getByPlaceholderText(/可直接打整串課表/) as HTMLInputElement
   fireEvent.change(nameInput, { target: { value: '300m×6 p72s r60s' } })
   fireEvent.blur(nameInput)
-  expect(screen.getByText('×6')).toBeInTheDocument()
-  expect(nameInput.value).not.toMatch(/×/)
+  expect(screen.getByText('×6')).toBeInTheDocument()   // chips 連動
+  expect(nameInput.value).toMatch(/×6/)                // 名稱重新帶入新摘要
 })
 
 it('SessionSetup 由 chip 開 sheet 改趟數 → chip 即時更新（共用同一份 state）', () => {
