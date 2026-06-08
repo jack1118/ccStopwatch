@@ -87,6 +87,12 @@ it('解析 @p 等同 p：400m@p118 → targetSec=118、無 pace', () => {
   expect(segs[0].items![0].paceSecPerKm).toBeUndefined()
 })
 
+it('@p 等同 p 的每圈語意，多圈距離也換算：1200m@p118（400m場地）→ 354', () => {
+  const segs = parsePlan('1200m@p118', 400)!
+  expect(segs[0].items![0].targetSec).toBe(354)   // 118×1200/400（@p 走 p 的每圈邏輯）
+  expect(segs[0].items![0].paceSecPerKm).toBeUndefined()
+})
+
 it('組合內含 k 與 @：(1k@4:00+400m)×5', () => {
   const segs = parsePlan('(1k@4:00+400m)×5', 400)!
   expect(segs[0].reps).toBe(5)
