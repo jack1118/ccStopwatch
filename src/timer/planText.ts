@@ -131,3 +131,34 @@ export function parsePlan(text: string, lapMeters: number): Segment[] | null {
   if (!segs.length || s.slice(last).trim()) return null   // 沒解析到 / 尾端有殘渣
   return segs
 }
+
+export interface PlanChip {
+  key: string
+  segId: string
+  itemId: string | null   // reps chip 為 null（綁 segment）
+  field: 'distance' | 'reps' | 'target' | 'rest'
+  label: string
+  empty: boolean          // true = 未設定的目標/休息（淡色 ＋ chip）
+}
+
+/** 由一個 segment 算出 chip（顯示順序：各 item 的 距離/目標/休息，最後 ×趟數） */
+export function segChips(seg: Segment, lapMeters: number): PlanChip[] {
+  const items = itemsOf(seg)
+  const chips: PlanChip[] = []
+  for (const it of items) {
+    chips.push({ key: `${it.id}:distance`, segId: seg.id, itemId: it.id, field: 'distance', label: distLabel(it, false), empty: false })
+
+    const hasPace = !!it.paceSecPerKm && it.paceSecPerKm > 0
+    const tgt = it.targetSec ?? 0
+    const tgtLabel = hasPace
+      ? `@${fmtMmss(it.paceSecPerKm as number)}`
+      : tgt > 0
+        ? `p${Math.round((tgt * lapMeters) / it.meters)}s`
+        : '＋目標'
+    chips.push({ key: `${it.id}:target`, segId: seg.id, itemId: it.id, field: 'target', label: tgtLabel, empty: !hasPace && tgt <= 0 })
+
+    chips.push({ key: `${it.id}:rest`, segId: seg.id, itemId: it.id, field: 'rest', label: it.restSec > 0 ? `r${it.restSec}s` : '＋休息', empty: it.restSec <= 0 })
+  }
+  chips.push({ key: `${seg.id}:reps`, segId: seg.id, itemId: null, field: 'reps', label: `×${seg.reps}`, empty: false })
+  return chips
+}

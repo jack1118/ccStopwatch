@@ -1,5 +1,5 @@
 import { it, expect } from 'vitest'
-import { parsePlan, planSummary } from './planText'
+import { parsePlan, planSummary, segChips } from './planText'
 
 it('解析單一段落 300m×10 p72s r90s（p=每圈秒，依場地換算）', () => {
   const segs = parsePlan('300m×10 p72s r90s', 400)!
@@ -178,4 +178,51 @@ it('round-trip：每圈 p 在多圈距離 1200m×10 p96s r90s', () => {
 
 it('p 配速顯示正規化為 @m:ss：p500 → 1k×3 @5:00', () => {
   expect(planSummary(parsePlan('1k×3 p500', 400)!)).toBe('1k×3 @5:00')
+})
+
+it('segChips 單一項目：距離/目標/間休/趟數 四個 chip', () => {
+  const seg = parsePlan('400m×10 p96s r90s', 400)![0]
+  const chips = segChips(seg, 400)
+  expect(chips.map((c) => c.label)).toEqual(['400m', 'p96s', 'r90s', '×10'])
+  expect(chips.map((c) => c.field)).toEqual(['distance', 'target', 'rest', 'reps'])
+  expect(chips.find((c) => c.field === 'reps')!.itemId).toBeNull()
+  expect(chips.every((c) => !c.empty)).toBe(true)
+})
+
+it('segChips 未設定目標/間休 → 淡色 ＋ chip、empty=true', () => {
+  const seg = parsePlan('400m×10', 400)![0]
+  const chips = segChips(seg, 400)
+  const tgt = chips.find((c) => c.field === 'target')!
+  const rest = chips.find((c) => c.field === 'rest')!
+  expect(tgt).toMatchObject({ label: '＋目標', empty: true })
+  expect(rest).toMatchObject({ label: '＋休息', empty: true })
+})
+
+it('segChips 配速目標顯示 @m:ss', () => {
+  const seg = parsePlan('1k×3 p500', 400)![0]   // p500 → 5:00/km 配速
+  expect(segChips(seg, 400).find((c) => c.field === 'target')!.label).toBe('@5:00')
+})
+
+it('segChips 每圈換算依場地：1200m p96（400m）→ 每圈 96', () => {
+  const seg = parsePlan('1200m×5 p96s', 400)![0]   // targetSec=288
+  expect(segChips(seg, 400).find((c) => c.field === 'target')!.label).toBe('p96s')
+})
+
+it('segChips 組合：兩個項目各自 chip，趟數放尾端', () => {
+  const seg = parsePlan('(400m p84s r90s+200m r60s)×8', 400)![0]
+  const chips = segChips(seg, 400)
+  expect(chips.map((c) => c.label)).toEqual(['400m', 'p84s', 'r90s', '200m', '＋目標', 'r60s', '×8'])
+  expect(chips[chips.length - 1].field).toBe('reps')
+  expect(new Set(chips.slice(0, 3).map((c) => c.itemId)).size).toBe(1)
+})
+
+it('segChips 組合相同距離 chip key 仍唯一', () => {
+  const seg = parsePlan('(400m+400m)×8', 400)![0]
+  const chips = segChips(seg, 400)
+  expect(new Set(chips.map((c) => c.key)).size).toBe(chips.length)
+})
+
+it('segChips 距離 chip 顯示 k：1.6k', () => {
+  const seg = parsePlan('1.6k×3', 400)![0]
+  expect(segChips(seg, 400).find((c) => c.field === 'distance')!.label).toBe('1.6k')
 })

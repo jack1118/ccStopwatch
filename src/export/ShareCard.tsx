@@ -8,6 +8,7 @@ import { SplitArea } from '../chart/SplitArea'
 import { planSummary } from '../timer/planText'
 import { fmtClockStr } from '../format'
 import { ShareCardArt } from './ShareCardArt'
+import { FitText } from '../components/FitText'
 import { cardGradient } from './cardGradient'
 import { sharePng } from './screenshot'
 import bgPng from '../assets/bg.png'
@@ -52,7 +53,7 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
     colors = [NRC_CHART[detail.color]]
   } else {
     chart = <LineChart groups={session.groups} visible={visible} />
-    stat = <div style={{ fontSize: 16, fontWeight: 800, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{planFull || session.name}</div>
+    stat = <FitText text={planFull || session.name} max={16} min={9} maxHeight={66} style={{ fontWeight: 800 }} />
     const present = session.groups.filter((g) => visible.has(g.id))
     colors = [...new Set((present.length ? present : session.groups).map((g) => NRC_CHART[g.color]))]
   }

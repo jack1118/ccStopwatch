@@ -1,4 +1,5 @@
 import type { ReactNode, Ref } from 'react'
+import { FitText } from '../components/FitText'
 
 const W = 270, H = 270   // 1:1 方形（對齊 bg.png 比例）；匯出 pixelRatio 4 → 1080×1080
 
@@ -29,7 +30,9 @@ export function ShareCardArt({ photoUrl, gradient, stat, chart, planText, captio
       <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', padding: 16, boxSizing: 'border-box' }}>
         <div style={{ textShadow: SHADOW, textAlign: 'center' }}>{stat}</div>
         <div style={{ marginTop: 10, background: 'rgba(0,0,0,.35)', borderRadius: 12, padding: '8px 6px' }}>{chart}</div>
-        {planText && <div style={{ marginTop: 10, fontSize: 15, fontWeight: 800, textAlign: 'center', textShadow: SHADOW }}>{planText}</div>}
+        {planText && <div style={{ marginTop: 10, textShadow: SHADOW }}>
+          <FitText text={planText} max={15} min={9} maxHeight={48} style={{ fontWeight: 800 }} />
+        </div>}
         {caption && <div style={{ marginTop: 16, fontSize: 18, fontWeight: 700, lineHeight: 1.3, textAlign: 'center', textShadow: SHADOW, whiteSpace: 'pre-wrap' }}>{caption}</div>}
       </div>
     </div>

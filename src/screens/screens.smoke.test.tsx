@@ -1,5 +1,5 @@
 import { it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import { SessionSetup } from './SessionSetup'
 import { Results } from './Results'
 import { Help } from './Help'
@@ -31,7 +31,7 @@ it('Results 正常渲染（含每圈距離、圖表、明細）', () => {
     }],
   }
   render(<Results session={session} onExit={vi.fn()} onUpdate={vi.fn()} />)
-  expect(screen.getByText(/分段成績/)).toBeInTheDocument()
+  expect(screen.getByText('測試')).toBeInTheDocument()   // 標題＝課程名稱（已移除「分段成績—」前綴）
   expect(screen.getByRole('img', { name: '各組分段折線圖' })).toBeInTheDocument()
 })
 
@@ -50,6 +50,35 @@ it('Results 詳細頁預設時間圖,可切換到趟次圖', () => {
   expect(screen.getByRole('img', { name: /時間軸/ })).toBeInTheDocument()
   fireEvent.click(screen.getByText('趟次'))
   expect(screen.getByRole('img', { name: /各趟分段/ })).toBeInTheDocument()
+})
+
+it('SessionSetup 名稱欄自動帶入 日期+課表摘要（隨 chips 連動）', () => {
+  render(<SessionSetup onStart={vi.fn()} onCancel={vi.fn()} />)
+  const nameInput = screen.getByPlaceholderText(/可直接打整串課表/) as HTMLInputElement
+  expect(nameInput.value).toMatch(/×10/)   // 預設 400m×10 摘要帶入名稱
+})
+
+it('SessionSetup 點趟數 chip 開啟編輯彈窗', () => {
+  render(<SessionSetup onStart={vi.fn()} onCancel={vi.fn()} />)
+  fireEvent.click(screen.getByText('×10'))
+  expect(screen.getByText('完成')).toBeInTheDocument()
+  expect(screen.getByRole('dialog')).toBeInTheDocument()
+})
+
+it('SessionSetup 名稱欄打整串課表 → chips 連動且名稱重新帶入新摘要', () => {
+  render(<SessionSetup onStart={vi.fn()} onCancel={vi.fn()} />)
+  const nameInput = screen.getByPlaceholderText(/可直接打整串課表/) as HTMLInputElement
+  fireEvent.change(nameInput, { target: { value: '300m×6 p72s r60s' } })
+  fireEvent.blur(nameInput)
+  expect(screen.getByText('×6')).toBeInTheDocument()   // chips 連動
+  expect(nameInput.value).toMatch(/×6/)                // 名稱重新帶入新摘要
+})
+
+it('SessionSetup 由 chip 開 sheet 改趟數 → chip 即時更新（共用同一份 state）', () => {
+  render(<SessionSetup onStart={vi.fn()} onCancel={vi.fn()} />)
+  fireEvent.click(screen.getByText('×10'))
+  fireEvent.click(within(screen.getByRole('dialog')).getByText('＋'))
+  expect(screen.getByText('×11')).toBeInTheDocument()
 })
 
 it('Results 點分享卡開啟編輯器', () => {
