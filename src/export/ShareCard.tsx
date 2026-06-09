@@ -23,10 +23,28 @@ interface Props {
 
 export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+  const [bgData, setBgData] = useState<string | null>(null)
   const [caption, setCaption] = useState('Just do it')
   const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl) }, [photoUrl])
+
+  // 預設底圖先轉成 data URL：html-to-image 匯出時無法 fetch 外部 URL 的圖（SVG foreignObject 受限），
+  // 必須是 data: 才會被嵌進去，否則預設底圖在下載/分享的圖裡會變空白。
+  useEffect(() => {
+    let alive = true
+    fetch(bgPng)
+      .then((r) => r.blob())
+      .then((b) => new Promise<string>((res, rej) => {
+        const fr = new FileReader()
+        fr.onload = () => res(fr.result as string)
+        fr.onerror = rej
+        fr.readAsDataURL(b)
+      }))
+      .then((d) => { if (alive) setBgData(d) })
+      .catch(() => { /* 失敗則退回 bgPng URL（顯示正常，匯出可能空白） */ })
+    return () => { alive = false }
+  }, [])
 
   const onPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
@@ -60,8 +78,8 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
   const gradient = cardGradient(colors)
   // 總覽卡頂部已放課表(無日期)，下方不再重複；單組卡下方放課表摘要
   const planText = detail ? planFull : ''
-  // 無上傳照片時一律用內建底圖 bg.png（總覽與單組相同）
-  const bg = photoUrl ?? bgPng
+  // 無上傳照片時一律用內建底圖 bg.png（總覽與單組相同）；優先用已轉好的 data URL 以確保匯出能嵌入
+  const bg = photoUrl ?? bgData ?? bgPng
 
   return (
     <div style={{
