@@ -21,13 +21,34 @@ interface Props {
   onClose: () => void
 }
 
+type ShareState = 'idle' | 'busy' | 'shared' | 'downloaded'
+
 export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [bgData, setBgData] = useState<string | null>(null)
   const [caption, setCaption] = useState('Just do it')
+  const [shareState, setShareState] = useState<ShareState>('idle')
   const cardRef = useRef<HTMLDivElement>(null)
+  const doneTimer = useRef<number | undefined>(undefined)
 
   useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl) }, [photoUrl])
+  useEffect(() => () => { if (doneTimer.current) clearTimeout(doneTimer.current) }, [])
+
+  // 匯出 → 完成回饋：分享/下載 → 處理中 → ✓(1.6s) → 回 idle；取消(AbortError)不給回饋
+  const doShare = async () => {
+    if (!cardRef.current || shareState === 'busy') return
+    setShareState('busy')
+    let result: 'shared' | 'downloaded' | 'cancelled'
+    try {
+      result = await sharePng(cardRef.current, `${session.name}.png`)
+    } catch {
+      setShareState('idle')   // 匯出失敗 → 回到可重試
+      return
+    }
+    if (result === 'cancelled') { setShareState('idle'); return }
+    setShareState(result)
+    doneTimer.current = window.setTimeout(() => setShareState('idle'), 1600)
+  }
 
   // 預設底圖先轉成 data URL：html-to-image 匯出時無法 fetch 外部 URL 的圖（SVG foreignObject 受限），
   // 必須是 data: 才會被嵌進去，否則預設底圖在下載/分享的圖裡會變空白。
@@ -80,6 +101,8 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
   const planText = detail ? planFull : ''
   // 無上傳照片時一律用內建底圖 bg.png（總覽與單組相同）；優先用已轉好的 data URL 以確保匯出能嵌入
   const bg = photoUrl ?? bgData ?? bgPng
+  // 上傳照片(blob)本來就能嵌入；預設底圖要等 data URL 轉好才保證匯出不空白
+  const ready = photoUrl != null || bgData != null
 
   return (
     <div style={{
@@ -104,7 +127,17 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
         )}
         <input className="field wide" style={{ textAlign: 'center' }} placeholder="加一行字（選填，如：好濕不好吃）"
           value={caption} onChange={(e) => setCaption(e.target.value)} />
-        <button className="btn primary" onClick={() => { if (cardRef.current) void sharePng(cardRef.current, `${session.name}.png`) }}>分享 / 下載</button>
+        <button
+          className={`btn primary${shareState === 'shared' || shareState === 'downloaded' ? ' share-done' : ''}`}
+          disabled={!ready || shareState === 'busy'}
+          style={ready ? undefined : { opacity: .5 }}
+          onClick={() => void doShare()}>
+          {!ready ? '底圖準備中…'
+            : shareState === 'busy' ? <><span className="share-spin" aria-hidden="true" />處理中…</>
+            : shareState === 'shared' ? '✓ 已傳送'
+            : shareState === 'downloaded' ? '✓ 已下載'
+            : '分享 / 下載'}
+        </button>
       </div>
     </div>
   )

@@ -55,6 +55,18 @@ button { font-family: inherit; color: inherit; }
 .btn.primary { background: #30D158; color: #03260f; }
 .btn.danger { background: #3a2020; color: #ff6b5e; }
 
+/* 分享/下載完成回饋：處理中轉圈 → 完成 ✓ 彈一下 */
+.share-spin { display: inline-block; width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px;
+  border: 2px solid rgba(3,38,15,.35); border-top-color: #03260f; border-radius: 50%;
+  animation: shareSpin .7s linear infinite; }
+@keyframes shareSpin { to { transform: rotate(360deg); } }
+.btn.primary.share-done { animation: sharePop .4s ease-out; }
+@keyframes sharePop { 0% { transform: scale(1); } 35% { transform: scale(1.08); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .share-spin { display: none; }                 /* 降級：只留「處理中…」文字 */
+  .btn.primary.share-done { animation: none; }    /* 降級：直接顯示 ✓，不彈跳 */
+}
+
 /* ── 計時網格 ── */
 .timer-grid { display: grid; gap: 8px; padding: 8px; flex: 1; grid-auto-rows: 1fr; }
 .nw { white-space: nowrap; }

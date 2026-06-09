@@ -15,17 +15,21 @@ export async function elementToPngBlob(el: HTMLElement, pixelRatio = 4): Promise
   return res.blob()
 }
 
-/** 優先用系統分享(可附檔，跳 IG 限動)；不支援或失敗則下載 PNG。使用者取消(AbortError)時靜默。 */
-export async function sharePng(el: HTMLElement, filename: string): Promise<void> {
+/** 分享結果：交給系統分享 / 退回下載 / 使用者取消。用來決定要給什麼完成回饋。 */
+export type ShareResult = 'shared' | 'downloaded' | 'cancelled'
+
+/** 優先用系統分享(可附檔，跳 IG 限動)；不支援或失敗則下載 PNG。使用者取消(AbortError)回 'cancelled'。
+ *  註：share() resolve 只代表系統收下了，不保證使用者真的發佈；下載也無完成事件，故回饋文案用「已傳送/已下載」。 */
+export async function sharePng(el: HTMLElement, filename: string): Promise<ShareResult> {
   const blob = await elementToPngBlob(el, 4)
   const file = new File([blob], filename, { type: 'image/png' })
   try {
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({ files: [file] })
-      return
+      return 'shared'
     }
   } catch (e) {
-    if ((e as DOMException).name === 'AbortError') return
+    if ((e as DOMException).name === 'AbortError') return 'cancelled'
     // 其他錯誤 → 落到下載
   }
   const url = URL.createObjectURL(blob)
@@ -34,6 +38,7 @@ export async function sharePng(el: HTMLElement, filename: string): Promise<void>
   a.download = filename
   a.click()
   URL.revokeObjectURL(url)
+  return 'downloaded'
 }
 
 export function downloadText(text: string, filename: string, mime = 'text/csv'): void {
