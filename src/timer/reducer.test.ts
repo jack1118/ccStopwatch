@@ -75,17 +75,17 @@ describe('timerReducer', () => {
     st = timerReducer(st, { type: 'UNDO', groupId: 'g1' })
     expect(g(st).state).toBe('running')      // 退回按圈前
     expect(g(st).reps).toHaveLength(0)
-    expect(g(st).runStartTs).toBeNull()      // 復原後計時歸0、需點一下才開始
+    expect(g(st).runStartTs).toBe(0)         // 沿用原本起跑時間，接續計時、不歸零
   })
 
-  it('UNDO 回到休息時，休息計時歸0（restStartTs 重設為 now）', () => {
+  it('UNDO 回到休息時，沿用原本休息起點接續計時', () => {
     let st = initTimerState(makeSession())
     st = timerReducer(st, { type: 'START', groupId: 'g1', now: 0 })
     st = timerReducer(st, { type: 'LAP', groupId: 'g1', now: 88000 })   // → 休息(restStartTs 88000)
     st = timerReducer(st, { type: 'NEXT', groupId: 'g1', now: 93000 })  // 休息5秒後出發
     st = timerReducer(st, { type: 'UNDO', groupId: 'g1', now: 200000 }) // 回到休息
     expect(g(st).state).toBe('resting')
-    expect(g(st).restStartTs).toBe(200000)   // 從 0 重新計時，而非沿用 5 秒
+    expect(g(st).restStartTs).toBe(88000)    // 沿用原本休息起點，接續計時、不歸零
   })
 
   it('STOP 任何狀態 → done', () => {

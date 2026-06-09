@@ -45,10 +45,9 @@ export function timerReducer(state: TimerState, action: TimerAction): TimerState
   if (action.type === 'UNDO') {
     const stack = state.undo[action.groupId] ?? []
     if (stack.length === 0) return state
-    let prev = stack[stack.length - 1]
-    // 復原後計時歸 0：跑步→暫停(需點一下才開始)；休息→從 0 重新計時
-    if (prev.state === 'running') prev = { ...prev, runStartTs: null }
-    else if (prev.state === 'resting') prev = { ...prev, restStartTs: action.now ?? prev.restStartTs }
+    // 復原＝整組還原成上一個動作之前的快照（含原本的 runStartTs/restStartTs），
+    // 計時沿用原本時間繼續走（就像沒按那一下一樣），不歸零、不需再點一下。
+    const prev = stack[stack.length - 1]
     const undo = { ...state.undo, [action.groupId]: stack.slice(0, -1) }
     const groups = state.session.groups.map((g) => (g.id === prev.id ? prev : g))
     const session = { ...state.session, groups }

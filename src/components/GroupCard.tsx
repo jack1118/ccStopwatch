@@ -111,7 +111,7 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
   const UndoRing = undoHolding ? <span className="undo-ring" /> : null
   const Corner = (
     <div className="corner">
-      <button className="undo-btn" aria-label="長按復原上一圈"
+      <button className="undo-btn" aria-label="長按復原上一步"
         onPointerDown={startUndo} onPointerUp={cancelUndo}
         onPointerLeave={cancelUndo} onPointerCancel={cancelUndo}>
         ↩
@@ -147,7 +147,7 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
   if (g.state === 'running') {
     const idx = g.reps.length
     const cur = lapPlan[idx]
-    const ticking = g.runStartTs != null            // false = 復原後暫停，需點一下才開始
+    const ticking = g.runStartTs != null            // 防呆：running 理論上一定有 runStartTs
     const runSec = ticking ? elapsedSec(g.runStartTs as number, now) : 0
     const ref = cur?.target ?? g.targetPaceSec ?? (lastRep ? lastRep.runSec : null)
     const tone = paceTone(runSec, ref, 10)   // 剩 10 秒內轉橘、超過轉紅
