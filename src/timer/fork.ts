@@ -1,7 +1,7 @@
 import type { Group, Item, Plan, Segment } from '../types'
 import { effectiveSegments, getLapMeters, itemsOf, lapsOf } from './timer'
 
-const uid = () => crypto.randomUUID()
+const uid = () => globalThis.crypto?.randomUUID?.() ?? `id${Math.random().toString(36).slice(2)}`
 
 /**
  * 把某組「當下生效的課表」烤成獨立課表（fork）。
@@ -26,7 +26,7 @@ export function bakeOwnSegments(plan: Plan, group: Group): Segment[] {
         unit: it.unit,
         paceSecPerKm: it.paceSecPerKm,
         restSec: group.segRest?.[it.id] ?? it.restSec,
-        targetSec: baked,
+        targetSec: baked > 0 ? baked : undefined,
         gapSec: 0,
       }
     })

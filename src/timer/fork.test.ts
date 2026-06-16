@@ -26,5 +26,19 @@ describe('bakeOwnSegments', () => {
     const own = bakeOwnSegments(plan, g)
     expect(own[0].reps).toBe(5)
     expect(own[0].items![0].restSec).toBe(60)
+    expect(own[0].items![0].targetSec).toBe(97)
+  })
+
+  it('組號 1（參考組）烤入無加秒：targetSec 等於原值', () => {
+    const g: Group = { ...baseGroup, number: 1 }
+    const own = bakeOwnSegments(plan, g)
+    expect(own[0].items![0].targetSec).toBe(96)
+    expect(own[0].items![0].gapSec).toBe(0)
+  })
+
+  it('原項目無目標 → 烤入 targetSec 為 undefined（不設目標）', () => {
+    const noTarget: Plan = { lapMeters: 400, segments: [{ id: 's', reps: 2, items: [{ id: 'a', meters: 400, restSec: 90 }] }] }
+    const own = bakeOwnSegments(noTarget, baseGroup)
+    expect(own[0].items![0].targetSec).toBeUndefined()
   })
 })
