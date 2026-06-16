@@ -100,7 +100,7 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
     setBuilding(true)
     const t = window.setTimeout(() => {
       const el = cardRef.current
-      if (!el) return
+      if (!el) { setBuilding(false); return }
       void elementToPngBlob(el, 4).then((blob) => {
         if (!alive) return
         blobRef.current = blob
@@ -109,9 +109,10 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
       }).catch(() => { if (alive) setBuilding(false) })
     }, 300)
     return () => { alive = false; clearTimeout(t) }
-  }, [ready, bg, caption, detail, mode, visible])
+  }, [ready, photoUrl, bgData, caption, detail, mode, visible])
 
   // 分享：同步 handler（不 await），直接用已合成好的 blob
+  // 必須保持同步、shareBlob 前不可有 await，否則 iOS 的 user-gesture（transient activation）會失效
   const doShare = () => {
     if (building || !blobRef.current || shareState === 'busy') return
     setShareState('busy')
