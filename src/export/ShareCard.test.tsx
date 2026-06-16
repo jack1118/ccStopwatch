@@ -49,3 +49,19 @@ it('底圖就緒後分享按鈕最終顯示「分享 / 下載」', async () => {
   // 等 bgData 載入(ready=true) → 300ms debounce → elementToPngBlob resolve → setBuilding(false)
   await screen.findByText('分享 / 下載', {}, { timeout: 3000 })
 })
+
+it('總覽分享卡：各組課表不同時顯示兩行上色文字', async () => {
+  const s: Session = {
+    ...session,
+    groups: [
+      { ...session.groups[0], id: 'g1', color: 'yellow' as const, number: 1,
+        ownSegments: [{ id: 'a', reps: 3, items: [{ id: 'a1', meters: 400, restSec: 90, targetSec: 84 }] }] },
+      { ...session.groups[0], id: 'g2', color: 'green' as const, number: 2,
+        ownSegments: [{ id: 'b', reps: 5, items: [{ id: 'b1', meters: 400, restSec: 60, targetSec: 90 }] }] },
+    ],
+  }
+  render(<ShareCard session={s} detail={null} mode="time" visible={new Set(['g1', 'g2'])} onClose={vi.fn()} />)
+  const lines = screen.getAllByText(/400×/)
+  expect(lines).toHaveLength(2)
+  expect(lines[0]).toHaveStyle({ fontWeight: '800', whiteSpace: 'nowrap' })
+})
