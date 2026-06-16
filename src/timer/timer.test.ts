@@ -91,6 +91,14 @@ describe('buildLapPlan — 單一距離 / 覆寫', () => {
     expect(buildLapPlan({ segments: [] }, baseGroup)).toEqual([])
     expect(totalLaps({ segments: [] }, baseGroup)).toBe(0)
   })
+  it('ownSegments 存在時，改用該組自己的課表（忽略共用 plan.segments）', () => {
+    const plan = { segments: [{ id: 's', reps: 10, items: [{ id: 'a', meters: 400, restSec: 90 }] }] }
+    const own = [{ id: 'o', reps: 2, items: [{ id: 'b', meters: 800, restSec: 120 }] }]
+    const laps = buildLapPlan(plan, { ...baseGroup, ownSegments: own })
+    // 800m 在 400m 場地 = 2 圈/趟 × 2 趟 = 4 圈
+    expect(laps).toHaveLength(4)
+    expect(laps[0].meters).toBe(400)   // 800m 拆成兩個 400m 圈
+  })
 })
 
 describe('elapsedSec / paceTone', () => {
