@@ -45,6 +45,7 @@ export interface Group {
   segReps?: Record<string, number>        // 各段落自訂趟數（key=segment.id）；缺則用 segment.reps
   segTarget?: Record<string, number>      // 各段落自訂「每圈目標秒」；缺則用 gap 推算
   segRest?: Record<string, number>        // 各段落自訂「間休秒」；缺則用 segment.restSec
+  ownSegments?: Segment[]   // 該組獨立課表（分岔/fork）；未設＝沿用 plan.segments（共用）
   targetPaceSec: number | null
   athletes: string[]
   state: GroupState

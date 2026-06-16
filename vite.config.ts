@@ -13,6 +13,7 @@ export default defineConfig(({ command }) => ({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: null,   // 改由 src/pwa.ts 自行註冊，才能取得 updateSW 把手做「主動更新」
       includeAssets: ['icon.svg', 'apple-touch-icon-180x180.png'],
       workbox: {
         // 預設 globPatterns 不含 assets 內的 png，需明列；並提高上限讓分享卡內建底圖 bg.png(約2.1MB)離線預快取
@@ -39,5 +40,8 @@ export default defineConfig(({ command }) => ({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/setupTests.ts',
+    alias: {
+      'virtual:pwa-register': '/src/__mocks__/virtual-pwa-register.ts',
+    },
   },
 }))

@@ -1,8 +1,25 @@
+import { useState, useRef, useEffect } from 'react'
+import { checkForUpdate } from '../pwa'
+
 interface Props {
   onBack: () => void
 }
 
+type UpdateState = 'idle' | 'checking' | 'latest'
+
 export function Help({ onBack }: Props) {
+  const [upd, setUpd] = useState<UpdateState>('idle')
+  const timerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null)
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current) }, [])
+  const onCheck = async () => {
+    if (upd === 'checking') return
+    setUpd('checking')
+    const r = await checkForUpdate()   // 'updating' 會直接重載頁面
+    if (r === 'latest') {
+      setUpd('latest')
+      timerRef.current = window.setTimeout(() => setUpd('idle'), 1600)
+    }
+  }
   return (
     <div className="app">
       <div className="topbar">
@@ -82,7 +99,12 @@ export function Help({ onBack }: Props) {
           </ul>
         </section>
 
-        <p style={{ opacity: .5, fontSize: 12, textAlign: 'center', marginTop: 8 }}>版本 {__BUILD__}</p>
+        <div style={{ textAlign: 'center', marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <button className="btn" disabled={upd === 'checking'} onClick={() => void onCheck()}>
+            {upd === 'checking' ? '檢查中…' : upd === 'latest' ? '已是最新版' : '檢查更新'}
+          </button>
+          <span style={{ opacity: .5, fontSize: 12 }}>版本 {__BUILD__}</span>
+        </div>
       </div>
     </div>
   )

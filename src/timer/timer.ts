@@ -47,6 +47,11 @@ function targetForItem(item: Item, group: Group, lapMeters: number): number | nu
   return null
 }
 
+/** 取得某組「生效」的課表：有 ownSegments（分岔）用自己的，否則用共用 plan.segments。 */
+export function effectiveSegments(plan: Plan, group: Group): Segment[] {
+  return group.ownSegments && group.ownSegments.length > 0 ? group.ownSegments : plan.segments
+}
+
 /**
  * 把課表攤平成「一圈一筆」的計畫（計時/按圈的基本單位是圈）。
  * 段落可為組合：items=[400m,200m]、reps=8 → (400+200)×8。
@@ -58,7 +63,7 @@ export function buildLapPlan(plan: Plan, group: Group): PlannedLap[] {
   const laps: PlannedLap[] = []
   let setNo = 0
 
-  for (const seg of plan.segments) {
+  for (const seg of effectiveSegments(plan, group)) {
     const reps = group.segReps?.[seg.id] ?? seg.reps
     const items = itemsOf(seg)
     const unit: '組' | '趟' = items.length > 1 ? '組' : '趟'

@@ -8,9 +8,18 @@ export async function downloadPng(el: HTMLElement, filename: string): Promise<vo
   a.click()
 }
 
-/** 把元素轉成 PNG blob（分享卡用；pixelRatio 放大到目標解析度） */
+/** 把元素轉成 PNG blob（分享卡用）。合成前先等字型與每張圖 decode，並連呼叫兩次 toPng，
+ *  解決 html-to-image 已知坑：圖片未載入、字型未嵌入、第一次渲染漏失。 */
 export async function elementToPngBlob(el: HTMLElement, pixelRatio = 4): Promise<Blob> {
-  const dataUrl = await toPng(el, { pixelRatio, backgroundColor: '#0b0b0d' })
+  // 1) 等字型就緒（避免第一次渲染缺字）
+  if (document.fonts?.ready) await document.fonts.ready
+  // 2) 等卡片內每張 <img> 確實 decode（剛上傳的照片最常還沒 decode 完）
+  const imgs = Array.from(el.querySelectorAll('img'))
+  await Promise.all(imgs.map((img) => (img.decode ? img.decode().catch(() => {}) : Promise.resolve())))
+  const opts = { pixelRatio, backgroundColor: '#0b0b0d' }
+  // 3) 暖機一次（首次常漏圖/字型），結果丟棄
+  await toPng(el, opts)
+  const dataUrl = await toPng(el, opts)
   const res = await fetch(dataUrl)
   return res.blob()
 }
@@ -26,6 +35,28 @@ export async function sharePng(el: HTMLElement, filename: string): Promise<Share
   try {
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({ files: [file] })
+      return 'shared'
+    }
+  } catch (e) {
+    if ((e as DOMException).name === 'AbortError') return 'cancelled'
+    // 其他錯誤 → 落到下載
+  }
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+  return 'downloaded'
+}
+
+/** 用「已備好的 blob」分享（呼叫端事先合成，點擊當下零等待，避免 iOS transient activation 失效）。
+ *  優先系統分享（title:'' 修 iOS 把檔變純文字的坑）；不支援/失敗則下載。取消回 'cancelled'。 */
+export async function shareBlob(blob: Blob, filename: string): Promise<ShareResult> {
+  const file = new File([blob], filename, { type: 'image/png' })
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: '' })
       return 'shared'
     }
   } catch (e) {
