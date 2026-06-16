@@ -97,6 +97,8 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
   useEffect(() => {
     if (!ready) return                // 底圖尚未就緒，先不合成
     let alive = true
+    // 輸入一變動就立即標示合成中：顯示遮罩並停用分享，避免在 300ms 去抖窗口內分享到舊圖（刻意的同步 setState）
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setBuilding(true)
     const t = window.setTimeout(() => {
       const el = cardRef.current

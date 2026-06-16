@@ -21,6 +21,8 @@ export default defineConfig([
     rules: {
       // 中文 UI 文字刻意使用全形空白「　」排版（字串/樣板/JSX 文字內）
       'no-irregular-whitespace': ['error', { skipStrings: true, skipTemplates: true, skipJSXText: true }],
+      // `_` 前綴＝刻意未使用（與既有 _swUrl 等慣例一致）
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
     },
   },
 ])
