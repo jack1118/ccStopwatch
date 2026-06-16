@@ -40,5 +40,8 @@ export default defineConfig(({ command }) => ({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/setupTests.ts',
+    alias: {
+      'virtual:pwa-register': '/src/__mocks__/virtual-pwa-register.ts',
+    },
   },
 }))
