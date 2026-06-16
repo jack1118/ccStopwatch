@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { checkForUpdate } from '../pwa'
 
 interface Props {
@@ -9,13 +9,15 @@ type UpdateState = 'idle' | 'checking' | 'latest'
 
 export function Help({ onBack }: Props) {
   const [upd, setUpd] = useState<UpdateState>('idle')
+  const timerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null)
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current) }, [])
   const onCheck = async () => {
     if (upd === 'checking') return
     setUpd('checking')
     const r = await checkForUpdate()   // 'updating' 會直接重載頁面
     if (r === 'latest') {
       setUpd('latest')
-      window.setTimeout(() => setUpd('idle'), 1600)
+      timerRef.current = window.setTimeout(() => setUpd('idle'), 1600)
     }
   }
   return (

@@ -29,6 +29,7 @@ export async function checkForUpdate(): Promise<'updating' | 'latest'> {
   }
   // update() 後若有等待中的新 SW（onNeedRefresh 已觸發，或 registration.waiting 存在）→ 套用
   if (needRefresh || swRegistration.waiting) {
+    needRefresh = false          // consume the flag
     await updateSW(true)   // skipWaiting + reload
     return 'updating'
   }
