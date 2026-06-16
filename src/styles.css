@@ -398,3 +398,7 @@ table.splits tbody tr:active td:first-child { background: #28324a; }
   background: #26262e; color: #fff; border: 1px solid #3a3a42; border-radius: 14px; }
 .plan-chip.empty { font-weight: 500; opacity: .6; border-style: dashed; border-color: #55555f; }
 .plan-paren { opacity: .6; font-size: 15px; }
+
+.gplan { font-size: 11px; opacity: .72; font-weight: 700; line-height: 1.1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.card.big .gplan { font-size: 13px; }

@@ -1,5 +1,5 @@
 import { it, expect } from 'vitest'
-import { parsePlan, planSummary, segChips } from './planText'
+import { parsePlan, planSummary, segChips, planShape } from './planText'
 
 it('解析單一段落 300m×10 p72s r90s（p=每圈秒，依場地換算）', () => {
   const segs = parsePlan('300m×10 p72s r90s', 400)!
@@ -225,4 +225,23 @@ it('segChips 組合相同距離 chip key 仍唯一', () => {
 it('segChips 距離 chip 顯示 k：1.6k', () => {
   const seg = parsePlan('1.6k×3', 400)![0]
   expect(segChips(seg, 400).find((c) => c.field === 'distance')!.label).toBe('1.6k')
+})
+
+describe('planShape — 只距離×趟', () => {
+  it('單一距離段：去掉 m、配速、休息', () => {
+    expect(planShape([{ id: 's', reps: 3, items: [{ id: 'a', meters: 1200, restSec: 90, targetSec: 288 }] }])).toBe('1200×3')
+  })
+  it('多段以全形＋串接', () => {
+    const segs = [
+      { id: 's1', reps: 3, items: [{ id: 'a', meters: 1200, restSec: 90 }] },
+      { id: 's2', reps: 2, items: [{ id: 'b', meters: 800, restSec: 120 }] },
+    ]
+    expect(planShape(segs)).toBe('1200×3＋800×2')
+  })
+  it('組合段：括號內以 + 串距離', () => {
+    expect(planShape([{ id: 's', reps: 8, items: [{ id: 'a', meters: 400, restSec: 0 }, { id: 'b', meters: 200, restSec: 60 }] }])).toBe('(400+200)×8')
+  })
+  it('公里單位：用 k', () => {
+    expect(planShape([{ id: 's', reps: 1, items: [{ id: 'a', meters: 3000, unit: 'k', restSec: 0 }] }])).toBe('3k×1')
+  })
 })

@@ -91,6 +91,12 @@ it('休息中點整個碼表區即觸發 onNext（出發下一趟）', async () 
   expect(onNext).toHaveBeenCalledWith('g1')
 })
 
+it('分岔組卡片顯示自己的課表行', () => {
+  const g = { ...base, state: 'idle' as const, ownSegments: [{ id: 'o', reps: 2, items: [{ id: 'b', meters: 800, restSec: 120 }] }] }
+  render(<GroupCard group={g} plan={plan} now={0} big onStart={() => {}} onLap={() => {}} onNext={() => {}} onUndo={() => {}} onStop={() => {}} />)
+  expect(screen.getByText('800×2')).toBeInTheDocument()
+})
+
 it('跑步中有設目標時顯示目標秒數', () => {
   const planT: Plan = { lapMeters: 400, segments: [{ id: '1', meters: 400, reps: 10, restSec: 90, targetSec: 96, gapSec: 0 }] }
   const g = { ...base, number: 1, state: 'running' as const, runStartTs: 0, reps: [] }
