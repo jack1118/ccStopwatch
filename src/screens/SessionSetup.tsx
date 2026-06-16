@@ -135,19 +135,23 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
     setCfg((p) => ({ ...p, [c]: { ...p[c], segRest: { ...p[c].segRest, [itemId]: v } } }))
   const toggleExpand = (c: NRCColor) => setExpanded((p) => ({ ...p, [c]: !p[c] }))
 
-  const forkGroup = (c: NRCColor) => setCfg((p) => {
-    const g: Group = {
-      id: 'tmp', color: c, number: NRC_NUM[c], athletes: [], state: 'idle',
-      runStartTs: null, restStartTs: null, reps: [], targetPaceSec: null,
-      segReps: p[c].segReps, segTarget: p[c].segTarget, segRest: p[c].segRest,
-    }
-    return { ...p, [c]: { ...p[c], ownSegments: bakeOwnSegments({ segments, lapMeters }, g) } }
-  })
+  const forkGroup = (c: NRCColor) => {
+    const currentSegs = segments
+    const currentLap = lapMeters
+    setCfg((p) => {
+      const g: Group = {
+        id: 'tmp', color: c, number: NRC_NUM[c], athletes: [], state: 'idle',
+        runStartTs: null, restStartTs: null, reps: [], targetPaceSec: null,
+        segReps: p[c].segReps, segTarget: p[c].segTarget, segRest: p[c].segRest,
+      }
+      return { ...p, [c]: { ...p[c], ownSegments: bakeOwnSegments({ segments: currentSegs, lapMeters: currentLap }, g) } }
+    })
+  }
   const unforkGroup = (c: NRCColor) =>
     setCfg((p) => ({ ...p, [c]: { ...p[c], ownSegments: undefined } }))
   const setOwnSegments = (c: NRCColor, segs: Segment[]) =>
     setCfg((p) => ({ ...p, [c]: { ...p[c], ownSegments: segs } }))
-  const isForked = (c: NRCColor) => !!cfg[c].ownSegments
+  const isForked = (c: NRCColor) => (cfg[c].ownSegments?.length ?? 0) > 0
 
   const repsFor = (c: NRCColor, seg: Segment) => cfg[c].segReps[seg.id] ?? seg.reps
   const targetFor = (c: NRCColor, it: Item) =>
@@ -234,7 +238,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
                 <span className="pill" style={{ background: NRC_HEX[c], color: NRC_TEXT[c] }}>
                   {NRC_LABEL[c]} 第{NRC_NUM[c]}組
                 </span>
-                {on && segments.length > 0 && (
+                {on && (isForked(c) || segments.length > 0) && (
                   <>
                     <button className="grp-expand" onClick={() => toggleExpand(c)}>{isOpen ? '▾ 自訂' : '▸ 自訂'}</button>
                     {!isOpen && (isForked(c)
@@ -246,7 +250,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
                 )}
                 {!editingActive && <button className={`grp-toggle${on ? ' on' : ''}`} onClick={() => toggleColor(c)}>{on ? '出場' : '不出場'}</button>}
               </div>
-              {on && isOpen && segments.length > 0 && (
+              {on && isOpen && (isForked(c) || segments.length > 0) && (
                 <div className="grp-expand-body">
                   {isForked(c) ? (
                     <>
