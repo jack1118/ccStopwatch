@@ -3,9 +3,10 @@ import type { Group, Item, NRCColor, Segment, Session } from '../types'
 import { Stepper } from '../components/Stepper'
 import { NRC_ORDER, NRC_NUM, NRC_HEX, NRC_TEXT, NRC_LABEL } from '../constants'
 import { itemsOf, lapsOf } from '../timer/timer'
-import { segLabel, planSummary, parsePlan } from '../timer/planText'
+import { planSummary, parsePlan } from '../timer/planText'
 import type { PlanChip } from '../timer/planText'
 import { PlanChips } from '../components/PlanChips'
+import { PlanEditor } from '../components/PlanEditor'
 import { EditSheet } from '../components/EditSheet'
 import { useSwipe } from '../hooks/useSwipe'
 
@@ -65,9 +66,6 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
   const [cfg, setCfg] = useState<Record<NRCColor, GroupCfg>>(() => initGroupCfg(initial))
   const [lapMeters, setLapMeters] = useState(initial?.plan.lapMeters ?? 400)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
-  const [targetMode, setTargetMode] = useState<Record<string, 'dist' | 'lap'>>({})
-  const modeOf = (id: string) => targetMode[id] ?? 'lap'
-  const setMode = (id: string, m: 'dist' | 'lap') => setTargetMode((p) => ({ ...p, [id]: m }))
   const [editChip, setEditChip] = useState<PlanChip | null>(null)
 
   // 每組每圈加秒 × 此距離圈數 = 各組之間在「整段距離」上累加的秒數
@@ -113,29 +111,12 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
     if (segs) { setSegments(segs); setNameTouched(false) }
   }
 
-  // 段落（組合）操作
-  const addSegment = () => setSegments((s) => [...s, { id: uid(), reps: 8, items: [newItem(400, 90, lapMeters)] }])
-  const removeSegment = (id: string) => setSegments((s) => s.filter((seg) => seg.id !== id))
+  // 段落（組合）操作（EditSheet 仍透過 onPatchSeg/onPatchItem 呼叫）
   const patchSegment = (id: string, patch: Partial<Segment>) =>
     setSegments((s) => s.map((seg) => (seg.id === id ? { ...seg, ...patch } : seg)))
-  const addItem = (segId: string) =>
-    setSegments((s) => s.map((seg) => seg.id === segId
-      ? { ...seg, items: [...itemsOf(seg), newItem(200, 60, lapMeters)] } : seg))
-  const removeItem = (segId: string, itemId: string) =>
-    setSegments((s) => s.map((seg) => seg.id === segId
-      ? { ...seg, items: itemsOf(seg).filter((it) => it.id !== itemId) } : seg))
   const patchItem = (segId: string, itemId: string, patch: Partial<Item>) =>
     setSegments((s) => s.map((seg) => seg.id === segId
       ? { ...seg, items: itemsOf(seg).map((it) => (it.id === itemId ? { ...it, ...patch } : it)) } : seg))
-  // 鏡像(金字塔)：把前半段(含高峰)對稱補到後面，如 1200,800,400 → 1200,800,400,800,1200
-  const mirrorSegment = (segId: string) =>
-    setSegments((s) => s.map((seg) => {
-      if (seg.id !== segId) return seg
-      const items = itemsOf(seg)
-      if (items.length < 2) return seg
-      const mirror = items.slice(0, -1).reverse().map((it) => ({ ...it, id: uid() }))
-      return { ...seg, items: [...items, ...mirror] }
-    }))
 
   // 組別設定
   const toggleColor = (c: NRCColor) => setCfg((p) => ({ ...p, [c]: { ...p[c], on: !p[c].on } }))
@@ -212,92 +193,9 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
       <div className="sec-block">
         <div className="label">共用課表</div>
         <div className="sublabel">項目可為組合，如 (400m+200m)×8；可留空＝純碼表</div>
-        {segments.map((seg, si) => {
-          const items = itemsOf(seg)
-          const multi = items.length > 1
-          return (
-            <div className="seg-card" key={seg.id}>
-              <div className="field-row">
-                <span className="rl" style={{ width: 'auto', fontWeight: 700 }}>
-                  項目 {si + 1} · {segLabel(seg, lapMeters)}
-                </span>
-                {!editingActive && <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeSegment(seg.id)}>✕ 刪除</button>}
-              </div>
-              <div className="field-row">
-                <span className="rl">{multi ? '組數' : '趟數'}</span>
-                <Stepper value={seg.reps} step={1} min={editingActive ? repFloorSeg(seg) : 1} onChange={(v) => patchSegment(seg.id, { reps: v })} />
-                <span className="ru">{multi ? '組' : '趟'}</span>
-                {editingActive && <span className="field-hint">不可少於已完成 {repFloorSeg(seg)} {multi ? '組' : '趟'}</span>}
-              </div>
-              {items.map((it, ii) => (
-                <div className="item-box" key={it.id}>
-                  <div className="field-row">
-                    <span className="rl">距離{multi ? ` ${ii + 1}` : ''}</span>
-                    <Stepper value={it.meters} step={100} min={50} onChange={(v) => patchItem(seg.id, it.id, { meters: v })} disabled={editingActive} />
-                    <span className="ru">m</span>
-                    {multi && !editingActive && <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeItem(seg.id, it.id)}>✕</button>}
-                    {lapsOf(it.meters, lapMeters) > 1 && <span className="field-hint">＝ {lapsOf(it.meters, lapMeters)} 圈／趟</span>}
-                  </div>
-                  <div className="field-row">
-                    <span className="rl">目標</span>
-                    <div className="seg-toggle">
-                      <button className={modeOf(it.id) === 'dist' ? 'on' : ''} onClick={() => setMode(it.id, 'dist')}>以距離</button>
-                      <button className={modeOf(it.id) === 'lap' ? 'on' : ''} onClick={() => setMode(it.id, 'lap')}>以每圈</button>
-                    </div>
-                  </div>
-                  {modeOf(it.id) === 'dist' ? (
-                    <div className="field-row">
-                      <span className="rl">距離目標</span>
-                      <Stepper value={it.targetSec ?? 0} step={1} min={0}
-                        onChange={(v) => patchItem(seg.id, it.id, { targetSec: v })} />
-                      <span className="ru">秒</span>
-                      {(it.targetSec ?? 0) > 0 && <span className="pace-pill">{fmtPace(it.targetSec ?? 0, it.meters)}</span>}
-                      <span className="field-hint">完成 {it.meters}m；≈ 每圈 {Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} 秒（0＝不設）</span>
-                    </div>
-                  ) : (
-                    <div className="field-row">
-                      <span className="rl">每圈目標</span>
-                      <Stepper value={Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} step={1} min={0}
-                        onChange={(v) => patchItem(seg.id, it.id, { targetSec: Math.round(v * it.meters / lapMeters) })} />
-                      <span className="ru">秒/圈</span>
-                      {(it.targetSec ?? 0) > 0 && <span className="pace-pill">{fmtPace(it.targetSec ?? 0, it.meters)}</span>}
-                      <span className="field-hint">每 {lapMeters}m；≈ 完成 {it.meters}m {it.targetSec ?? 0} 秒（0＝不設）</span>
-                    </div>
-                  )}
-                  {(it.targetSec ?? 0) > 0 && (
-                    <div className="field-row">
-                      <span className="rl">每組每圈＋</span>
-                      <Stepper value={it.gapSec ?? 0} step={1} min={0} onChange={(v) => patchItem(seg.id, it.id, { gapSec: v })} />
-                      <span className="ru">秒/圈</span>
-                      <span className="field-hint">各組配速差，每圈加秒×圈數逐組累加（黑、紫…）</span>
-                    </div>
-                  )}
-                  <div className="field-row">
-                    <span className="rl">間休</span>
-                    <Stepper value={it.restSec} step={10} min={0} onChange={(v) => patchItem(seg.id, it.id, { restSec: v })} />
-                    <span className="ru">秒</span>
-                    <span className="field-hint">
-                      {multi && ii === items.length - 1
-                        ? '此距離後＝組與組之間的休息（組休）'
-                        : '此距離跑完後的休息'}
-                    </span>
-                  </div>
-                  {(it.targetSec ?? 0) > 0 && (
-                    <div className="target-preview">
-                      <b>各組目標（{it.meters}m）</b>
-                      {NRC_ORDER.map((c) => ` ${NRC_LABEL[c]}${(it.targetSec ?? 0) + gapTotal(it) * (NRC_NUM[c] - 1)}`).join('・')}
-                    </div>
-                  )}
-                </div>
-              ))}
-              {!editingActive && <button className="btn" onClick={() => addItem(seg.id)}>＋ 加一個距離（組合）</button>}
-              {!editingActive && items.length >= 2 && (
-                <button className="btn" style={{ marginLeft: 8 }} onClick={() => mirrorSegment(seg.id)}>鏡像(金字塔)</button>
-              )}
-            </div>
-          )
-        })}
-        {!editingActive && <button className="btn" onClick={addSegment}>＋ 新增項目</button>}
+        <PlanEditor segments={segments} lapMeters={lapMeters}
+          editingActive={editingActive} repFloor={repFloorSeg}
+          onChange={setSegments} />
       </div>
 
       <div className="sec-block">
