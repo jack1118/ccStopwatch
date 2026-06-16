@@ -50,6 +50,28 @@ export async function sharePng(el: HTMLElement, filename: string): Promise<Share
   return 'downloaded'
 }
 
+/** 用「已備好的 blob」分享（呼叫端事先合成，點擊當下零等待，避免 iOS transient activation 失效）。
+ *  優先系統分享（title:'' 修 iOS 把檔變純文字的坑）；不支援/失敗則下載。取消回 'cancelled'。 */
+export async function shareBlob(blob: Blob, filename: string): Promise<ShareResult> {
+  const file = new File([blob], filename, { type: 'image/png' })
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: '' })
+      return 'shared'
+    }
+  } catch (e) {
+    if ((e as DOMException).name === 'AbortError') return 'cancelled'
+    // 其他錯誤 → 落到下載
+  }
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+  return 'downloaded'
+}
+
 export function downloadText(text: string, filename: string, mime = 'text/csv'): void {
   const blob = new Blob([text], { type: `${mime};charset=utf-8` })
   const url = URL.createObjectURL(blob)
