@@ -84,9 +84,21 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
     colors = [NRC_CHART[detail.color]]
   } else {
     chart = <LineChart groups={session.groups} visible={visible} />
-    const anyFork = session.groups.some((g) => g.ownSegments && g.ownSegments.length > 0)
-    const overviewText = (planFull || session.name) + (anyFork ? '（部分組自訂）' : '')
-    stat = <FitText text={overviewText} max={16} min={9} maxHeight={66} style={{ fontWeight: 800 }} />
+    // 各組生效課表（compact 摘要）+ 該組顏色；全部相同收一行，否則每組一行上色
+    const groupPlans = session.groups.map((g) => ({
+      color: NRC_CHART[g.color],
+      text: planSummary(effectiveSegments(session.plan, g), session.plan.lapMeters, true),
+    }))
+    const allSame = new Set(groupPlans.map((p) => p.text)).size <= 1
+    stat = allSame
+      ? <FitText text={planFull || session.name} max={16} min={9} maxHeight={66} style={{ fontWeight: 800 }} />
+      : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center', lineHeight: 1.2 }}>
+          {groupPlans.map((p, i) => (
+            <div key={i} style={{ color: p.color, fontWeight: 800, fontSize: 13, whiteSpace: 'nowrap' }}>{p.text}</div>
+          ))}
+        </div>
+      )
     const present = session.groups.filter((g) => visible.has(g.id))
     colors = [...new Set((present.length ? present : session.groups).map((g) => NRC_CHART[g.color]))]
   }
