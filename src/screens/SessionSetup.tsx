@@ -195,7 +195,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
         <div className="sublabel">項目可為組合，如 (400m+200m)×8；可留空＝純碼表</div>
         <PlanEditor segments={segments} lapMeters={lapMeters}
           editingActive={editingActive} repFloor={repFloorSeg}
-          onChange={setSegments} />
+          showGroupTargets onChange={setSegments} />
       </div>
 
       <div className="sec-block">

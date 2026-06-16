@@ -1,5 +1,6 @@
 import type { Item, Segment } from '../types'
 import { Stepper } from './Stepper'
+import { NRC_ORDER, NRC_LABEL, NRC_NUM } from '../constants'
 import { itemsOf, lapsOf } from '../timer/timer'
 import { segLabel } from '../timer/planText'
 import { useState } from 'react'
@@ -22,12 +23,15 @@ interface Props {
   editingActive?: boolean
   /** 編輯進行中時，某段趟數下限（預設都 1） */
   repFloor?: (seg: Segment) => number
+  /** 顯示各組目標預覽（共用課表用；單組獨立課表不需要） */
+  showGroupTargets?: boolean
 }
 
-export function PlanEditor({ segments, lapMeters, onChange, editingActive = false, repFloor }: Props) {
+export function PlanEditor({ segments, lapMeters, onChange, editingActive = false, repFloor, showGroupTargets = false }: Props) {
   const [targetMode, setTargetMode] = useState<Record<string, 'dist' | 'lap'>>({})
   const modeOf = (id: string) => targetMode[id] ?? 'lap'
   const setMode = (id: string, m: 'dist' | 'lap') => setTargetMode((p) => ({ ...p, [id]: m }))
+  const gapTotal = (it: Item) => (it.gapSec ?? 0) * lapsOf(it.meters, lapMeters)
 
   const set = (next: Segment[]) => onChange(next)
   const addSegment = () => set([...segments, { id: uid(), reps: 8, items: [newItem(400, 90, lapMeters)] }])
@@ -120,6 +124,12 @@ export function PlanEditor({ segments, lapMeters, onChange, editingActive = fals
                     {multi && ii === items.length - 1 ? '此距離後＝組與組之間的休息（組休）' : '此距離跑完後的休息'}
                   </span>
                 </div>
+                {showGroupTargets && (it.targetSec ?? 0) > 0 && (
+                  <div className="target-preview">
+                    <b>各組目標（{it.meters}m）</b>
+                    {NRC_ORDER.map((c) => ` ${NRC_LABEL[c]}${(it.targetSec ?? 0) + gapTotal(it) * (NRC_NUM[c] - 1)}`).join('・')}
+                  </div>
+                )}
               </div>
             ))}
             {!editingActive && <button className="btn" onClick={() => addItem(seg.id)}>＋ 加一個距離（組合）</button>}
