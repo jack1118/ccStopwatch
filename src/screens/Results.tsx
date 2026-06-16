@@ -57,6 +57,8 @@ export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
   const refLaps = refGroup ? buildLapPlan(session.plan, refGroup) : []
   const distAt = (i: number) => refLaps[i]?.meters ?? null
   const detail = session.groups.find((g) => g.id === detailId)
+  const detailLaps = detail ? buildLapPlan(session.plan, detail) : []
+  const detailDistAt = (i: number) => detailLaps[i]?.meters ?? null
 
   // 向右滑 → 在詳細頁先返回總表，否則返回上一頁
   const swipe = useSwipe({ onRight: () => (detailId ? setDetailId(null) : onExit()) })
@@ -156,7 +158,7 @@ export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
                 {detail.reps.map((r) => (
                   <tr key={r.index}>
                     <td>{r.index + 1}</td>
-                    {hasPlan && <td>{distAt(r.index) != null ? `${distAt(r.index)}m` : '—'}</td>}
+                    {hasPlan && <td>{detailDistAt(r.index) != null ? `${detailDistAt(r.index)}m` : '—'}</td>}
                     <td>{fmtClockStr(r.runSec)}</td>
                     <td>{r.restSec}s</td>
                   </tr>
