@@ -6,6 +6,7 @@ import { LineChart } from '../chart/LineChart'
 import { TimelineArea } from '../chart/TimelineArea'
 import { SplitArea } from '../chart/SplitArea'
 import { planSummary } from '../timer/planText'
+import { effectiveSegments } from '../timer/timer'
 import { fmtClockStr } from '../format'
 import { ShareCardArt } from './ShareCardArt'
 import { FitText } from '../components/FitText'
@@ -62,7 +63,9 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
     setPhotoUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(f) })
   }
 
-  const planFull = session.plan.segments.length ? planSummary(session.plan.segments, session.plan.lapMeters) : ''
+  // 單組卡用該組生效課表（fork 則為自己的）；總覽卡用共用課表
+  const planSegs = detail ? effectiveSegments(session.plan, detail) : session.plan.segments
+  const planFull = planSegs.length ? planSummary(planSegs, session.plan.lapMeters) : ''
   // 依「目前看的圖」組 chart / stat / 漸層色
   let chart: ReactNode
   let stat: ReactNode
