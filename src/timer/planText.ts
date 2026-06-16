@@ -40,6 +40,16 @@ export function planSummary(segments: Segment[], lapMeters = 400, compact = fals
   return segments.map((s) => segLabel(s, lapMeters, compact)).join(' ')
 }
 
+/** 最精簡課表摘要：只「距離×趟」，不含配速/休息。單一：1200×3；組合：(400+200)×8；多段以全形＋串接。 */
+export function planShape(segments: Segment[]): string {
+  return segments.map((seg) => {
+    const items = itemsOf(seg)
+    return items.length > 1
+      ? `(${items.map((i) => distLabel(i, true)).join('+')})×${seg.reps}`
+      : `${distLabel(items[0], true)}×${seg.reps}`
+  }).join('＋')
+}
+
 function parseItem(raw: string, gapSec: number, lapMeters: number): Item | null {
   // 距離：先試 Nk(可小數)，再試 Nm(整數，m 可省)
   const dk = raw.match(/^\s*(\d+(?:\.\d+)?)\s*k/i)
