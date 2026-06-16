@@ -10,7 +10,7 @@ import { fmtClockStr } from '../format'
 import { ShareCardArt } from './ShareCardArt'
 import { FitText } from '../components/FitText'
 import { cardGradient } from './cardGradient'
-import { sharePng } from './screenshot'
+import { elementToPngBlob, shareBlob } from './screenshot'
 import bgPng from '../assets/bg.png'
 
 interface Props {
@@ -31,24 +31,13 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
   const cardRef = useRef<HTMLDivElement>(null)
   const doneTimer = useRef<number | undefined>(undefined)
 
-  useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl) }, [photoUrl])
-  useEffect(() => () => { if (doneTimer.current) clearTimeout(doneTimer.current) }, [])
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const blobRef = useRef<Blob | null>(null)
+  const [building, setBuilding] = useState(true)
 
-  // 匯出 → 完成回饋：分享/下載 → 處理中 → ✓(1.6s) → 回 idle；取消(AbortError)不給回饋
-  const doShare = async () => {
-    if (!cardRef.current || shareState === 'busy') return
-    setShareState('busy')
-    let result: 'shared' | 'downloaded' | 'cancelled'
-    try {
-      result = await sharePng(cardRef.current, `${session.name}.png`)
-    } catch {
-      setShareState('idle')   // 匯出失敗 → 回到可重試
-      return
-    }
-    if (result === 'cancelled') { setShareState('idle'); return }
-    setShareState(result)
-    doneTimer.current = window.setTimeout(() => setShareState('idle'), 1600)
-  }
+  useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl) }, [photoUrl])
+  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl) }, [previewUrl])
+  useEffect(() => () => { if (doneTimer.current) clearTimeout(doneTimer.current) }, [])
 
   // 預設底圖先轉成 data URL：html-to-image 匯出時無法 fetch 外部 URL 的圖（SVG foreignObject 受限），
   // 必須是 data: 才會被嵌進去，否則預設底圖在下載/分享的圖裡會變空白。
@@ -104,6 +93,35 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
   // 上傳照片(blob)本來就能嵌入；預設底圖要等 data URL 轉好才保證匯出不空白
   const ready = photoUrl != null || bgData != null
 
+  // 任何影響卡片外觀的輸入變動 → 重新合成預覽（caption 去抖 300ms）
+  useEffect(() => {
+    if (!ready) return                // 底圖尚未就緒，先不合成
+    let alive = true
+    setBuilding(true)
+    const t = window.setTimeout(() => {
+      const el = cardRef.current
+      if (!el) return
+      void elementToPngBlob(el, 4).then((blob) => {
+        if (!alive) return
+        blobRef.current = blob
+        setPreviewUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(blob) })
+        setBuilding(false)
+      }).catch(() => { if (alive) setBuilding(false) })
+    }, 300)
+    return () => { alive = false; clearTimeout(t) }
+  }, [ready, bg, caption, detail, mode, visible])
+
+  // 分享：同步 handler（不 await），直接用已合成好的 blob
+  const doShare = () => {
+    if (building || !blobRef.current || shareState === 'busy') return
+    setShareState('busy')
+    void shareBlob(blobRef.current, `${session.name}.png`).then((result) => {
+      if (result === 'cancelled') { setShareState('idle'); return }
+      setShareState(result)
+      doneTimer.current = window.setTimeout(() => setShareState('idle'), 1600)
+    }).catch(() => setShareState('idle'))
+  }
+
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,.88)', overflowY: 'auto',
@@ -114,8 +132,21 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
         <button className="btn" onClick={onClose}>✕</button>
       </div>
 
-      <ShareCardArt rootRef={cardRef} photoUrl={bg} gradient={gradient}
-        stat={stat} chart={chart} planText={planText} caption={caption} />
+      {/* 畫面外的真實卡片，作為光柵化來源（不可用 display:none，否則量不到尺寸） */}
+      <div style={{ position: 'fixed', left: -9999, top: 0, pointerEvents: 'none' }} aria-hidden="true">
+        <ShareCardArt rootRef={cardRef} photoUrl={bg} gradient={gradient}
+          stat={stat} chart={chart} planText={planText} caption={caption} />
+      </div>
+      {/* 使用者看到的預覽圖＝會送出的圖 */}
+      <div style={{ width: 270, height: 270, position: 'relative', background: '#0b0b0d', borderRadius: 4, overflow: 'hidden' }}>
+        {previewUrl && <img src={previewUrl} alt="分享預覽" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />}
+        {building && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(0,0,0,.55)', fontSize: 14 }}>
+            <span className="share-spin" aria-hidden="true" />合成中…
+          </div>
+        )}
+      </div>
 
       <div style={{ width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 8 }}>
         <label className="btn" style={{ textAlign: 'center', cursor: 'pointer' }}>
@@ -129,10 +160,11 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
           value={caption} onChange={(e) => setCaption(e.target.value)} />
         <button
           className={`btn primary${shareState === 'shared' || shareState === 'downloaded' ? ' share-done' : ''}`}
-          disabled={!ready || shareState === 'busy'}
-          style={ready ? undefined : { opacity: .5 }}
-          onClick={() => void doShare()}>
+          disabled={!ready || building || shareState === 'busy'}
+          style={ready && !building ? undefined : { opacity: .5 }}
+          onClick={() => doShare()}>
           {!ready ? '底圖準備中…'
+            : building ? <><span className="share-spin" aria-hidden="true" />合成中…</>
             : shareState === 'busy' ? <><span className="share-spin" aria-hidden="true" />處理中…</>
             : shareState === 'shared' ? '✓ 已傳送'
             : shareState === 'downloaded' ? '✓ 已下載'
