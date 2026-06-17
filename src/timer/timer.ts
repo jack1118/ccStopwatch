@@ -62,6 +62,7 @@ export function buildLapPlan(plan: Plan, group: Group): PlannedLap[] {
   const L = getLapMeters(plan)
   const laps: PlannedLap[] = []
   let setNo = 0
+  const forked = !!(group.ownSegments && group.ownSegments.length > 0)
 
   for (const seg of effectiveSegments(plan, group)) {
     const reps = group.segReps?.[seg.id] ?? seg.reps
@@ -70,7 +71,10 @@ export function buildLapPlan(plan: Plan, group: Group): PlannedLap[] {
     for (let r = 0; r < reps; r++) {
       setNo++
       for (const item of items) {
-        const base = targetForItem(item, group, L)
+        // 獨立課表(fork)：targetSec 即該組最終每圈目標，不套用每組每圈＋或覆寫
+        const base = forked
+          ? (item.targetSec && item.targetSec > 0 ? item.targetSec : null)
+          : targetForItem(item, group, L)
         const restSec = group.segRest?.[item.id] ?? item.restSec
         const lpr = lapsOf(item.meters, L)
         let remaining = item.meters

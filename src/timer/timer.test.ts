@@ -99,6 +99,12 @@ describe('buildLapPlan — 單一距離 / 覆寫', () => {
     expect(laps).toHaveLength(4)
     expect(laps[0].meters).toBe(400)   // 800m 拆成兩個 400m 圈
   })
+  it('獨立課表(fork)：每圈目標以 targetSec 為準，不套用每組每圈＋', () => {
+    const plan: Plan = { segments: [{ id: 's', reps: 1, items: [{ id: 'a', meters: 400, restSec: 90, targetSec: 96, gapSec: 8 }] }] }
+    const g = { ...baseGroup, number: 3, ownSegments: [{ id: 'o', reps: 1, items: [{ id: 'b', meters: 400, restSec: 90, targetSec: 104, gapSec: 2 }] }] }
+    const laps = buildLapPlan(plan, g)
+    expect(laps[0].target).toBe(104)   // 不是 104 + 2*1*(3-1) = 108
+  })
 })
 
 describe('elapsedSec / paceTone', () => {
