@@ -32,8 +32,7 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
   )
   const cardStyle = { background: NRC_HEX[g.color], color: NRC_TEXT[g.color] }
   const lapPlan = buildLapPlan(plan, g)
-  const forked = !!(g.ownSegments && g.ownSegments.length > 0)
-  const shape = forked ? planShape(effectiveSegments(plan, g)) : ''
+  const shape = planShape(effectiveSegments(plan, g))
   const lastRep = g.reps[g.reps.length - 1]
 
   // 長按停止：快速點＝動作；按住到紅框繞滿＝停止
@@ -129,7 +128,7 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
         <button className={`startbtn${pressedCls}`} onClick={() => { tapFlash(); onStart(g.id) }}
           onPointerDown={() => setPressed(true)} onPointerUp={() => setPressed(false)}
           onPointerLeave={() => setPressed(false)} onPointerCancel={() => setPressed(false)}>▶ 開始</button>
-        <div className="cmeta">{forked ? shape : (lapPlan.length > 0 ? `共 ${lapPlan.length} 圈` : '純碼表')}</div>
+        <div className="cmeta">{shape || (lapPlan.length > 0 ? `共 ${lapPlan.length} 圈` : '純碼表')}</div>
       </div>
     )
   }
@@ -139,7 +138,7 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
     return (
       <div className={`card${big ? ' big' : ''}`} data-testid="card" style={{ ...cardStyle, opacity: 0.72 }}>
         <div className="ctop">{Title}<span className="tag">✓完成</span></div>
-        {forked && <div className="gplan">{shape}</div>}
+        {shape && <div className="gplan">{shape}</div>}
         <div className="hero" style={{ justifyContent: 'center' }}>
           <span style={{ fontSize: big ? 34 : 24, fontWeight: 900 }}>總 {fmtClockStr(total)}</span>
         </div>
@@ -171,7 +170,7 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
             )}
           </span>
         </div>
-        {forked && <div className="gplan">{shape}</div>}
+        {shape && <div className="gplan">{shape}</div>}
         {showUndo && Corner}
         <button className={`lapface${pressedCls}`} data-testid="lap-body"
           {...pressProps(() => (ticking ? onLap(g.id) : onStart(g.id)))}
@@ -236,7 +235,7 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
           第<b className="bignum">{justSetNo}</b>{justUnit}
         </span>
       </div>
-      {forked && <div className="gplan">{shape}</div>}
+      {shape && <div className="gplan">{shape}</div>}
       {showUndo && Corner}
       <button className={`restwrap${pressedCls}`} data-testid="next-body" {...pressProps(() => onNext(g.id))}>
         <span className="rest-vlabel">{restLabel}</span>

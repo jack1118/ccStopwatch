@@ -97,6 +97,13 @@ it('分岔組卡片顯示自己的課表行', () => {
   expect(screen.getByText('800×2')).toBeInTheDocument()
 })
 
+it('未分岔組也顯示共用課表行（取代共N圈）', () => {
+  const comboPlan = { lapMeters: 400, segments: [{ id: 's', reps: 5, items: [{ id: 'a', meters: 400, restSec: 0 }, { id: 'b', meters: 200, restSec: 60 }] }] }
+  const g = { ...base, state: 'idle' as const }   // no ownSegments
+  render(<GroupCard group={g} plan={comboPlan} now={0} big onStart={() => {}} onLap={() => {}} onNext={() => {}} onUndo={() => {}} onStop={() => {}} />)
+  expect(screen.getByText('(400+200)×5')).toBeInTheDocument()
+})
+
 it('跑步中有設目標時顯示目標秒數', () => {
   const planT: Plan = { lapMeters: 400, segments: [{ id: '1', meters: 400, reps: 10, restSec: 90, targetSec: 96, gapSec: 0 }] }
   const g = { ...base, number: 1, state: 'running' as const, runStartTs: 0, reps: [] }
