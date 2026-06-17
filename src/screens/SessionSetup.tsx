@@ -71,6 +71,12 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
   const [cfg, setCfg] = useState<Record<NRCColor, GroupCfg>>(() => initGroupCfg(initial))
   const [lapMeters, setLapMeters] = useState(initial?.plan.lapMeters ?? 400)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  // 哪些組是「已真正編輯/已提交」的獨立課表；未在此集合的 fork 視為待定(未編輯)，收合/開始時自動還原。
+  // 用 state（惰性 seed 既有真分岔）：讀取為純運算，避免 ref.current 在 render 可達函式裡被讀寫
+  // 而觸發 react-compiler 純度誤判；編輯/還原時以新 Set 取代。
+  const [forkEdited, setForkEdited] = useState<Set<NRCColor>>(
+    () => new Set((initial?.groups ?? []).filter((g) => g.ownSegments && g.ownSegments.length > 0).map((g) => g.color)),
+  )
   const [editChip, setEditChip] = useState<PlanChip | null>(null)
 
   // 每組每圈加秒 × 此距離圈數 = 各組之間在「整段距離」上累加的秒數
@@ -133,7 +139,11 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
     setCfg((p) => ({ ...p, [c]: { ...p[c], segTarget: { ...p[c].segTarget, [itemId]: v } } }))
   const setItemRest = (c: NRCColor, itemId: string, v: number) =>
     setCfg((p) => ({ ...p, [c]: { ...p[c], segRest: { ...p[c].segRest, [itemId]: v } } }))
-  const toggleExpand = (c: NRCColor) => setExpanded((p) => ({ ...p, [c]: !p[c] }))
+  const toggleExpand = (c: NRCColor) => {
+    // 收合時：若是「未編輯」的待定分岔 → 自動還原成共用（避免誤觸留下空分岔、脫鉤共用課表）
+    if (expanded[c] && isForked(c) && !forkEdited.has(c)) unforkGroup(c)
+    setExpanded((p) => ({ ...p, [c]: !p[c] }))
+  }
 
   const forkGroup = (c: NRCColor) => {
     const currentSegs = segments
@@ -147,10 +157,14 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
       return { ...p, [c]: { ...p[c], ownSegments: bakeOwnSegments({ segments: currentSegs, lapMeters: currentLap }, g) } }
     })
   }
-  const unforkGroup = (c: NRCColor) =>
+  const unforkGroup = (c: NRCColor) => {
+    setForkEdited((p) => { if (!p.has(c)) return p; const n = new Set(p); n.delete(c); return n })
     setCfg((p) => ({ ...p, [c]: { ...p[c], ownSegments: undefined } }))
-  const setOwnSegments = (c: NRCColor, segs: Segment[]) =>
+  }
+  const setOwnSegments = (c: NRCColor, segs: Segment[]) => {
+    setForkEdited((p) => (p.has(c) ? p : new Set(p).add(c)))   // 使用者真的改了獨立課表的值
     setCfg((p) => ({ ...p, [c]: { ...p[c], ownSegments: segs } }))
+  }
   const isForked = (c: NRCColor) => (cfg[c].ownSegments?.length ?? 0) > 0
 
   const repsFor = (c: NRCColor, seg: Segment) => cfg[c].segReps[seg.id] ?? seg.reps
@@ -171,7 +185,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
         segReps: { ...cfg[g.color].segReps },
         segTarget: { ...cfg[g.color].segTarget },
         segRest: { ...cfg[g.color].segRest },
-        ownSegments: cfg[g.color].ownSegments,
+        ownSegments: forkEdited.has(g.color) ? cfg[g.color].ownSegments : undefined,
       }))
       onStart({ ...initial, name: name.trim() || '未命名課程', plan: { segments, lapMeters }, groups })
       return
@@ -179,7 +193,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
     const groups = NRC_ORDER.filter((c) => cfg[c].on).map((c) => ({
       id: uid(), color: c, number: NRC_NUM[c],
       segReps: { ...cfg[c].segReps }, segTarget: { ...cfg[c].segTarget }, segRest: { ...cfg[c].segRest },
-      ownSegments: cfg[c].ownSegments,
+      ownSegments: forkEdited.has(c) ? cfg[c].ownSegments : undefined,
       targetPaceSec: null, athletes: [], state: 'idle' as const, runStartTs: null, restStartTs: null, reps: [],
     }))
     onStart({
