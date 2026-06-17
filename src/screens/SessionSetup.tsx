@@ -258,7 +258,9 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
                         editingActive={editingActive} repFloor={(seg) => repFloorGroup(c, seg)}
                         onChange={(segs) => setOwnSegments(c, segs)} />
                       {!editingActive && (
-                        <button className="btn" style={{ marginTop: 8 }} onClick={() => unforkGroup(c)}>重新套用共用課表</button>
+                        <div style={{ marginTop: 8 }}>
+                          <button className="btn" onClick={() => unforkGroup(c)}>重新套用共用課表</button>
+                        </div>
                       )}
                     </>
                   ) : (
