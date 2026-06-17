@@ -108,7 +108,7 @@ export function PlanEditor({ segments, lapMeters, onChange, editingActive = fals
                     <span className="field-hint">每 {lapMeters}m；≈ 完成 {it.meters}m {it.targetSec ?? 0} 秒（0＝不設）</span>
                   </div>
                 )}
-                {(it.targetSec ?? 0) > 0 && (
+                {showGroupTargets && (it.targetSec ?? 0) > 0 && (
                   <div className="field-row">
                     <span className="rl">每組每圈＋</span>
                     <Stepper value={it.gapSec ?? 0} step={1} min={0} onChange={(v) => patchItem(seg.id, it.id, { gapSec: v })} />
