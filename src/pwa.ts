@@ -33,7 +33,9 @@ async function fetchServerBuild(): Promise<string | null> {
 }
 
 /**
- * 主動檢查更新：先用 version.json 確認是否真有新版，再驅動 SW 更新並重載。
+ * 主動檢查更新：先用 version.json 確認是否真有新版，有就觸發 SW 更新並重載。
+ * autoUpdate 模式下新 SW 會自動 skipWaiting → controlling 事件 → 上方 listener 重載；
+ * 1.5s 保底重載涵蓋 iOS 主畫面(controlling 可能不觸發)。
  * 'updating' = 已觸發更新/重載；'latest' = 已是最新（或離線無法確認且無更新）。
  */
 export async function checkForUpdate(): Promise<'updating' | 'latest'> {
@@ -46,20 +48,10 @@ export async function checkForUpdate(): Promise<'updating' | 'latest'> {
     return 'latest'
   }
 
-  // 等新 SW 進入 waiting（iOS 需時間下載預快取），逾時 10s
-  const waiting = await new Promise<boolean>((resolve) => {
-    let done = false
-    wb!.addEventListener('waiting', () => { if (!done) { done = true; resolve(true) } })
-    void wb!.update()
-    window.setTimeout(() => { if (!done) { done = true; resolve(false) } }, 10000)
-  })
-
-  if (waiting) {
-    wb.messageSkipWaiting()
-    // iOS 主畫面常不觸發 'controlling' → 給新 SW 啟用時間後主動重載保底
-    window.setTimeout(() => window.location.reload(), 1500)
+  if (hasNewBuild) {
+    void wb.update()                                          // 新 SW 自動 skipWaiting → controlling → 重載
+    window.setTimeout(() => window.location.reload(), 1500)   // iOS 主畫面保底
     return 'updating'
   }
-  if (hasNewBuild) { window.location.reload(); return 'updating' }   // 保底：確定有新版但 SW 沒就緒
   return 'latest'
 }
