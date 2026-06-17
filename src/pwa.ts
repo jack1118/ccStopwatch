@@ -18,13 +18,17 @@ export function initPwa(): void {
 
 /** 向伺服器確認最新 build；回 null 代表抓不到（離線/失敗）。?t= 繞過 GitHub Pages 600s CDN 快取。 */
 async function fetchServerBuild(): Promise<string | null> {
+  const ctrl = new AbortController()
+  const timer = window.setTimeout(() => ctrl.abort(), 8000)
   try {
-    const res = await fetch(`${import.meta.env.BASE_URL}version.json?t=${Date.now()}`, { cache: 'no-store' })
+    const res = await fetch(`${import.meta.env.BASE_URL}version.json?t=${Date.now()}`, { cache: 'no-store', signal: ctrl.signal })
     if (!res.ok) return null
     const data = (await res.json()) as { build?: string }
     return data.build ?? null
   } catch {
     return null
+  } finally {
+    window.clearTimeout(timer)
   }
 }
 
@@ -51,7 +55,9 @@ export async function checkForUpdate(): Promise<'updating' | 'latest'> {
   })
 
   if (waiting) {
-    wb.messageSkipWaiting()   // → SW skipWaiting → 'controlling'(isUpdate) → reload
+    wb.messageSkipWaiting()
+    // iOS 主畫面常不觸發 'controlling' → 給新 SW 啟用時間後主動重載保底
+    window.setTimeout(() => window.location.reload(), 1500)
     return 'updating'
   }
   if (hasNewBuild) { window.location.reload(); return 'updating' }   // 保底：確定有新版但 SW 沒就緒
