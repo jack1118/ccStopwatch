@@ -22,7 +22,7 @@ export default defineConfig(({ command }) => ({
       },
     },
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       injectRegister: null,
       includeAssets: ['icon.svg', 'apple-touch-icon-180x180.png'],
       workbox: {

@@ -3,16 +3,21 @@ import { Workbox } from 'workbox-window'
 declare const __BUILD__: string
 
 let wb: Workbox | null = null
+let reloadTimer: number | undefined
+
+/** 重載一次：先清掉保底計時器，避免 controlling 與逾時重複重載 */
+function reloadOnce(): void {
+  if (reloadTimer !== undefined) { window.clearTimeout(reloadTimer); reloadTimer = undefined }
+  window.location.reload()
+}
 
 /** App 啟動時呼叫一次，註冊 service worker（僅正式環境）。dev/不支援 → no-op。 */
 export function initPwa(): void {
   if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return
   const base = import.meta.env.BASE_URL
   wb = new Workbox(`${base}sw.js`, { scope: base, updateViaCache: 'none' })
-  // 新 SW 接管時自動重載到新版；首次安裝(無前一 controller)不可重載，否則首次載入會無限重載
-  wb.addEventListener('controlling', (event) => {
-    if (event.isUpdate) window.location.reload()
-  })
+  // 新 SW 接管時自動重載到新版（autoUpdate 會自動 skipWaiting）；首次安裝不重載
+  wb.addEventListener('controlling', (event) => { if (event.isUpdate) reloadOnce() })
   void wb.register()
 }
 
@@ -33,33 +38,21 @@ async function fetchServerBuild(): Promise<string | null> {
 }
 
 /**
- * 主動檢查更新：先用 version.json 確認是否真有新版，再驅動 SW 更新並重載。
+ * 主動檢查更新：先用 version.json 確認是否真有新版，有就觸發 SW 更新並重載。
+ * autoUpdate 模式下新 SW 安裝後會自動 skipWaiting → controlling 事件 → 上方 listener 重載；
+ * 12s 保底重載涵蓋 iOS 主畫面(controlling 可能不觸發)，給新 SW 足夠時間安裝/預快取。
  * 'updating' = 已觸發更新/重載；'latest' = 已是最新（或離線無法確認且無更新）。
  */
 export async function checkForUpdate(): Promise<'updating' | 'latest'> {
   const serverBuild = await fetchServerBuild()
-  if (serverBuild != null && serverBuild === __BUILD__) return 'latest'   // 確定最新
-  const hasNewBuild = serverBuild != null && serverBuild !== __BUILD__
-
-  if (!wb) {                                  // dev / 無 SW
-    if (hasNewBuild) { window.location.reload(); return 'updating' }
-    return 'latest'
-  }
-
-  // 等新 SW 進入 waiting（iOS 需時間下載預快取），逾時 10s
-  const waiting = await new Promise<boolean>((resolve) => {
-    let done = false
-    wb!.addEventListener('waiting', () => { if (!done) { done = true; resolve(true) } })
-    void wb!.update()
-    window.setTimeout(() => { if (!done) { done = true; resolve(false) } }, 10000)
+  if (serverBuild == null) return 'latest'          // 離線/抓不到 → 不動作（誠實）
+  if (serverBuild === __BUILD__) return 'latest'    // 已是最新
+  // 確定有新版：
+  if (!wb) { reloadOnce(); return 'updating' }      // dev / 無 SW
+  // autoUpdate：新 SW 安裝後自動 skipWaiting → controlling → reloadOnce()
+  void wb.update().catch(() => {                    // 抓不到新 SW（網路掉）→ 取消保底，不重載到舊版
+    if (reloadTimer !== undefined) { window.clearTimeout(reloadTimer); reloadTimer = undefined }
   })
-
-  if (waiting) {
-    wb.messageSkipWaiting()
-    // iOS 主畫面常不觸發 'controlling' → 給新 SW 啟用時間後主動重載保底
-    window.setTimeout(() => window.location.reload(), 1500)
-    return 'updating'
-  }
-  if (hasNewBuild) { window.location.reload(); return 'updating' }   // 保底：確定有新版但 SW 沒就緒
-  return 'latest'
+  reloadTimer = window.setTimeout(reloadOnce, 12000) // iOS 主畫面 controlling 不觸發時的保底
+  return 'updating'
 }
