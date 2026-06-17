@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fmtClock, fmtClockStr, fmtOverflow } from './format'
+import { fmtClock, fmtClockStr, fmtOverflow, dateLabel } from './format'
 
 describe('fmtClock', () => {
   it('拆出分與兩位數秒', () => {
@@ -22,5 +22,16 @@ describe('fmtOverflow', () => {
     expect(fmtOverflow(104, 90)).toBe('+14s')
     expect(fmtOverflow(90, 90)).toBe('')   // 未超時不顯示
     expect(fmtOverflow(80, 90)).toBe('')
+  })
+})
+
+describe('dateLabel', () => {
+  it('格式化為 M/D (台灣星期)', () => {
+    const ts = new Date(2026, 5, 17).getTime()   // 2026-06-17 週三
+    expect(dateLabel(ts)).toBe('6/17 (三)')
+  })
+  it('個位數月份日期不補零', () => {
+    const ts = new Date(2026, 0, 4).getTime()     // 2026-01-04 週日
+    expect(dateLabel(ts)).toBe('1/4 (日)')
   })
 })
