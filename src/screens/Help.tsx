@@ -12,14 +12,16 @@ export function Help({ onBack }: Props) {
   const timerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null)
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current) }, [])
   const onCheck = async () => {
-    if (upd === 'checking') return
+    if (upd === 'checking' || upd === 'updating') return
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
     setUpd('checking')
     const r = await checkForUpdate()   // 'updating' 會重載頁面
     if (r === 'latest') {
       setUpd('latest')
       timerRef.current = window.setTimeout(() => setUpd('idle'), 1600)
     } else {
-      setUpd('updating')   // 即將重載；顯示「更新中…」而非卡在「檢查中…」
+      setUpd('updating')   // 即將重載
+      timerRef.current = window.setTimeout(() => setUpd('idle'), 5000)   // 重載沒發生的保底，避免永遠卡住
     }
   }
   return (
