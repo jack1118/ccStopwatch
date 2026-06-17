@@ -1,37 +1,59 @@
-import { registerSW } from 'virtual:pwa-register'
+import { Workbox } from 'workbox-window'
 
-// 由 registerSW 取得的更新函式；呼叫 updateSW(true) 會 skipWaiting 並 reload
-let updateSW: ((reload?: boolean) => Promise<void>) | null = null
-// 是否已偵測到等待中的新版（onNeedRefresh 觸發）
-let needRefresh = false
-// 保存 registration 以便手動 update() 向伺服器查最新
-let swRegistration: ServiceWorkerRegistration | undefined
+declare const __BUILD__: string
 
-/** App 啟動時呼叫一次，註冊 service worker。dev 無 SW 時為 no-op。 */
+let wb: Workbox | null = null
+
+/** App 啟動時呼叫一次，註冊 service worker（僅正式環境）。dev/不支援 → no-op。 */
 export function initPwa(): void {
-  updateSW = registerSW({
-    immediate: true,
-    onNeedRefresh() { needRefresh = true },
-    onRegisteredSW(_swUrl, reg) { swRegistration = reg },
+  if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return
+  const base = import.meta.env.BASE_URL
+  wb = new Workbox(`${base}sw.js`, { scope: base, updateViaCache: 'none' })
+  // 新 SW 接管時自動重載到新版；首次安裝(無前一 controller)不可重載，否則首次載入會無限重載
+  wb.addEventListener('controlling', (event) => {
+    if (event.isUpdate) window.location.reload()
   })
+  void wb.register()
+}
+
+/** 向伺服器確認最新 build；回 null 代表抓不到（離線/失敗）。?t= 繞過 GitHub Pages 600s CDN 快取。 */
+async function fetchServerBuild(): Promise<string | null> {
+  try {
+    const res = await fetch(`${import.meta.env.BASE_URL}version.json?t=${Date.now()}`, { cache: 'no-store' })
+    if (!res.ok) return null
+    const data = (await res.json()) as { build?: string }
+    return data.build ?? null
+  } catch {
+    return null
+  }
 }
 
 /**
- * 主動檢查更新：向伺服器查最新 SW；抓到新版就套用並重載，否則回 'latest'。
- * 'updating' 代表已觸發重載（呼叫端通常不會走到後續）。
+ * 主動檢查更新：先用 version.json 確認是否真有新版，再驅動 SW 更新並重載。
+ * 'updating' = 已觸發更新/重載；'latest' = 已是最新（或離線無法確認且無更新）。
  */
 export async function checkForUpdate(): Promise<'updating' | 'latest'> {
-  if (!swRegistration || !updateSW) return 'latest'   // dev / 尚未註冊
-  try {
-    await swRegistration.update()
-  } catch {
+  const serverBuild = await fetchServerBuild()
+  if (serverBuild != null && serverBuild === __BUILD__) return 'latest'   // 確定最新
+  const hasNewBuild = serverBuild != null && serverBuild !== __BUILD__
+
+  if (!wb) {                                  // dev / 無 SW
+    if (hasNewBuild) { window.location.reload(); return 'updating' }
     return 'latest'
   }
-  // update() 後若有等待中的新 SW（onNeedRefresh 已觸發，或 registration.waiting 存在）→ 套用
-  if (needRefresh || swRegistration.waiting) {
-    needRefresh = false          // consume the flag
-    await updateSW(true)   // skipWaiting + reload
+
+  // 等新 SW 進入 waiting（iOS 需時間下載預快取），逾時 10s
+  const waiting = await new Promise<boolean>((resolve) => {
+    let done = false
+    wb!.addEventListener('waiting', () => { if (!done) { done = true; resolve(true) } })
+    void wb!.update()
+    window.setTimeout(() => { if (!done) { done = true; resolve(false) } }, 10000)
+  })
+
+  if (waiting) {
+    wb.messageSkipWaiting()   // → SW skipWaiting → 'controlling'(isUpdate) → reload
     return 'updating'
   }
+  if (hasNewBuild) { window.location.reload(); return 'updating' }   // 保底：確定有新版但 SW 沒就緒
   return 'latest'
 }
