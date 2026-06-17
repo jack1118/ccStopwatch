@@ -21,7 +21,7 @@ export function Help({ onBack }: Props) {
       timerRef.current = window.setTimeout(() => setUpd('idle'), 1600)
     } else {
       setUpd('updating')   // 即將重載
-      timerRef.current = window.setTimeout(() => setUpd('idle'), 5000)   // 重載沒發生的保底，避免永遠卡住
+      timerRef.current = window.setTimeout(() => setUpd('idle'), 15000)   // 重載沒發生的保底，避免永遠卡住（> pwa 12s）
     }
   }
   return (
