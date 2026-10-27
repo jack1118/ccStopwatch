@@ -42,14 +42,39 @@ button { font-family: inherit; color: inherit; }
   68% { opacity: 1; transform: scale(1); }
   100% { opacity: 0; transform: scale(1.06); }
 }
-/* 字級由 inline 依位數設定；不用 text-stroke(大字會自我交疊出鬼影)，改多層深色陰影做輪廓 */
-.lap-flash-sec { font-weight: 900; line-height: .85;
+/* 字級由 inline 依位數設定；不用 text-stroke(大字會自我交疊出鬼影)，改多層深色陰影做輪廓。
+   一律白字＋深色半透明底：組色(紫/黑)疊在別組卡上對比太低 */
+.lap-flash-sec { font-weight: 900; line-height: .85; color: #fff;
+  background: rgba(12,12,16,.66); border-radius: .16em; padding: .08em .14em .1em;
   text-shadow: 0 0 3px rgba(0,0,0,.9), 0 3px 6px rgba(0,0,0,.85), 0 8px 30px rgba(0,0,0,.6); }
-/* 組別標籤：深色膠囊底→不管後面卡片什麼顏色都讀得清楚 */
+/* 組別標籤：深色膠囊底＋白字，組色只留在小圓點 → 不管後面卡片什麼顏色都讀得清楚 */
 .lap-flash-label { font-size: 7vw; font-weight: 800; margin-bottom: 2.5vh; white-space: nowrap;
-  background: rgba(0,0,0,.6); padding: 5px 18px; border-radius: 999px;
+  color: #fff; background: rgba(12,12,16,.82); padding: 5px 18px; border-radius: 999px;
   text-shadow: 0 1px 3px rgba(0,0,0,.8); }
 @media (min-width: 560px) { .lap-flash-label { font-size: 32px; } }
+/* 視覺隱藏、讀屏可讀（按圈 aria-live 播報用） */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+/* 碼表頁頂列：開課時間（同一天多堂課分得出來） */
+.plan-time { font-size: 15px; font-weight: 600; color: #b3b3b9; }   /* 略小：390px 寬時頂列 4 顆鈕下仍放得下 */
+/* 頂列開關(🔊/↩)：除透明度外，開＝實心底＋亮框、關＝透明底＋暗框(↩ 另加斜線) */
+.btn.tgl { position: relative; }
+.btn.tgl[aria-pressed="true"] { background: #3a3a42; box-shadow: inset 0 0 0 1.5px #8e8e96; }
+.btn.tgl[aria-pressed="false"] { background: transparent; box-shadow: inset 0 0 0 1.5px #3a3a42; }
+.btn.tgl.slash[aria-pressed="false"]::after { content: ''; position: absolute; left: 20%; right: 20%;
+  top: calc(50% - 1px); height: 2px; border-radius: 1px; background: #ff6b5e; transform: rotate(-38deg); }
+/* 結束一組後的復原 toast：底部置中、窄、5 秒自動消失；只有本體可點，不擋其他卡片 */
+.stop-toast { position: fixed; left: 50%; transform: translateX(-50%); z-index: 40;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  display: flex; align-items: center; gap: 8px; max-width: calc(100% - 32px);
+  padding: 0 4px 0 14px; border-radius: 14px; white-space: nowrap;
+  background: #1c1c22; border: 1px solid #3a3a42; color: #fff; font-size: 15px; font-weight: 700;
+  box-shadow: 0 6px 20px rgba(0,0,0,.55); animation: toastIn .18s ease-out; }
+.stop-toast.above-bar { bottom: calc(70px + env(safe-area-inset-bottom)); }   /* 全部完成時讓出底部按鈕列 */
+.stop-toast-undo { min-height: 44px; min-width: 64px; margin: 4px 0; padding: 0 14px; border: 0;
+  border-radius: 10px; background: rgba(255,214,10,.16); color: #FFD60A; font-size: 15px; font-weight: 800; }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) { .stop-toast { animation: none; } }
 .btn { background: #2c2c2e; border: 0; border-radius: 10px; padding: 9px 14px; min-height: 44px;
   font-size: 14px; font-weight: 600; }
 .btn.primary { background: #30D158; color: #03260f; }
@@ -90,27 +115,36 @@ button { font-family: inherit; color: inherit; }
   border: 1px solid rgba(255,255,255,.14); word-break: keep-all;
   transition: filter .12s ease, transform .12s ease, box-shadow .12s ease; }
 .card.big { min-height: 200px; }
-.targetline { font-size: 13px; font-weight: 700; opacity: .95; text-align: left;
+/* 次要文字一律不降透明度、最小 13px；墨色由卡片 color 決定(黃/綠＝深字，其餘白字，見 NRC_TEXT) */
+.targetline { font-size: 13px; font-weight: 700; text-align: left;
   padding-left: 8px; margin-top: 2px; }
 .card.big .targetline { font-size: 19px; padding-left: 14px; }
 .card .ctop { display: flex; justify-content: space-between; align-items: center;
-  font-size: 12px; font-weight: 700;
+  font-size: 13px; font-weight: 700;
   position: relative; z-index: 2; gap: 8px; padding: 0 5px; }   /* 在跑燈條之上、且左右內縮不頂到燈條 */
 .card.big .ctop { font-size: 15px; }
-.tag { font-size: 10px; padding: 1px 7px; border-radius: 7px;
-  background: rgba(255,255,255,.26); font-weight: 700; }
+/* 狀態小標籤(未開始/換這組/✓完成)：深色膠囊＋白字，任何組色上都 ≥4.5:1 */
+.tag { font-size: 13px; padding: 2px 8px; border-radius: 8px; white-space: nowrap;
+  background: rgba(12,12,16,.8); color: #fff; font-weight: 800; }
 .tag.over { background: #FF2D1A; color: #fff; }
 .tag.warn { background: #FF8A1A; color: #fff; }
-.cmeta { font-size: 10px; opacity: .82; text-align: center; margin-top: auto; }
-.card.big .cmeta { font-size: 12px; }
+.cmeta { font-size: 13px; font-weight: 600; text-align: center; margin-top: auto; }
+.card.big .cmeta { font-size: 14px; }
 /* 休息卡底部「剛跑　目標休」放大更清楚 */
-.restmeta { font-size: 14px; font-weight: 600; opacity: .95; }
+.restmeta { font-size: 14px; font-weight: 600; }
 .card.big .restmeta { font-size: 18px; }
-.corner { position: absolute; top: 44px; right: 6px; z-index: 6; display: flex;
+/* ↩ 復原鈕：移到右下角(不壓時鐘)；底部資訊列讓出右側空間 */
+.corner { position: absolute; bottom: 6px; right: 6px; z-index: 6; display: flex;
   flex-direction: column; gap: 10px; }
-.undo-btn { position: relative; background: rgba(0,0,0,.32); border: 1.5px solid rgba(255,255,255,.5);
+.card.has-undo .lapface .cmeta, .card.has-undo .restmeta, .card.done .donebody .cmeta { padding-right: 46px; }
+.undo-btn { position: relative; background: rgba(12,12,16,.78); border: 1.5px solid rgba(255,255,255,.7);
   color: #fff; font-size: 22px; font-weight: 900; line-height: 1;
-  width: 40px; height: 40px; border-radius: 50%; }
+  width: 44px; height: 44px; border-radius: 50%; }
+/* 完成卡：整塊＝看該組明細的按鈕(不降透明度，靠深色「✓完成」膠囊標示) */
+.donebody { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: stretch;
+  background: transparent; border: 0; color: inherit; cursor: pointer; padding: 0; }
+.donebody .cmeta { margin-top: 0; padding-bottom: 14px; }
+.card.big .donebody .cmeta { padding-bottom: 16px; }
 /* 復原長按：白色寬線繞整個碼表卡片 */
 .undo-ring { position: absolute; inset: 0; border-radius: 16px; pointer-events: none; z-index: 5;
   padding: 5px;
@@ -132,16 +166,20 @@ button { font-family: inherit; color: inherit; }
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
-  animation: fillring 1.25s linear forwards;
+  animation: fillring .9s linear forwards;   /* 600ms 才出現、1.5s 繞滿 → 0.9s */
 }
 
 /* 進行中跑燈進度環(SVG)：沿圓角邊框依邊長均勻填色 + 亮綠實心圓點貼頭部;超過→整圈轉紅持續閃 */
 .run-ring-wrap { position: absolute; inset: 0; pointer-events: none; z-index: 1; }   /* 在文字之下：綠點/填色不會蓋住文字 */
 .run-svg { position: absolute; inset: 0; overflow: visible; }
 .run-track { fill: none; stroke: rgba(255,255,255,.18); }
+/* 填色下墊一條較寬的深色底線 → 白/紅填色兩側各露 2px 黑邊，紅卡/黃卡上也看得見 */
+.run-fill-under { fill: none; stroke: rgba(12,12,16,.8); stroke-linecap: round; }
 .run-fill { fill: none; stroke: rgba(255,255,255,.95); stroke-linecap: round; }
 .run-fill.over { stroke: #FF2D1A; animation: ringpulse .7s ease-in-out infinite; }
-.run-dot { fill: #4cff78; filter: drop-shadow(0 0 5px rgba(76,255,120,.95)); }
+/* 頭部圓點：深色描邊托住亮綠/紅，綠卡/紅卡上不會融進底色 */
+.run-dot { fill: #4cff78; stroke: #0c0c10; stroke-width: 2.5;
+  filter: drop-shadow(0 0 5px rgba(76,255,120,.95)); }
 .run-dot.over { fill: #FF2D1A; filter: drop-shadow(0 0 5px rgba(255,45,26,.95)); }
 @keyframes ringpulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
 
@@ -161,17 +199,17 @@ button { font-family: inherit; color: inherit; }
   position: relative; z-index: 2; }   /* 文字在跑燈條之上，不被綠點/填色蓋住 */
 .lapface .targetline { margin: 0 0 2px; padding-left: 0; text-align: left; }
 /* 上圈資訊：至少跟目標一樣清楚，並與計時拉開距離 */
-.lapface .cmeta { margin: 8px 0 0; text-align: left; font-size: 15px; font-weight: 600; opacity: .95; }
+.lapface .cmeta { margin: 8px 0 0; text-align: left; font-size: 15px; font-weight: 600; }
 .card.big .lapface .cmeta { margin-top: 12px; font-size: 20px; }
 
 /* 右上角「第 N 趟」— N 放大強調 */
-.reptag { font-size: 12px; font-weight: 700; display: inline-flex; align-items: baseline;
+.reptag { font-size: 13px; font-weight: 700; display: inline-flex; align-items: baseline;
   gap: 1px; white-space: nowrap; }
 .gtitle, .targetline { white-space: nowrap; }
 .card.big .reptag { font-size: 15px; }
 .reptag .bignum { font-size: 22px; font-weight: 900; line-height: 1; }
 /* 多圈「第N/M圈」：N(目前圈)用 bignum 放大、M(總圈)用 lapof 縮小，一眼看出進行到第幾圈 */
-.reptag .lapof { font-size: 14px; font-weight: 800; opacity: .7; }
+.reptag .lapof { font-size: 14px; font-weight: 800; }
 .card.big .reptag .lapof { font-size: 18px; }
 /* 組名「第N組」的 N 放大 */
 .gtitle .num { font-size: 1.55em; font-weight: 900; }
@@ -181,7 +219,7 @@ button { font-family: inherit; color: inherit; }
 .startbtn { flex: 1; display: flex; align-items: center; justify-content: center;
   font-size: 20px; font-weight: 800; background: rgba(255,255,255,.2);
   border: 0; border-radius: 12px; margin-top: 2px; }
-.resume-hint { font-size: 22px; font-weight: 800; opacity: .95; }
+.resume-hint { font-size: 22px; font-weight: 800; }
 .card.big .resume-hint { font-size: 30px; }
 /* 休息區：左＝直書「趟休/組休」大字、右＝計時/進度/出發；整塊＝出發按鈕 */
 .restwrap { flex: 1; display: flex; flex-direction: row; align-items: center; gap: 10px; }
@@ -196,11 +234,16 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .restbar { height: 5px; width: 88%; border-radius: 3px;
   background: rgba(255,255,255,.3); overflow: hidden; }
 .restbar i { display: block; height: 100%; background: rgba(255,255,255,.9); }
+.restbar.over { background: rgba(12,12,16,.55); }   /* 超時：深色軌道托住紅條(紅卡上也看得見) */
 .restbar.over i { background: #FF453A; }
+/* 黃/綠卡深色字：直書標籤不疊深色陰影(會糊)，進度條改深色 */
+.card.ink-dark .rest-vlabel { text-shadow: none; }
+.card.ink-dark .restbar { background: rgba(0,0,0,.2); }
+.card.ink-dark .restbar i { background: #111; }
+.card.ink-dark .restbar.over i { background: #FF453A; }
 /* 出發提示：去掉底框，只留文字（整張卡片即出發點擊區）；固定兩行(距離獨立一行)避免高度跳動 */
 .gobtn { font-size: 14px; font-weight: 800; background: transparent;
   border: 0; padding: 4px 0; display: flex; flex-direction: column; align-items: center; gap: 1px; }
-.gobtn .godist { opacity: .9; }
 /* 標籤後面的數字放大（標籤字維持） */
 .metaval { font-size: 1.4em; font-weight: 800; }
 /* 休息中：柔和實線內框（取代原虛線；虛線在 UI 慣例＝placeholder 較不好看） */
@@ -208,29 +251,41 @@ button.restwrap { background: transparent; border: 0; color: inherit;
   border-radius: 14px; pointer-events: none; z-index: 3; }
 .resting.blink-go::after { display: none; }   /* 到點紅閃時不再疊白框，聚焦紅框 */
 /* 休息中：只把底色換深（在 GroupCard 計算），文字/數字維持全亮可讀；一眼分辨「暗＝休息、亮＝進行」 */
-/* 最後3秒：只有「Go」放大變紅，其餘字維持 */
-.gobtn .go-word { color: #FF3B30; font-size: 1.8em; font-weight: 900; }
+/* 最後3秒：只有「Go」放大變紅，其餘字維持；紅字墊深色膠囊(紅卡上紅字原本 1.2:1) */
+.gobtn .go-word { color: #FF3B30; font-size: 1.8em; font-weight: 900;
+  background: rgba(12,12,16,.92); border-radius: 8px; padding: 0 6px; }
 /* 下方超時 Go：紅字＋淺描邊(比中央輕)，當次要提示 */
 .gobtn .go-word.go-over { text-shadow: 0 1px 3px rgba(0,0,0,.55), 0 0 2px rgba(0,0,0,.5); }
-/* 最後3秒中央大紅倒數 3/2/1/Go：與時鐘一致；用多層陰影(不用描邊→大字不會有鬼影) */
+/* 最後3秒中央大紅倒數 3/2/1/Go：與時鐘一致；用多層陰影(不用描邊→大字不會有鬼影)；外層 .stat-pill 墊深底 */
 .go-count { color: #FF3B30; font-weight: 900; line-height: .9; letter-spacing: -2px;
   text-shadow: 0 0 2px rgba(0,0,0,.75), 0 2px 5px rgba(0,0,0,.55), 0 0 4px rgba(0,0,0,.5); }
-/* Ready 與 Go 成對：同字位、略小、冷靜白色（Go 紅＝爆發） */
-.gobtn .ready-word { color: #fff; font-size: 1.4em; font-weight: 900; }
-/* 該按的組：外框閃燈提示（更亮更快） */
+/* Ready 與 Go 成對：同字位、同 padding(不跳版)、略小、跟卡片墨色（Go 紅＝爆發） */
+.gobtn .ready-word { color: inherit; font-size: 1.4em; font-weight: 900; padding: 0 6px; }
+/* 該按的組(綠)/趟休到點(紅)：卡片外光暈閃 + ::before 畫高對比框。
+   框＝外白線＋色帶＋內黑線，在綠/紅/黃卡上都清楚；形狀也不同 → 不只靠色相：
+   .blink＝連續實線、.blink-go＝紅黑斜紋。越超時閃越快：inline animationDuration 由 ::before 繼承 */
 @keyframes blinkborder {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(48,255,120,0); border-color: rgba(255,255,255,.14); }
-  50% { box-shadow: 0 0 24px 7px rgba(48,255,120,.95), inset 0 0 0 3px #4cff78;
-        border-color: #4cff78; }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(48,255,120,0); }
+  50% { box-shadow: 0 0 24px 7px rgba(48,255,120,.95); }
 }
 .card.blink { animation: blinkborder .55s ease-in-out infinite; }
-/* 趟休到點＝紅色閃框（與「下一個該按」的綠色提示區隔；越超時閃越快由 inline animationDuration 控制） */
 @keyframes blinkborder-red {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,48,0); border-color: rgba(255,255,255,.14); }
-  50% { box-shadow: 0 0 24px 7px rgba(255,59,48,.95), inset 0 0 0 3px #FF3B30;
-        border-color: #FF3B30; }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,48,0); }
+  50% { box-shadow: 0 0 24px 7px rgba(255,59,48,.95); }
 }
 .card.blink-go { animation: blinkborder-red .55s ease-in-out infinite; }
+@keyframes frameblink { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+.card.blink::before, .card.blink-go::before { content: ''; position: absolute; inset: 0;
+  border-radius: 16px; pointer-events: none; z-index: 4;
+  animation: frameblink .55s ease-in-out infinite; animation-duration: inherit; }
+.card.blink::before { border: 2px solid #fff;
+  box-shadow: inset 0 0 0 4px #3DFF7E, inset 0 0 0 6px #0c0c10; }
+.card.blink-go::before { border: 2px solid #fff; padding: 8px;
+  background: repeating-linear-gradient(-45deg, #FF3B30 0 7px, #0c0c10 7px 13px);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude; }
 
 /* ── 休息卡呼吸：柔白外光暈 +「趟休」字同步呼吸（4.5s 吸快吐慢，貼近 Apple 睡眠呼吸燈） ── */
 /* 峰值落在 35%：吸氣 ~1.6s 快、吐氣 ~2.9s 慢；快到點/該出發(.blink)時自動停，交給綠光催促 */
@@ -269,10 +324,25 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .clock .sec { transform-origin: center bottom; }
 .clock .sec.tick { animation: tick .9s ease-out; }
 @keyframes tick { 0% { transform: scale(1.16); } 18% { transform: scale(1); } 100% { transform: scale(1); } }
-/* 橘/紅在淺色卡（黃組）也要看得清楚 → 保留深色描邊並加陰影 */
+/* 橘/紅字放在 .stat-pill 深色膠囊上(≥4.5:1)；陰影保留做輪廓 */
 .over-text { color: #FF3B30 !important; text-shadow: 0 1px 3px rgba(0,0,0,.7), 0 0 2px rgba(0,0,0,.6); }
 .warn-text { color: #FF7A00 !important; text-shadow: 0 1px 3px rgba(0,0,0,.7), 0 0 2px rgba(0,0,0,.6); }
 .reptag.warn-text, .reptag .over-text { -webkit-text-stroke: 0; }
+/* 狀態膠囊：一般狀態 padding 照留、底透明(白字照舊)；橘/紅/321Go 時墊固定深底 → 切換不跳版 */
+/* 上下負 margin 抵掉 padding：膠囊只往外長、不增加卡片高度(3 組大卡已接近滿版) */
+.stat-pill { position: relative; display: inline-flex; align-items: baseline;
+  padding: 3px 8px 4px; margin: -3px 0 -4px; border-radius: 14px; background: transparent; }
+.stat-pill.on { background: rgba(12,12,16,.92); }
+.card.big .stat-pill { padding: 4px 12px 6px; margin: -4px 0 -6px; border-radius: 18px; }
+.rest-main .stat-pill, .card.big .rest-main .stat-pill { margin-bottom: 0; }   /* 下方緊貼進度條，不可壓到 */
+
+/* 減少動態：閃框/紅環脈動/秒數跳動全部停，改靜態粗框/靜態紅環（狀態仍可辨識） */
+@media (prefers-reduced-motion: reduce) {
+  .card.blink, .card.blink-go { animation: none; }
+  .card.blink::before, .card.blink-go::before { animation: none; opacity: 1; }
+  .run-fill.over { animation: none; }
+  .clock .sec.tick { animation: none; }
+}
 
 /* ── 清單 / 設定 ── */
 .list { padding: 8px 12px; display: flex; flex-direction: column; gap: 8px; }
@@ -426,6 +496,6 @@ table.splits tbody tr:active td:first-child { background: #28324a; }
 .plan-chip.empty { font-weight: 500; opacity: .6; border-style: dashed; border-color: #55555f; }
 .plan-paren { opacity: .6; font-size: 15px; }
 
-.gplan { font-size: 11px; opacity: .72; font-weight: 700; line-height: 1.1;
+.gplan { font-size: 13px; font-weight: 700; line-height: 1.15; padding: 0 5px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
-.card.big .gplan { font-size: 13px; }
+.card.big .gplan { font-size: 14px; }

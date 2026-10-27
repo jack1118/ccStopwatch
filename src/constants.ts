@@ -7,20 +7,22 @@ export const NRC_NUM: Record<NRCColor, number> = {
   yellow: 1, black: 2, purple: 3, blue: 4, green: 5, red: 6,
 }
 
-// 卡片底色：黃維持明亮金黃（白字靠描邊+陰影保可讀）、黑提亮避免與背景混色，其餘鮮明
+// 卡片底色：黃維持明亮金黃、黑提亮避免與背景混色，其餘鮮明。
+// 紅由 #E0392B 微調深到 #D93426：白字對比 4.38 → 4.70（小字也過 4.5:1）
 export const NRC_HEX: Record<NRCColor, string> = {
   yellow: '#EFB000',
   black: '#3A3A40',
   purple: '#7B3FE4',
   blue: '#0A6CFF',
   green: '#1FA84A',
-  red: '#E0392B',
+  red: '#D93426',
 }
 
-// 碼表/卡片文字一律白色（各組一致）
+// 卡片次要文字（組名/目標/上圈/標籤…）的墨色：白字在黃(1.9:1)、綠(3.1:1)上不夠，這兩色改深字(9.8 / 6.1:1)；
+// 其餘白字皆 ≥4.5:1。計時大數字(.clock)不吃這個，一律白字＋多層陰影
 export const NRC_TEXT: Record<NRCColor, string> = {
-  yellow: '#ffffff', black: '#ffffff', purple: '#ffffff',
-  blue: '#ffffff', green: '#ffffff', red: '#ffffff',
+  yellow: '#111111', black: '#ffffff', purple: '#ffffff',
+  blue: '#ffffff', green: '#111111', red: '#ffffff',
 }
 
 /** 把 #RRGGBB 各通道乘上 f（<1 變暗），用於休息卡片的深色底 */

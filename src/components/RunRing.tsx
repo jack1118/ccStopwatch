@@ -72,6 +72,9 @@ export function RunRing({ progress, over, big }: Props) {
     svg = (
       <svg className="run-svg" width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
         <path className="run-track" d={d} strokeWidth={sw} />
+        {/* 深色描邊底線：白/紅填色在黃、紅、綠卡上都有黑邊托住，看得見 */}
+        <path className="run-fill-under" d={d} strokeWidth={sw + 4}
+          strokeDasharray={g.total} strokeDashoffset={g.total * (1 - p)} />
         <path className={`run-fill${over ? ' over' : ''}`} d={d} strokeWidth={sw}
           strokeDasharray={g.total} strokeDashoffset={g.total * (1 - p)} />
         <circle className={`run-dot${over ? ' over' : ''}`} cx={dot.x} cy={dot.y} r={dotR} />

@@ -15,12 +15,15 @@ interface Props {
   session: Session
   enterAnim?: '' | 'fromRight' | 'fromLeft'
   onExit: () => void
-  onFinish: (session: Session) => void
+  onFinish: (session: Session, groupId?: string) => void   // groupId：直接打開該組單組明細
 }
+
+const pad2 = (n: number) => String(n).padStart(2, '0')
 
 export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
   const [state, dispatch] = useReducer(timerReducer, session, initTimerState)
-  const anyActive = state.session.groups.some((g) => g.state === 'running' || g.state === 'resting')
+  const isActive = (g: Session['groups'][number]) => g.state === 'running' || g.state === 'resting'
+  const anyActive = state.session.groups.some(isActive)
   const now = useNow(true)
   useWakeLock(anyActive)
   const [soundOn, setSoundOn] = useState(isTapSoundOn())
@@ -28,11 +31,31 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
   // 按圈瞬間全畫面彈出大秒數（給教練喊聲、跑者知道這圈幾秒）
   const [flash, setFlash] = useState<{ sec: number; color: string; label: string; key: number } | null>(null)
   const flashKey = useRef(0)
+  const [announce, setAnnounce] = useState('')   // 讀屏播報（aria-live）
   useEffect(() => {
     if (!flash) return
     const t = setTimeout(() => setFlash(null), 1200)
     return () => clearTimeout(t)
   }, [flash])
+  // 長按結束一組後：底部 toast 5 秒內可一鍵復原（誤觸的退路）
+  const [stopToast, setStopToast] = useState<{ groupId: string; label: string; key: number } | null>(null)
+  useEffect(() => {
+    if (!stopToast) return
+    const t = setTimeout(() => setStopToast(null), 5000)
+    return () => clearTimeout(t)
+  }, [stopToast])
+  const toastGroup = stopToast && state.session.groups.find((g) => g.id === stopToast.groupId)
+
+  // 結束整堂課：一次停掉所有進行中/休息中的組 → 存檔 → 前往結果頁
+  const endAll = () => {
+    const active = state.session.groups.filter(isActive)
+    if (!window.confirm(`結束整堂課？\n進行中/休息中的 ${active.length} 組會立即停止，並前往結果頁。`)) return
+    const t = Date.now()
+    const final = active.reduce((s, g) => timerReducer(s, { type: 'STOP', groupId: g.id, now: t }), state)
+    saveSession(final.session)   // 立即存：切頁後本元件卸載，持久化 effect 不會再跑
+    onFinish(final.session)
+  }
+  const started = new Date(state.session.createdAt)
 
   // 持久化
   useEffect(() => { saveSession(state.session) }, [state.session])
@@ -79,16 +102,21 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
     <div className={`app${enterAnim ? ' enter-' + enterAnim : ''}`} {...swipe}>
       <div className="topbar">
         <button className="btn" onClick={onExit}>←</button>
-        <h1 className="plan-title">{dateLabel(state.session.createdAt)}</h1>
-        <button className="btn" aria-label="點擊音效開關"
+        {/* 日期＋開課時間：同一天兩堂課也分得出來 */}
+        <h1 className="plan-title">{dateLabel(state.session.createdAt)}
+          <span className="plan-time"> {pad2(started.getHours())}:{pad2(started.getMinutes())}</span></h1>
+        <button className="btn tgl" aria-label="點擊音效開關" aria-pressed={soundOn}
           onClick={() => { const v = !soundOn; setTapSound(v); setSoundOn(v) }}>
           {soundOn ? '🔊' : '🔇'}
         </button>
-        <button className="btn" aria-label="復原鈕顯示開關"
+        <button className="btn tgl slash" aria-label="復原鈕顯示開關" aria-pressed={showUndo}
           onClick={() => { const v = !showUndo; setUndoBtn(v); setShowUndo(v) }}>
           <span style={{ opacity: showUndo ? 1 : 0.35 }}>↩</span>
         </button>
-        <button className="btn" onClick={() => onFinish(state.session)}>結果</button>
+        {/* 有組在跑/休息時＝「結束」整堂課（確認後停全部並看結果）；否則＝「結果」。左滑仍可隨時偷看結果 */}
+        {anyActive
+          ? <button className="btn danger" onClick={endAll}>結束</button>
+          : <button className="btn" onClick={() => onFinish(state.session)}>結果</button>}
       </div>
       <div className={`timer-grid cols-${cols}`}>
         {state.session.groups.map((g) => (
@@ -101,14 +129,21 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
               const t = Date.now()
               const grp = state.session.groups.find((x) => x.id === id)
               if (grp?.runStartTs != null) {
-                setFlash({ sec: elapsedSec(grp.runStartTs, t), color: NRC_CHART[grp.color],
-                  label: `${NRC_LABEL[grp.color]} 第${grp.number}組`, key: flashKey.current++ })
+                const sec = elapsedSec(grp.runStartTs, t)
+                const label = `${NRC_LABEL[grp.color]} 第${grp.number}組`
+                setFlash({ sec, color: NRC_CHART[grp.color], label, key: flashKey.current++ })
+                setAnnounce(`${label} ${sec} 秒`)
               }
               dispatch({ type: 'LAP', groupId: id, now: t })
             }}
             onNext={(id) => { tapFeedback(); dispatch({ type: 'NEXT', groupId: id, now: Date.now() }) }}
             onUndo={(id) => dispatch({ type: 'UNDO', groupId: id, now: Date.now() })}
-            onStop={(id) => dispatch({ type: 'STOP', groupId: id, now: Date.now() })}
+            onStop={(id) => {
+              dispatch({ type: 'STOP', groupId: id, now: Date.now() })
+              const grp = state.session.groups.find((x) => x.id === id)
+              if (grp) setStopToast({ groupId: id, label: `${NRC_LABEL[grp.color]} 第${grp.number}組`, key: Date.now() })
+            }}
+            onOpen={(id) => onFinish(state.session, id)}
           />
         ))}
       </div>
@@ -117,13 +152,25 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
           <button className="btn primary" onClick={() => onFinish(state.session)}>查看分段圖表 →</button>
         </div>
       )}
+      {/* 只在該組仍是完成狀態時顯示（已用 ↩ 復原就收掉，避免多退一步） */}
+      {stopToast && toastGroup?.state === 'done' && (
+        <div className={`stop-toast${allDone ? ' above-bar' : ''}`} key={stopToast.key} role="status">
+          <span>已結束 {stopToast.label}</span>
+          <button className="stop-toast-undo" onClick={() => {
+            dispatch({ type: 'UNDO', groupId: stopToast.groupId, now: Date.now() })
+            setStopToast(null)
+          }}>復原</button>
+        </div>
+      )}
       {flash && (
         <div className="lap-flash" key={flash.key} aria-hidden="true">
-          <div className="lap-flash-label" style={{ color: flash.color }}>● {flash.label}</div>
-          <div className="lap-flash-sec" style={{ color: flash.color,
+          {/* 組色只留在小圓點；大秒數一律白字＋深色半透明底，疊在任何組色卡上都清楚 */}
+          <div className="lap-flash-label"><span style={{ color: flash.color }}>●</span> {flash.label}</div>
+          <div className="lap-flash-sec" style={{
             fontSize: String(flash.sec).length <= 2 ? 'min(56vw, 300px)' : 'min(40vw, 210px)' }}>{flash.sec}</div>
         </div>
       )}
+      <div className="sr-only" aria-live="polite">{announce}</div>
     </div>
   )
 }
