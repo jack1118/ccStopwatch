@@ -7,7 +7,7 @@ import { TimelineArea } from '../chart/TimelineArea'
 import { SplitArea } from '../chart/SplitArea'
 import { planSummary } from '../timer/planText'
 import { effectiveSegments } from '../timer/timer'
-import { fmtClockStr } from '../format'
+import { fmtClockStr, dateLabel } from '../format'
 import { ShareCardArt } from './ShareCardArt'
 import { FitText } from '../components/FitText'
 import { cardGradient } from './cardGradient'
@@ -27,7 +27,7 @@ type ShareState = 'idle' | 'busy' | 'shared' | 'downloaded'
 export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [bgData, setBgData] = useState<string | null>(null)
-  const [caption, setCaption] = useState('Just do it')
+  const [caption, setCaption] = useState(() => dateLabel(session.createdAt))   // 預設＝上課日期(卡上已有課表，不重複)
   const [shareState, setShareState] = useState<ShareState>('idle')
   const cardRef = useRef<HTMLDivElement>(null)
   const doneTimer = useRef<number | undefined>(undefined)

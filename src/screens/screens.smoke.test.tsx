@@ -35,6 +35,21 @@ it('Results 正常渲染（含每圈距離、圖表、明細）', () => {
   expect(screen.getByRole('img', { name: '各組分段折線圖' })).toBeInTheDocument()
 })
 
+it('Results 不列 0 圈的組（未開始就結束課程）', () => {
+  const g = { repsOverride: null, targetPaceSec: null, athletes: [], state: 'done' as const, runStartTs: null, restStartTs: null }
+  const session: Session = {
+    id: 's', name: '測試', createdAt: 0, status: 'done',
+    plan: { lapMeters: 400, segments: [{ id: '1', meters: 400, reps: 2, restSec: 60, targetSec: 90, gapSec: 4 }] },
+    groups: [
+      { ...g, id: 'g1', color: 'yellow', number: 1, reps: [{ index: 0, runSec: 88, restSec: 60 }] },
+      { ...g, id: 'g2', color: 'black', number: 2, reps: [] },
+    ],
+  }
+  render(<Results session={session} onExit={vi.fn()} onUpdate={vi.fn()} />)
+  expect(screen.getAllByText(/第1組/).length).toBeGreaterThan(0)
+  expect(screen.queryByText(/第2組/)).toBeNull()
+})
+
 it('Results 詳細頁預設時間圖,可切換到趟次圖', () => {
   const session: Session = {
     id: 's2', name: '測試2', createdAt: 0, status: 'done',

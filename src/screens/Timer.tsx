@@ -46,12 +46,14 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
   }, [stopToast])
   const toastGroup = stopToast && state.session.groups.find((g) => g.id === stopToast.groupId)
 
-  // 結束整堂課：一次停掉所有進行中/休息中的組 → 存檔 → 前往結果頁
+  // 結束整堂課：進行中/休息中立即停、未開始的也一併結束(課程才會標成已完成；0 圈的組結果頁不列) → 存檔 → 前往結果頁
   const endAll = () => {
     const active = state.session.groups.filter(isActive)
-    if (!window.confirm(`結束整堂課？\n進行中/休息中的 ${active.length} 組會立即停止，並前往結果頁。`)) return
+    const idle = state.session.groups.filter((g) => g.state === 'idle')
+    const msg = `結束整堂課？\n進行中/休息中的 ${active.length} 組會立即停止` + (idle.length ? `，未開始的 ${idle.length} 組不列入結果` : '') + '。'
+    if (!window.confirm(msg)) return
     const t = Date.now()
-    const final = active.reduce((s, g) => timerReducer(s, { type: 'STOP', groupId: g.id, now: t }), state)
+    const final = [...active, ...idle].reduce((s, g) => timerReducer(s, { type: 'STOP', groupId: g.id, now: t }), state)
     saveSession(final.session)   // 立即存：切頁後本元件卸載，持久化 effect 不會再跑
     onFinish(final.session)
   }

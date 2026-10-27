@@ -29,14 +29,15 @@ it('頂列開關帶 aria-pressed', () => {
   expect(screen.getByLabelText('復原鈕顯示開關').getAttribute('aria-pressed')).toBe('true')
 })
 
-it('結束整堂課：確認後停掉所有進行中/休息中的組並前往結果', () => {
+it('結束整堂課：確認後所有組(含未開始)都結束、課程標成已完成並前往結果', () => {
   const onFinish = vi.fn()
   const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
   render(<Timer session={mk()} onExit={vi.fn()} onFinish={onFinish} />)
   fireEvent.click(screen.getByText('結束'))
   expect(confirm).toHaveBeenCalled()
   const s = onFinish.mock.calls[0][0] as Session
-  expect(s.groups.map((x) => x.state)).toEqual(['done', 'done', 'idle'])
+  expect(s.groups.map((x) => x.state)).toEqual(['done', 'done', 'done'])
+  expect(s.status).toBe('done')
   confirm.mockRestore()
 })
 

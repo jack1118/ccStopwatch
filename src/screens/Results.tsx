@@ -48,11 +48,14 @@ export function Results({ session, enterAnim = '', onExit, onUpdate, initialGrou
       return n
     })
 
-  const maxReps = Math.max(0, ...session.groups.map((g) => g.reps.length))
+  // 顯示用：0 圈的組(缺席/未開始就結束課程)不列入圖表、總表與分享卡；全部都 0 圈時照列
+  const withReps = session.groups.filter((g) => g.reps.length > 0)
+  const groups = withReps.length ? withReps : session.groups
+  const maxReps = Math.max(0, ...groups.map((g) => g.reps.length))
   const hasPlan = session.plan.segments.length > 0
   // 各圈距離（以最長的那組為參考）
-  const refGroup = session.groups.reduce(
-    (a, b) => (b.reps.length > a.reps.length ? b : a), session.groups[0])
+  const refGroup = groups.reduce(
+    (a, b) => (b.reps.length > a.reps.length ? b : a), groups[0])
   const refLaps = refGroup ? buildLapPlan(session.plan, refGroup) : []
   const distAt = (i: number) => refLaps[i]?.meters ?? null
   // 均時依距離分開：組合課表 (400+200)×8 每個距離各算各的，單距離＝整體平均
@@ -86,7 +89,7 @@ export function Results({ session, enterAnim = '', onExit, onUpdate, initialGrou
 
       <div className="panel" ref={chartRef}>
         <div className="legend">
-          {session.groups.map((g) => (
+          {groups.map((g) => (
             <button key={g.id} className={`chip${visible.has(g.id) ? '' : ' off'}`}
               onClick={() => toggle(g.id)}>
               <span className="dot" style={{ background: NRC_CHART[g.color] }} />
@@ -94,7 +97,7 @@ export function Results({ session, enterAnim = '', onExit, onUpdate, initialGrou
             </button>
           ))}
         </div>
-        <LineChart groups={session.groups} visible={visible} />
+        <LineChart groups={groups} visible={visible} />
       </div>
 
       {!detail && (
@@ -119,7 +122,7 @@ export function Results({ session, enterAnim = '', onExit, onUpdate, initialGrou
               </tr>
             </thead>
             <tbody>
-              {session.groups.map((g) => {
+              {groups.map((g) => {
                 const best = g.reps.length ? Math.min(...g.reps.map((r) => r.runSec)) : -1
                 const restN = g.reps.filter((r) => r.restSec > 0).length
                 const restAvg = restN ? Math.round(g.reps.reduce((s, r) => s + r.restSec, 0) / restN) : 0
@@ -201,7 +204,7 @@ export function Results({ session, enterAnim = '', onExit, onUpdate, initialGrou
       </div>
 
       {showCard && (
-        <ShareCard session={session} detail={detail ?? null} mode={mode} visible={visible}
+        <ShareCard session={{ ...session, groups }} detail={detail ?? null} mode={mode} visible={visible}
           onClose={() => setShowCard(false)} />
       )}
     </div>
