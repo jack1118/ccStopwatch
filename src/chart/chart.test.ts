@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { yRange, toPoints, buildTimeline } from './chart'
+import { yRange, toPoints, buildTimeline, avgByDistance } from './chart'
 
 describe('yRange', () => {
   it('依所有秒數取上下界並加緩衝（10 的倍數）', () => {
@@ -39,5 +39,25 @@ describe('buildTimeline', () => {
   })
   it('空輸入回空', () => {
     expect(buildTimeline([])).toEqual({ totalSec: 0, segs: [] })
+  })
+})
+
+describe('avgByDistance 組合課表依距離分開平均', () => {
+  const reps = [400, 200, 400, 200].map((_, i) => ({ runSec: [80, 40, 90, 50][i] }))
+  const dist = [400, 200, 400, 200]
+  it('(400+200)×2：400m 與 200m 各一個平均', () => {
+    expect(avgByDistance(reps, (i) => dist[i])).toEqual([
+      { meters: 400, avg: 85, n: 2 },
+      { meters: 200, avg: 45, n: 2 },
+    ])
+  })
+  it('單距離：只有一個平均（與整體平均相同）', () => {
+    expect(avgByDistance(reps, () => 400)).toEqual([{ meters: 400, avg: 65, n: 4 }])
+  })
+  it('無課表（距離未知）：歸同一桶', () => {
+    expect(avgByDistance(reps, () => null)).toEqual([{ meters: null, avg: 65, n: 4 }])
+  })
+  it('沒有資料回空陣列', () => {
+    expect(avgByDistance([], () => 400)).toEqual([])
   })
 })
