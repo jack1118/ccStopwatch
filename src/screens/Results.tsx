@@ -17,13 +17,14 @@ interface Props {
   enterAnim?: '' | 'fromRight' | 'fromLeft'
   onExit: () => void
   onUpdate: (session: Session) => void   // 編輯學員名單後存回
+  initialGroupId?: string | null         // 一進來就開這組的單組明細（碼表頁點完成卡）
 }
 
-export function Results({ session, enterAnim = '', onExit, onUpdate }: Props) {
+export function Results({ session, enterAnim = '', onExit, onUpdate, initialGroupId = null }: Props) {
   const [visible, setVisible] = useState<Set<string>>(
     () => new Set(session.groups.map((g) => g.id)),
   )
-  const [detailId, setDetailId] = useState<string | null>(null)
+  const [detailId, setDetailId] = useState<string | null>(initialGroupId)
   const [mode, setMode] = useState<'reps' | 'time'>('time')
   const [showCard, setShowCard] = useState(false)
   const chartRef = useRef<HTMLDivElement>(null)

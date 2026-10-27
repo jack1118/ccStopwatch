@@ -1,5 +1,5 @@
 import { it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { GroupCard } from './GroupCard'
 import type { Group, Plan } from '../types'
@@ -111,6 +111,78 @@ it('跑步中有設目標時顯示目標秒數', () => {
     onStart={vi.fn()} onLap={vi.fn()} onNext={vi.fn()} onUndo={vi.fn()} onStop={vi.fn()} />)
   expect(screen.getByText('目標', { exact: false })).toBeInTheDocument()
   expect(screen.getByText('1:36')).toBeInTheDocument()   // 目標數字（放大）
+})
+
+it('點擊時間窗：按住 500ms 才放開仍算點（按圈），且尚未出現紅框', () => {
+  vi.useFakeTimers()
+  try {
+    const onLap = vi.fn(), onStop = vi.fn()
+    const g = { ...base, state: 'running' as const, runStartTs: 0 }
+    const { container } = render(<GroupCard group={g} plan={plan} now={10000} big
+      onStart={vi.fn()} onLap={onLap} onNext={vi.fn()} onUndo={vi.fn()} onStop={onStop} />)
+    const body = screen.getByTestId('lap-body')
+    fireEvent.pointerDown(body, { clientX: 10, clientY: 10 })
+    act(() => { vi.advanceTimersByTime(500) })
+    expect(container.querySelector('.hold-ring')).toBeNull()   // 600ms 前不畫紅框
+    fireEvent.pointerUp(body)
+    expect(onLap).toHaveBeenCalledWith('g1')
+    expect(onStop).not.toHaveBeenCalled()
+  } finally { vi.useRealTimers() }
+})
+
+it('長按：600ms 後才出現紅框、此時放開不算點；滿 1.5s 觸發停止', () => {
+  vi.useFakeTimers()
+  try {
+    const onLap = vi.fn(), onStop = vi.fn()
+    const g = { ...base, state: 'running' as const, runStartTs: 0 }
+    const { container } = render(<GroupCard group={g} plan={plan} now={10000} big
+      onStart={vi.fn()} onLap={onLap} onNext={vi.fn()} onUndo={vi.fn()} onStop={onStop} />)
+    const body = screen.getByTestId('lap-body')
+    // 700ms 放開：紅框已出現 → 既不按圈也不停止
+    fireEvent.pointerDown(body, { clientX: 10, clientY: 10 })
+    act(() => { vi.advanceTimersByTime(700) })
+    expect(container.querySelector('.hold-ring')).not.toBeNull()
+    fireEvent.pointerUp(body)
+    expect(onLap).not.toHaveBeenCalled()
+    expect(onStop).not.toHaveBeenCalled()
+    // 按滿 1.5s → 停止
+    fireEvent.pointerDown(body, { clientX: 10, clientY: 10 })
+    act(() => { vi.advanceTimersByTime(1500) })
+    expect(onStop).toHaveBeenCalledWith('g1')
+  } finally { vi.useRealTimers() }
+})
+
+it('完成卡：不降透明度、永遠有 ↩ 復原、點卡片開該組明細', async () => {
+  const onOpen = vi.fn()
+  const g = { ...base, state: 'done' as const, reps: [{ index: 0, runSec: 88, restSec: 0 }] }
+  render(<GroupCard group={g} plan={plan} now={0} big showUndo={false}
+    onStart={vi.fn()} onLap={vi.fn()} onNext={vi.fn()} onUndo={vi.fn()} onStop={vi.fn()} onOpen={onOpen} />)
+  expect(screen.getByTestId('card').style.opacity).toBe('')
+  expect(screen.getByLabelText('長按復原上一步')).toBeInTheDocument()
+  expect(screen.getByText(/點看明細/)).toBeInTheDocument()
+  await userEvent.click(screen.getByTestId('done-body'))
+  expect(onOpen).toHaveBeenCalledWith('g1')
+})
+
+it('休息倒數剩 10 秒內：時鐘轉橘並墊上深色狀態膠囊', () => {
+  const g = {
+    ...base, state: 'resting' as const, restStartTs: 0,
+    reps: [{ index: 0, runSec: 88, restSec: 0 }],
+  }
+  const { container } = render(<GroupCard group={g} plan={plan} now={82000} big
+    onStart={vi.fn()} onLap={vi.fn()} onNext={vi.fn()} onUndo={vi.fn()} onStop={vi.fn()} />)
+  expect(screen.getByTestId('clock-sec').className).toContain('warn-text')
+  expect(container.querySelector('.stat-pill.on')).not.toBeNull()
+})
+
+it('黃/綠卡用深色墨色(.ink-dark)，紅卡維持白字', () => {
+  const { unmount } = render(<GroupCard group={{ ...base, color: 'yellow', number: 1 }} plan={plan} now={0} big
+    onStart={vi.fn()} onLap={vi.fn()} onNext={vi.fn()} onUndo={vi.fn()} onStop={vi.fn()} />)
+  expect(screen.getByTestId('card').className).toContain('ink-dark')
+  unmount()
+  render(<GroupCard group={{ ...base, color: 'red', number: 6 }} plan={plan} now={0} big
+    onStart={vi.fn()} onLap={vi.fn()} onNext={vi.fn()} onUndo={vi.fn()} onStop={vi.fn()} />)
+  expect(screen.getByTestId('card').className).not.toContain('ink-dark')
 })
 
 it('跑步中「上圈」顯示跑步＋休息時間', () => {

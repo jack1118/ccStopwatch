@@ -19,18 +19,30 @@ interface Props {
   onNext: (id: string) => void
   onUndo: (id: string) => void
   onStop: (id: string) => void
+  onOpen?: (id: string) => void   // 完成卡：點卡片＝看該組單組明細
 }
 
-const TAP_MAX = 250      // 250ms 內放開 = 點按（按圈/出發）
-const HOLD_MS = 1500     // 長按滿 1.5s = 確認停止
+// 戶外單手操作手指常停留較久：600ms 內放開都算點；之後才開始畫紅框，1.5s 繞滿＝停止
+const TAP_MAX = 600      // 600ms 內放開 = 點按（按圈/出發）
+const HOLD_MS = 1500     // 長按滿 1.5s = 確認停止（紅框 .hold-ring 動畫長度＝HOLD_MS−TAP_MAX＝0.9s）
 
-export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, onStart, onLap, onNext, onUndo, onStop }: Props) {
+/** 狀態膠囊：時鐘/倒數進入橘/紅狀態時墊固定深底(狀態色字 ≥4.5:1)；一般狀態 padding 照留、底透明 → 切換不跳版 */
+function StatPill({ on, padX, children }: { on: boolean; padX?: number; children: React.ReactNode }) {
+  return (
+    <span className={`stat-pill${on ? ' on' : ''}`}
+      style={padX != null ? { paddingLeft: padX, paddingRight: padX } : undefined}>{children}</span>
+  )
+}
+
+export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, onStart, onLap, onNext, onUndo, onStop, onOpen }: Props) {
   const secSize = big ? 140 : 70
   const minSize = big ? 54 : 32
   const Title = (
     <span className="gtitle">{NRC_LABEL[g.color]} 第<b className="num">{g.number}</b>組</span>
   )
   const cardStyle = { background: NRC_HEX[g.color], color: NRC_TEXT[g.color] }
+  // 黃/綠卡用深色字：CSS 依 .ink-dark 調整次要元素(直書標籤陰影、進度條)
+  const cardCls = `card${big ? ' big' : ''}${NRC_TEXT[g.color] !== '#ffffff' ? ' ink-dark' : ''}`
   const lapPlan = buildLapPlan(plan, g)
   const shape = planShape(effectiveSegments(plan, g))
   const lastRep = g.reps[g.reps.length - 1]
@@ -123,7 +135,7 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
 
   if (g.state === 'idle') {
     return (
-      <div className={`card${big ? ' big' : ''}${hint ? ' blink' : ''}`} data-testid="card" style={{ ...cardStyle, ...flashStyle }}>
+      <div className={`${cardCls}${hint ? ' blink' : ''}`} data-testid="card" style={{ ...cardStyle, ...flashStyle }}>
         <div className="ctop">{Title}<span className="tag">{hint ? '👉 換這組' : '未開始'}</span></div>
         <button className={`startbtn${pressedCls}`} onClick={() => { tapFlash(); onStart(g.id) }}
           onPointerDown={() => setPressed(true)} onPointerUp={() => setPressed(false)}
@@ -136,13 +148,17 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
   if (g.state === 'done') {
     const total = g.reps.reduce((s, r) => s + r.runSec + r.restSec, 0)
     return (
-      <div className={`card${big ? ' big' : ''}`} data-testid="card" style={{ ...cardStyle, opacity: 0.72 }}>
-        <div className="ctop">{Title}<span className="tag">✓完成</span></div>
+      // 完成：不再降透明度(混濁)，改用深色「✓完成」膠囊標示；↩ 角落復原永遠顯示(長按 0.9s)
+      <div className={`${cardCls} done has-undo`} data-testid="card" style={cardStyle}>
+        <div className="ctop">{Title}<span className="tag tag-done">✓完成</span></div>
         {shape && <div className="gplan">{shape}</div>}
-        <div className="hero" style={{ justifyContent: 'center' }}>
-          <span style={{ fontSize: big ? 34 : 24, fontWeight: 900 }}>總 {fmtClockStr(total)}</span>
-        </div>
-        <div className="cmeta">{g.reps.length} 圈完成 · 點看圖表</div>
+        <button className="donebody" data-testid="done-body" onClick={() => onOpen?.(g.id)}>
+          <span className="hero">
+            <span style={{ fontSize: big ? 34 : 24, fontWeight: 900 }}>總 {fmtClockStr(total)}</span>
+          </span>
+          <span className="cmeta">{g.reps.length} 圈完成 · 點看明細</span>
+        </button>
+        {Corner}{UndoRing}
       </div>
     )
   }
@@ -160,7 +176,7 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
     const runOver = hasRef && runSec > (ref as number)
     const setNo = cur?.setNo ?? idx + 1
     return (
-      <div className={`card${big ? ' big' : ''}${hint ? ' blink' : ''}`} data-testid="card" style={{ ...cardStyle, ...flashStyle }}>
+      <div className={`${cardCls}${hint ? ' blink' : ''}${showUndo ? ' has-undo' : ''}`} data-testid="card" style={{ ...cardStyle, ...flashStyle }}>
         <div className="ctop">
           {Title}
           <span className="reptag">
@@ -182,7 +198,7 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
             </div>
           )}
           {ticking
-            ? <Clock totalSec={runSec} secSize={secSize} minSize={minSize} tone={tone} />
+            ? <StatPill on={tone != null}><Clock totalSec={runSec} secSize={secSize} minSize={minSize} tone={tone} /></StatPill>
             : <span className="resume-hint">▶ 點一下開始<br />第{setNo}{cur ? cur.unit : '趟'}</span>}
           {lastRep && (
             <div className="cmeta">
@@ -226,7 +242,7 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
   const bDelay = g.restStartTs != null ? -(g.restStartTs % 4500) : 0
   // 休息不變暗：維持鮮明組色，靠左側大「趟休」＋進度條＋出發提示來區分
   return (
-    <div className={`card resting${big ? ' big' : ''}${goNow ? ' blink-go' : ''}`} data-testid="card"
+    <div className={`${cardCls} resting${goNow ? ' blink-go' : ''}${showUndo ? ' has-undo' : ''}`} data-testid="card"
       style={{ ...cardStyle, ...flashStyle, ['--bdelay' as string]: `${bDelay}ms`,
         ...(goNow ? { animationDuration: `${blinkDur}s` } : {}) } as React.CSSProperties}>
       <div className="ctop">
@@ -240,16 +256,19 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
       <button className={`restwrap${pressedCls}`} data-testid="next-body" {...pressProps(() => onNext(g.id))}>
         <span className="rest-vlabel">{restLabel}</span>
         <div className="rest-main">
-          {restOver ? (
-            <span className="overclock">
-              <span className="over-plus over-text" style={{ fontSize: big ? 40 : 26 }}>+</span>
-              <Clock totalSec={restShown} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone="over" />
-            </span>
-          ) : goNow ? (
-            <span className="go-count" style={{ fontSize: big ? 72 : 44 }}>{goWord}</span>
-          ) : (
-            <Clock totalSec={restShown} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone={tone} />
-          )}
+          {/* 左右 padding 預留「+」寬度(兩側對稱→時鐘維持置中)，超時「+」落在膠囊內 */}
+          <StatPill on={restOver || goNow || tone != null} padX={big ? 34 : 22}>
+            {restOver ? (
+              <span className="overclock">
+                <span className="over-plus over-text" style={{ fontSize: big ? 40 : 26 }}>+</span>
+                <Clock totalSec={restShown} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone="over" />
+              </span>
+            ) : goNow ? (
+              <span className="go-count" style={{ fontSize: big ? 72 : 44 }}>{goWord}</span>
+            ) : (
+              <Clock totalSec={restShown} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone={tone} />
+            )}
+          </StatPill>
           <span className={`restbar${tone === 'over' ? ' over' : ''}`}><i style={{ width: `${pct}%` }} /></span>
           <span className="gobtn">
             <span className="nw">▶ {!goNow
