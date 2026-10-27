@@ -113,7 +113,7 @@ export function PlanEditor({ segments, lapMeters, onChange, editingActive = fals
                     <span className="rl">每組每圈＋</span>
                     <Stepper value={it.gapSec ?? 0} step={1} min={0} onChange={(v) => patchItem(seg.id, it.id, { gapSec: v })} />
                     <span className="ru">秒/圈</span>
-                    <span className="field-hint">各組配速差，每圈加秒×圈數逐組累加（黑、紫…）</span>
+                    <span className="field-hint">每往後一組、每圈多給幾秒。例：設 2 → 黑組比黃組每圈慢 2 秒、紫組慢 4 秒（改場地會重算）</span>
                   </div>
                 )}
                 <div className="field-row">

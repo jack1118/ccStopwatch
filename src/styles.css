@@ -50,7 +50,7 @@ button { font-family: inherit; color: inherit; }
   background: rgba(0,0,0,.6); padding: 5px 18px; border-radius: 999px;
   text-shadow: 0 1px 3px rgba(0,0,0,.8); }
 @media (min-width: 560px) { .lap-flash-label { font-size: 32px; } }
-.btn { background: #2c2c2e; border: 0; border-radius: 10px; padding: 9px 14px;
+.btn { background: #2c2c2e; border: 0; border-radius: 10px; padding: 9px 14px; min-height: 44px;
   font-size: 14px; font-weight: 600; }
 .btn.primary { background: #30D158; color: #03260f; }
 .btn.danger { background: #3a2020; color: #ff6b5e; }
@@ -306,10 +306,10 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 
 /* 距離 / 趟數 / 休息 統一步進器：−、可直接輸入、＋ */
 .stepper { display: inline-flex; align-items: center; border-radius: 10px; overflow: hidden; flex: 0 0 auto; }
-.stepper button { width: 40px; height: 40px; font-size: 24px; font-weight: 800;
+.stepper button { width: 44px; height: 44px; font-size: 24px; font-weight: 800;
   background: #2c2c2e; border: 0; color: #fff; line-height: 1; flex: 0 0 auto; }
 .stepper button:active { background: #3a3a3e; }
-.stepper input { width: 80px; height: 40px; text-align: center; font-size: 19px;
+.stepper input { width: 72px; height: 44px; text-align: center; font-size: 19px;
   font-weight: 800; background: #15151a; border: 0; color: #fff; flex: 0 0 auto; }
 .stepper input.flash { animation: fieldflash .55s ease-out; }
 @keyframes fieldflash { 0% { background: #1f5e33; } 100% { background: #15151a; } }
@@ -334,16 +334,31 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .field-row .rl { width: 84px; flex: 0 0 auto; font-size: 14px; color: #cfcfd4; }
 .field-row .ru { flex: 0 0 auto; font-size: 14px; color: #9a9aa0; }
 /* 較長的說明：獨立一行小灰字，不與步進器搶寬度 */
-.field-hint { flex-basis: 100%; width: 100%; font-size: 11.5px; color: #8a8a90; margin: 1px 0 0; }
+.field-hint { flex-basis: 100%; width: 100%; font-size: 12.5px; line-height: 1.45; color: #a3a3ab; margin: 1px 0 0; }
+/* 名稱欄解析課表的回饋（失敗＝橘黃、成功＝綠） */
+.name-msg { font-size: 13px; font-weight: 700; margin-top: 6px; }
+.name-msg.fail { color: #ffb340; }
+.name-msg.ok { color: #30D158; }
+/* 進階設定：預設收合；summary 做成 44px 以上的觸控列 */
+.adv { margin: 4px 14px 8px; background: #15151a; border-radius: 12px; }
+.adv summary { min-height: 48px; padding: 0 14px; display: flex; align-items: center;
+  font-size: 15px; font-weight: 700; color: #cfcfd4; cursor: pointer; list-style: none; }
+.adv summary::-webkit-details-marker { display: none; }
+.adv summary::after { content: '展開'; margin-left: auto; font-size: 13px; font-weight: 600; color: #a3a3ab; }
+.adv[open] summary::after { content: '收合'; }
+.adv-body .sec-block { padding: 8px 12px; }
+/* 設定頁底列：永遠貼在畫面底部（開始上課／儲存變更） */
+.bottombar.setup-bar { position: sticky; bottom: 0; z-index: 20; background: #0b0b0d;
+  border-top: 1px solid #26262e; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); }
 /* 配速膠囊：醒目顯示每公里配速 */
 .pace-pill { flex: 0 0 auto; font-size: 12.5px; font-weight: 800; color: #062c33;
   background: #4fd6e8; padding: 1px 9px; border-radius: 999px; white-space: nowrap; margin-left: 4px; }
 
 /* 課程設定：色塊開關 */
 .grp-toggle { margin-left: auto; font-size: 13px; font-weight: 700;
-  padding: 7px 12px; border-radius: 9px; border: 0; background: #2c2c2e; color: #fff; }
+  padding: 7px 12px; min-height: 44px; border-radius: 9px; border: 0; background: #2c2c2e; color: #fff; }
 .grp-toggle.on { background: #30D158; color: #03260f; }
-.grp-expand { font-size: 13px; font-weight: 700; padding: 7px 10px; border-radius: 9px;
+.grp-expand { font-size: 13px; font-weight: 700; padding: 7px 10px; min-height: 44px; border-radius: 9px;
   border: 0; background: #2c2c2e; color: #cfcfd4; }
 .grp-sum { font-size: 13px; color: #9a9aa0; }
 .grp-expand-body { background: #15151a; border-radius: 10px; padding: 10px 12px;
