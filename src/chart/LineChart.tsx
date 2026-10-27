@@ -1,15 +1,18 @@
 import type { Group } from '../types'
 import { NRC_CHART } from '../constants'
 import { yRange } from './chart'
+import { fmtClockStr } from '../format'
+import { useChartWidth } from './useChartWidth'
 
 interface Props {
   groups: Group[]
   visible: Set<string>
 }
 
-const W = 580, H = 300, padL = 42, padR = 16, padT = 16, padB = 28
+const H = 300, padL = 42, padR = 16, padT = 16, padB = 28
 
 export function LineChart({ groups, visible }: Props) {
+  const { ref, W } = useChartWidth()   // viewBox 寬＝實際像素寬，軸字 12px 即實際 12px
   const shown = groups.filter((g) => visible.has(g.id) && g.reps.length > 0)
   const allSecs = shown.flatMap((g) => g.reps.map((r) => r.runSec))
   const { min, max } = yRange(allSecs)
@@ -26,6 +29,7 @@ export function LineChart({ groups, visible }: Props) {
   const fracs = [0, 0.25, 0.5, 0.75, 1]
 
   return (
+    <div ref={ref}>
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }}
       role="img" aria-label="各組分段折線圖">
       {/* 橫格線 + y 軸秒數 */}
@@ -35,13 +39,13 @@ export function LineChart({ groups, visible }: Props) {
         return (
           <g key={`g${i}`}>
             <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="#2c2c34" strokeWidth="1" />
-            <text x={padL - 6} y={y + 4} fill="#888" fontSize="12" textAnchor="end">{labelSec}s</text>
+            <text x={padL - 6} y={y + 4} fill="#9a9aa2" fontSize="12" textAnchor="end">{fmtClockStr(labelSec)}</text>
           </g>
         )
       })}
       {/* x 軸趟次 */}
       {Array.from({ length: maxReps }).map((_, i) => (
-        <text key={`x${i}`} x={xAt(i)} y={H - 8} fill="#888" fontSize="12" textAnchor="middle">{i + 1}</text>
+        <text key={`x${i}`} x={xAt(i)} y={H - 8} fill="#9a9aa2" fontSize="12" textAnchor="middle">{i + 1}</text>
       ))}
       {/* 目標配速虛線 */}
       {shown.filter((g) => g.targetPaceSec).map((g) => (
@@ -63,5 +67,6 @@ export function LineChart({ groups, visible }: Props) {
         )
       })}
     </svg>
+    </div>
   )
 }

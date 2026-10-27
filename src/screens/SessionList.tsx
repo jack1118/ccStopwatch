@@ -2,6 +2,15 @@ import { useState } from 'react'
 import type { SessionMeta } from '../types'
 import { listSessions, deleteSession } from '../storage/storage'
 import { useSwipe } from '../hooks/useSwipe'
+import { dateLabel } from '../format'
+
+/** 開始時間 HH:MM；課名已以「M/D (週)」開頭（預設命名）就不重複日期，否則補上日期 */
+function whenLabel(m: SessionMeta): string {
+  const d = new Date(m.createdAt)
+  const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  const date = dateLabel(m.createdAt)
+  return m.name.startsWith(date) ? hm : `${date} ${hm}`
+}
 
 interface Props {
   enterAnim?: '' | 'fromRight' | 'fromLeft'
@@ -31,9 +40,10 @@ export function SessionList({ enterAnim = '', onNew, onOpen, onEdit, onHelp }: P
       </div>
       <div className="list">
         {items.length === 0 && (
-          <p style={{ opacity: .5, textAlign: 'center', marginTop: 40 }}>
-            還沒有課程，點下方「＋ 新課程」開始
-          </p>
+          <div className="list-empty">
+            <p>還沒有課程。點下方「＋ 新課程」，設好課表就能開始計時。</p>
+            <button className="btn" onClick={onHelp}>先看使用說明</button>
+          </div>
         )}
         {items.map((m) => (
           <div className={`item${m.status === 'active' ? ' active' : ''}`} key={m.id}>
@@ -43,12 +53,12 @@ export function SessionList({ enterAnim = '', onNew, onOpen, onEdit, onHelp }: P
                 <span className={`status-chip${m.status === 'active' ? ' live' : ''}`}>
                   {m.status === 'active' ? '● 進行中' : '✓ 已完成'}
                 </span>
-                {' '}{new Date(m.createdAt).toLocaleDateString('zh-TW')} · {m.groupCount} 組
+                {' '}{whenLabel(m)} · {m.groupCount} 組
                 {m.status === 'active' ? ' · 點擊繼續計時' : ''}
               </div>
             </div>
             {m.status === 'active' && <button className="btn" onClick={() => onEdit(m.id)}>編輯</button>}
-            <button className="btn danger" onClick={() => remove(m.id, m.name)}>刪除</button>
+            <button className="btn quiet-danger" onClick={() => remove(m.id, m.name)}>刪除</button>
           </div>
         ))}
       </div>

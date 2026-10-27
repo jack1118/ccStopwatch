@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 import type { Item, Segment } from '../types'
 import { Stepper } from './Stepper'
@@ -24,7 +24,6 @@ interface Props {
 }
 
 export function EditSheet({ title, field, seg, item, lapMeters, repMin, distanceLocked, onPatchItem, onPatchSeg, onClose }: Props) {
-  const [tMode, setTMode] = useState<'dist' | 'lap'>('lap')
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
@@ -59,32 +58,14 @@ export function EditSheet({ title, field, seg, item, lapMeters, repMin, distance
     )
   } else {
     body = (
-      <>
-        <div className="field-row">
-          <span className="rl">目標</span>
-          <div className="seg-toggle">
-            <button className={tMode === 'dist' ? 'on' : ''} onClick={() => setTMode('dist')}>以距離</button>
-            <button className={tMode === 'lap' ? 'on' : ''} onClick={() => setTMode('lap')}>以每圈</button>
-          </div>
-        </div>
-        {tMode === 'dist' ? (
-          <div className="field-row">
-            <span className="rl">距離目標</span>
-            <Stepper value={target} step={1} min={0}
-              onChange={(v) => onPatchItem(item.id, { targetSec: v, paceSecPerKm: undefined })} />
-            <span className="ru">秒</span>
-            {target > 0 && <span className="pace-pill">{fmtPace(target, item.meters)}</span>}
-          </div>
-        ) : (
-          <div className="field-row">
-            <span className="rl">每圈目標</span>
-            <Stepper value={Math.round((target * lapMeters) / item.meters)} step={1} min={0}
-              onChange={(v) => onPatchItem(item.id, { targetSec: Math.round((v * item.meters) / lapMeters), paceSecPerKm: undefined })} />
-            <span className="ru">秒/圈</span>
-            {target > 0 && <span className="pace-pill">{fmtPace(target, item.meters)}</span>}
-          </div>
-        )}
-      </>
+      <div className="field-row">
+        <span className="rl">每圈目標</span>
+        <Stepper value={Math.round((target * lapMeters) / item.meters)} step={1} min={0}
+          onChange={(v) => onPatchItem(item.id, { targetSec: Math.round((v * item.meters) / lapMeters), paceSecPerKm: undefined })} />
+        <span className="ru">秒/圈</span>
+        {target > 0 && <span className="pace-pill">{fmtPace(target, item.meters)}</span>}
+        <span className="field-hint">要改成「整段距離的完成秒數」→ 進階設定</span>
+      </div>
     )
   }
 

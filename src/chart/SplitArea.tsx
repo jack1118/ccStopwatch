@@ -2,11 +2,13 @@ import type { Group } from '../types'
 import { NRC_CHART } from '../constants'
 import { yRange } from './chart'
 import { fmtClockStr } from '../format'
+import { useChartWidth } from './useChartWidth'
 
-const W = 580, H = 190, padL = 44, padR = 14, padT = 12, padB = 24
+const H = 190, padL = 44, padR = 14, padT = 12, padB = 24
 
 /** 單組各趟分段填色面積圖（Garmin 風）：快＝上、線下填色漸層、平均參考線、平均/最佳大字 */
 export function SplitArea({ group, hideStat = false }: { group: Group; hideStat?: boolean }) {
+  const { ref, W } = useChartWidth()   // viewBox 寬＝實際像素寬，軸字不被縮小
   const secs = group.reps.map((r) => r.runSec)
   if (secs.length === 0) return null
   const { min, max } = yRange(secs)
@@ -27,7 +29,7 @@ export function SplitArea({ group, hideStat = false }: { group: Group; hideStat?
   const fracs = [0, 0.5, 1]
 
   return (
-    <div>
+    <div ref={ref}>
       {!hideStat && (
         <div className="area-stat">
           <div><b>{fmtClockStr(avg)}</b><span>平均</span></div>
@@ -49,7 +51,7 @@ export function SplitArea({ group, hideStat = false }: { group: Group; hideStat?
           return (
             <g key={i}>
               <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="#2c2c34" strokeWidth="1" />
-              <text x={padL - 6} y={y + 4} fill="#888" fontSize="12" textAnchor="end">{Math.round(min + span * f)}s</text>
+              <text x={padL - 6} y={y + 4} fill="#9a9aa2" fontSize="12" textAnchor="end">{fmtClockStr(Math.round(min + span * f))}</text>
             </g>
           )
         })}
@@ -61,7 +63,7 @@ export function SplitArea({ group, hideStat = false }: { group: Group; hideStat?
         {secs.map((v, i) => <circle key={i} cx={xAt(i)} cy={yAt(v)} r="3.5" fill={color} />)}
         {/* x 軸趟次 */}
         {secs.map((_, i) => (
-          <text key={`x${i}`} x={xAt(i)} y={H - 7} fill="#888" fontSize="12" textAnchor="middle">{i + 1}</text>
+          <text key={`x${i}`} x={xAt(i)} y={H - 7} fill="#9a9aa2" fontSize="12" textAnchor="middle">{i + 1}</text>
         ))}
       </svg>
     </div>

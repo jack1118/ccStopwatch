@@ -15,7 +15,7 @@ it('含休息的組畫出面積與休息秒標籤', () => {
   )
   expect(getByRole('img', { name: /時間軸/ })).toBeInTheDocument()
   expect(container.querySelector('polygon')).toBeTruthy()
-  expect(container.textContent).toContain('60s')   // 休息谷夠寬會標 60s
+  expect(container.textContent).toContain('1:00')   // 休息谷夠寬會標 1:00(m:ss)
 })
 
 it('純碼表(無休息)也能渲染,不爆', () => {

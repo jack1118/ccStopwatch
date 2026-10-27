@@ -63,3 +63,21 @@ export function buildTimeline(reps: { runSec: number; restSec: number }[]): Time
   }
   return { totalSec: t, segs }
 }
+
+/** 依距離分開平均：組合課表 (400+200)×8 不把 400m 與 200m 混在一起平均。
+ *  metersAt(i) 回傳第 i 趟距離（未知＝null，全部歸同一桶）。依首次出現順序回傳。 */
+export function avgByDistance(
+  reps: { runSec: number }[],
+  metersAt: (i: number) => number | null,
+): { meters: number | null; avg: number; n: number }[] {
+  const buckets = new Map<number | null, number[]>()
+  reps.forEach((r, i) => {
+    const m = metersAt(i)
+    const arr = buckets.get(m)
+    if (arr) arr.push(r.runSec)
+    else buckets.set(m, [r.runSec])
+  })
+  return [...buckets].map(([meters, secs]) => ({
+    meters, n: secs.length, avg: Math.round(secs.reduce((a, b) => a + b, 0) / secs.length),
+  }))
+}

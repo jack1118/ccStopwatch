@@ -15,6 +15,7 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [enter, setEnter] = useState<Enter>('')
   const [editSession, setEditSession] = useState<Session | null>(null)   // 進行中課程「編輯」用
+  const [resultsGroup, setResultsGroup] = useState<string | null>(null)  // 結果頁一進來就開的單組明細（碼表完成卡用）
 
   const nav = (next: Screen, anim: Enter = '') => { setEnter(anim); setScreen(next) }
 
@@ -22,6 +23,7 @@ export default function App() {
     const s = loadSession(id)
     if (!s) return
     setSession(s)
+    setResultsGroup(null)
     nav(s.status === 'done' ? 'results' : 'timer', 'fromRight')   // 開啟課程＝往內走，從右滑入
   }
 
@@ -56,12 +58,13 @@ export default function App() {
           session={session}
           enterAnim={enter}
           onExit={() => nav('list', 'fromLeft')}                            // 碼表→清單：從左滑入
-          onFinish={(s) => { setSession(s); nav('results', 'fromRight') }}   // 碼表→結果：從右滑入
+          onFinish={(s, gid) => { setSession(s); setResultsGroup(gid ?? null); nav('results', 'fromRight') }}   // 碼表→結果：從右滑入（點完成卡→直接開該組明細）
         />
       )}
       {screen === 'results' && session && (
         <Results
           session={session}
+          initialGroupId={resultsGroup}
           enterAnim={enter}
           onExit={() => nav(session.status === 'active' ? 'timer' : 'list', 'fromLeft')}  // 結果→返回：從左滑入
           onUpdate={(s) => { saveSession(s); setSession(s) }}

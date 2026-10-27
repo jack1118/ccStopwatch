@@ -2,11 +2,13 @@ import type { Group } from '../types'
 import { NRC_CHART } from '../constants'
 import { yRange, buildTimeline } from './chart'
 import { fmtClockStr } from '../format'
+import { useChartWidth } from './useChartWidth'
 
-const W = 580, H = 190, padL = 44, padR = 14, padT = 12, padB = 24
+const H = 190, padL = 44, padR = 14, padT = 12, padB = 24
 
 /** 單組真實時間軸面積圖（Garmin 風）：跑步＝平頂方塊(快在上)、休息＝落到基線的山谷(寬度∝休息秒) */
 export function TimelineArea({ group, hideStat = false }: { group: Group; hideStat?: boolean }) {
+  const { ref, W } = useChartWidth()   // viewBox 寬＝實際像素寬，軸字不被縮小
   const secs = group.reps.map((r) => r.runSec)
   if (secs.length === 0) return null
   const { totalSec, segs } = buildTimeline(group.reps)
@@ -39,7 +41,7 @@ export function TimelineArea({ group, hideStat = false }: { group: Group; hideSt
   const xFracs = [0, 0.25, 0.5, 0.75, 1]
 
   return (
-    <div>
+    <div ref={ref}>
       {!hideStat && (
         <div className="area-stat">
           <div><b>{fmtClockStr(avg)}</b><span>平均</span></div>
@@ -60,7 +62,7 @@ export function TimelineArea({ group, hideStat = false }: { group: Group; hideSt
           return (
             <g key={i}>
               <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="#2c2c34" strokeWidth="1" />
-              <text x={padL - 6} y={y + 4} fill="#888" fontSize="12" textAnchor="end">{Math.round(min + span * f)}s</text>
+              <text x={padL - 6} y={y + 4} fill="#9a9aa2" fontSize="12" textAnchor="end">{fmtClockStr(Math.round(min + span * f))}</text>
             </g>
           )
         })}
@@ -74,12 +76,12 @@ export function TimelineArea({ group, hideStat = false }: { group: Group; hideSt
             stroke={color} strokeWidth="1" strokeDasharray="4 4" opacity="0.6" />
         ) : null}
         {/* 休息秒標籤（谷夠寬才標，避免重疊） */}
-        {segs.filter((s) => s.kind === 'rest' && xAt(s.t1) - xAt(s.t0) >= 18).map((s, i) => (
-          <text key={`r${i}`} x={(xAt(s.t0) + xAt(s.t1)) / 2} y={baseY - 4} fill="#888" fontSize="10" textAnchor="middle">{s.sec}s</text>
+        {segs.filter((s) => s.kind === 'rest' && xAt(s.t1) - xAt(s.t0) >= 28).map((s, i) => (
+          <text key={`r${i}`} x={(xAt(s.t0) + xAt(s.t1)) / 2} y={baseY - 4} fill="#9a9aa2" fontSize="11" textAnchor="middle">{fmtClockStr(s.sec)}</text>
         ))}
         {/* x 軸時間 */}
         {xFracs.map((f, i) => (
-          <text key={`x${i}`} x={padL + innerW * f} y={H - 7} fill="#888" fontSize="12" textAnchor="middle">{fmtClockStr(total * f)}</text>
+          <text key={`x${i}`} x={padL + innerW * f} y={H - 7} fill="#9a9aa2" fontSize="12" textAnchor="middle">{fmtClockStr(total * f)}</text>
         ))}
       </svg>
     </div>

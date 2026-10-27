@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { Group, Item, NRCColor, Segment, Session } from '../types'
 import { Stepper } from '../components/Stepper'
-import { NRC_ORDER, NRC_NUM, NRC_HEX, NRC_TEXT, NRC_LABEL } from '../constants'
+import { NRC_ORDER, NRC_NUM, NRC_HEX, NRC_LABEL } from '../constants'
 import { itemsOf, lapsOf } from '../timer/timer'
 import { planSummary, parsePlan } from '../timer/planText'
 import type { PlanChip } from '../timer/planText'
@@ -19,6 +19,8 @@ function todayLabel(): string {          // 田徑慣例：含星期，例 6/3 (
 
 const uid = () => crypto.randomUUID()
 const DEFAULT_ON: NRCColor[] = ['yellow', 'black', 'purple', 'blue', 'green']
+// 組別 pill 字色：黃、綠底用深色字才夠對比（白字僅 1.93:1／3.11:1），其餘維持白字
+const PILL_TEXT: Partial<Record<NRCColor, string>> = { yellow: '#111', green: '#111' }
 
 const gapPerLap = (lapMeters: number) => Math.max(1, Math.round(lapMeters / 100))   // 每圈 100m 加 1 秒
 const newItem = (meters: number, restSec: number, lapMeters = 400): Item =>
@@ -78,6 +80,12 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
     () => new Set((initial?.groups ?? []).filter((g) => g.ownSegments && g.ownSegments.length > 0).map((g) => g.color)),
   )
   const [editChip, setEditChip] = useState<PlanChip | null>(null)
+  const [nameMsg, setNameMsg] = useState<{ kind: 'ok' | 'fail'; text: string } | null>(null)   // 名稱欄解析課表的回饋
+
+  // 「有改動」判定：以目前表單簽章對比開啟當下的簽章。名稱未手動改過時是自動帶入（會隨 chips 連動），不列入比較
+  const formSig = JSON.stringify([nameTouched ? name : '', segments, cfg, lapMeters, [...forkEdited]])
+  const [baseSig] = useState(formSig)
+  const dirty = formSig !== baseSig
 
   // 每組每圈加秒 × 此距離圈數 = 各組之間在「整段距離」上累加的秒數
   const gapTotal = (it: Item) => (it.gapSec ?? 0) * lapsOf(it.meters, lapMeters)
@@ -107,8 +115,9 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
     setSegments((s) => s.map((seg) => ({ ...seg, items: itemsOf(seg).map((it) => ({ ...it, gapSec: g })) })))
   }
 
-  // 向右滑 → 跳確認後返回清單（表單未存檔，確認避免誤觸丟失）
-  const swipe = useSwipe({ onRight: () => { if (window.confirm('放棄此課程設定並返回？')) onCancel() } })
+  // ← 與向右滑一致：表單有改動才跳確認（避免誤觸丟失），沒改動直接返回清單
+  const goBack = () => { if (!dirty || window.confirm('放棄此課程設定並返回？')) onCancel() }
+  const swipe = useSwipe({ onRight: goBack })
 
   const summaryText = planSummary(segments, lapMeters)
   useEffect(() => {
@@ -121,8 +130,14 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
   const parseNameToPlan = (text: string) => {
     if (editingActive) return
     const segs = parsePlan(text, lapMeters)
-    if (segs) { setSegments(segs); setNameTouched(false) }
+    if (segs) {
+      setSegments(segs); setNameTouched(false)
+      if (nameTouched) setNameMsg({ kind: 'ok', text: '已依課表更新設定' })
+    } else if (nameTouched && /[×xX*✕]|\d+(?:\.\d+)?\s*[mk]\b/i.test(text)) {
+      setNameMsg({ kind: 'fail', text: '看不懂這段課表，已當成課程名稱' })   // 像課表卻解析失敗：明講，不默默當標籤
+    }
   }
+  const addSegment = () => setSegments((s) => [...s, { id: uid(), reps: 8, items: [newItem(400, 90, lapMeters)] }])
 
   // 段落（組合）操作（EditSheet 仍透過 onPatchSeg/onPatchItem 呼叫）
   const patchSegment = (id: string, patch: Partial<Segment>) =>
@@ -209,39 +224,53 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
   return (
     <div className={`app${enterAnim ? ' enter-' + enterAnim : ''}`} {...swipe}>
       <div className="topbar">
-        <button className="btn" onClick={onCancel}>←</button>
+        <button className="btn" aria-label="返回" onClick={goBack}>←</button>
         <h1>{editingActive ? '編輯課程（只改未跑）' : '課程設定'}</h1>
       </div>
 
       <div className="sec-block">
-        <div className="label">課程名稱（自動帶入「日期 課表摘要」並隨下方連動；可改成自訂標籤）</div>
+        <div className="label">課程名稱</div>
         <input className="field wide" value={name}
-          placeholder="可直接打整串課表（如 400m×10 p96s r90s）連動下方設定"
-          onChange={(e) => { setName(e.target.value); setNameTouched(true) }}
+          placeholder="可直接打整串課表，如 400m×10 p96s r90s"
+          onChange={(e) => { setName(e.target.value); setNameTouched(true); setNameMsg(null) }}
           onBlur={(e) => parseNameToPlan(e.target.value)} />
+        <div className="field-hint" style={{ margin: '6px 0 0' }}>自動帶入「日期 課表摘要」，可改成自訂標籤</div>
+        {nameMsg && <div className={`name-msg ${nameMsg.kind}`} role="status">{nameMsg.text}</div>}
+      </div>
+
+      <div className="sec-block">
+        <div className="label">課表</div>
+        <div className="field-hint" style={{ margin: '-4px 0 4px' }}>點下方項目修改；可留空＝純碼表</div>
         <PlanChips segments={segments} lapMeters={lapMeters} onChipTap={setEditChip} />
+        {!editingActive && <button className="btn" onClick={addSegment}>＋ 新增項目</button>}
       </div>
 
-      <div className="sec-block">
-        <div className="label">操作場地一圈</div>
-        <div className="field-row">
-          <Stepper value={lapMeters} step={50} min={50} onChange={changeLapMeters} disabled={editingActive} />
-          <span className="ru">m</span>
-          <span className="field-hint">{editingActive ? '進行中不可改場地' : '預設 400；距離會換算成圈數'}</span>
+      <details className="adv">
+        <summary>進階設定</summary>
+        <div className="adv-body">
+          <div className="sec-block">
+            <div className="label">操作場地一圈</div>
+            <div className="field-row">
+              <Stepper value={lapMeters} step={50} min={50} onChange={changeLapMeters} disabled={editingActive} />
+              <span className="ru">m</span>
+              <span className="field-hint">{editingActive ? '進行中不可改場地' : '預設 400；距離會換算成圈數'}</span>
+            </div>
+          </div>
+
+          <div className="sec-block">
+            <div className="label">共用課表</div>
+            <div className="sublabel">項目可為組合，如 (400m+200m)×8；可逐項設距離、目標（以距離／以每圈）、每組每圈＋、間休，並可刪除、鏡像</div>
+            <PlanEditor segments={segments} lapMeters={lapMeters}
+              editingActive={editingActive} repFloor={repFloorSeg}
+              showGroupTargets onChange={setSegments} />
+          </div>
         </div>
-      </div>
+      </details>
 
       <div className="sec-block">
-        <div className="label">共用課表</div>
-        <div className="sublabel">項目可為組合，如 (400m+200m)×8；可留空＝純碼表</div>
-        <PlanEditor segments={segments} lapMeters={lapMeters}
-          editingActive={editingActive} repFloor={repFloorSeg}
-          showGroupTargets onChange={setSegments} />
-      </div>
-
-      <div className="sec-block">
-        <div className="label">組別（顏色固定對應組號；可展開逐組自訂組數/目標/休息）</div>
-        {editingActive && <div className="sublabel">進行中不可增減組別，僅能調整各組目標/休息/趟數</div>}
+        <div className="label">組別</div>
+        <div className="field-hint" style={{ margin: '-4px 0 6px' }}>顏色固定對應組號；可展開逐組自訂組數、目標、休息</div>
+        {editingActive && <div className="field-hint" style={{ margin: '0 0 6px' }}>進行中不可增減組別，僅能調整各組目標/休息/趟數</div>}
         {NRC_ORDER.map((c) => {
           const on = cfg[c].on
           const isOpen = !!expanded[c]
@@ -249,7 +278,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
           return (
             <div key={c}>
               <div className={`grp-row${on ? '' : ' off'}`}>
-                <span className="pill" style={{ background: NRC_HEX[c], color: NRC_TEXT[c] }}>
+                <span className="pill" style={{ background: NRC_HEX[c], color: PILL_TEXT[c] ?? '#fff' }}>
                   {NRC_LABEL[c]} 第{NRC_NUM[c]}組
                 </span>
                 {on && (isForked(c) || segments.length > 0) && (
@@ -321,7 +350,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
       </div>
 
       <div className="spacer" />
-      <div className="bottombar">
+      <div className="bottombar setup-bar">
         <button className="btn primary" style={{ fontSize: 18, padding: 16 }}
           disabled={activeCount === 0} onClick={start}>
           {editingActive ? '儲存變更 ✓' : `開始上課 ▶（${activeCount} 組）`}

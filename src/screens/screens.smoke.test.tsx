@@ -35,6 +35,21 @@ it('Results 正常渲染（含每圈距離、圖表、明細）', () => {
   expect(screen.getByRole('img', { name: '各組分段折線圖' })).toBeInTheDocument()
 })
 
+it('Results 不列 0 圈的組（未開始就結束課程）', () => {
+  const g = { repsOverride: null, targetPaceSec: null, athletes: [], state: 'done' as const, runStartTs: null, restStartTs: null }
+  const session: Session = {
+    id: 's', name: '測試', createdAt: 0, status: 'done',
+    plan: { lapMeters: 400, segments: [{ id: '1', meters: 400, reps: 2, restSec: 60, targetSec: 90, gapSec: 4 }] },
+    groups: [
+      { ...g, id: 'g1', color: 'yellow', number: 1, reps: [{ index: 0, runSec: 88, restSec: 60 }] },
+      { ...g, id: 'g2', color: 'black', number: 2, reps: [] },
+    ],
+  }
+  render(<Results session={session} onExit={vi.fn()} onUpdate={vi.fn()} />)
+  expect(screen.getAllByText(/第1組/).length).toBeGreaterThan(0)
+  expect(screen.queryByText(/第2組/)).toBeNull()
+})
+
 it('Results 詳細頁預設時間圖,可切換到趟次圖', () => {
   const session: Session = {
     id: 's2', name: '測試2', createdAt: 0, status: 'done',
@@ -107,4 +122,43 @@ it('Results 點分享卡開啟編輯器', () => {
   fireEvent.click(screen.getByText('分享卡'))
   expect(screen.getByText('限動分享卡')).toBeInTheDocument()
   expect(screen.getByText('上傳照片')).toBeInTheDocument()
+})
+
+it('SessionSetup ← 沒改動直接返回；有改動才 confirm', () => {
+  const onCancel = vi.fn()
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  render(<SessionSetup onStart={vi.fn()} onCancel={onCancel} />)
+  fireEvent.click(screen.getByLabelText('返回'))
+  expect(confirm).not.toHaveBeenCalled()
+  expect(onCancel).toHaveBeenCalledTimes(1)
+  fireEvent.click(screen.getAllByText('＋ 新增項目')[0])          // 動表單
+  fireEvent.click(screen.getByLabelText('返回'))
+  expect(confirm).toHaveBeenCalledTimes(1)
+  expect(onCancel).toHaveBeenCalledTimes(1)               // 選取消 → 不返回
+  confirm.mockReturnValue(true)
+  fireEvent.click(screen.getByLabelText('返回'))
+  expect(onCancel).toHaveBeenCalledTimes(2)
+  confirm.mockRestore()
+})
+
+it('SessionSetup 名稱欄：亂碼課表提示、成功解析回饋、再輸入即消失', () => {
+  render(<SessionSetup onStart={vi.fn()} onCancel={vi.fn()} />)
+  const nameInput = screen.getByPlaceholderText(/可直接打整串課表/) as HTMLInputElement
+  fireEvent.change(nameInput, { target: { value: '400x' } })
+  fireEvent.blur(nameInput)
+  expect(screen.getByText('看不懂這段課表，已當成課程名稱')).toBeInTheDocument()
+  fireEvent.change(nameInput, { target: { value: '200m×3 p40s r8s' } })
+  expect(screen.queryByText('看不懂這段課表，已當成課程名稱')).not.toBeInTheDocument()
+  fireEvent.blur(nameInput)
+  expect(screen.getByText('已依課表更新設定')).toBeInTheDocument()
+  fireEvent.change(nameInput, { target: { value: '週三加強' } })   // 一般標籤：不提示
+  fireEvent.blur(nameInput)
+  expect(screen.queryByRole('status')).not.toBeInTheDocument()
+})
+
+it('SessionSetup 進階設定預設收合，且含每組每圈＋說明', () => {
+  const { container } = render(<SessionSetup onStart={vi.fn()} onCancel={vi.fn()} />)
+  const adv = container.querySelector('details.adv') as HTMLDetailsElement
+  expect(adv.open).toBe(false)
+  expect(screen.getByText(/每往後一組、每圈多給幾秒/)).toBeInTheDocument()
 })
