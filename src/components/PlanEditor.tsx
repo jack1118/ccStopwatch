@@ -4,6 +4,7 @@ import { NRC_ORDER, NRC_LABEL, NRC_NUM } from '../constants'
 import { itemsOf, lapsOf } from '../timer/timer'
 import { segLabel } from '../timer/planText'
 import { useState } from 'react'
+import { nativeSelection } from '../native'
 
 const uid = () => globalThis.crypto?.randomUUID?.() ?? `id${Math.random().toString(36).slice(2)}`
 const gapPerLap = (lapMeters: number) => Math.max(1, Math.round(lapMeters / 100))
@@ -86,8 +87,8 @@ export function PlanEditor({ segments, lapMeters, onChange, editingActive = fals
                 <div className="field-row">
                   <span className="rl">目標</span>
                   <div className="seg-toggle">
-                    <button className={modeOf(it.id) === 'dist' ? 'on' : ''} onClick={() => setMode(it.id, 'dist')}>以距離</button>
-                    <button className={modeOf(it.id) === 'lap' ? 'on' : ''} onClick={() => setMode(it.id, 'lap')}>以每圈</button>
+                    <button className={modeOf(it.id) === 'dist' ? 'on' : ''} onClick={() => { nativeSelection(); setMode(it.id, 'dist') }}>以距離</button>
+                    <button className={modeOf(it.id) === 'lap' ? 'on' : ''} onClick={() => { nativeSelection(); setMode(it.id, 'lap') }}>以每圈</button>
                   </div>
                 </div>
                 {modeOf(it.id) === 'dist' ? (

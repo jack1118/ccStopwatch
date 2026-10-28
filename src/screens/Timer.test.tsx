@@ -1,5 +1,5 @@
 import { it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { Timer } from './Timer'
 import type { Group, Session } from '../types'
 
@@ -29,12 +29,13 @@ it('頂列開關帶 aria-pressed', () => {
   expect(screen.getByLabelText('復原鈕顯示開關').getAttribute('aria-pressed')).toBe('true')
 })
 
-it('結束整堂課：確認後所有組(含未開始)都結束、課程標成已完成並前往結果', () => {
+it('結束整堂課：確認後所有組(含未開始)都結束、課程標成已完成並前往結果', async () => {
   const onFinish = vi.fn()
   const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
   render(<Timer session={mk()} onExit={vi.fn()} onFinish={onFinish} />)
   fireEvent.click(screen.getByText('結束'))
   expect(confirm).toHaveBeenCalled()
+  await waitFor(() => expect(onFinish).toHaveBeenCalled())   // 確認改為非同步（app 用系統底部選單）
   const s = onFinish.mock.calls[0][0] as Session
   expect(s.groups.map((x) => x.state)).toEqual(['done', 'done', 'done'])
   expect(s.status).toBe('done')

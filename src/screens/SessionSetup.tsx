@@ -9,6 +9,7 @@ import { PlanChips } from '../components/PlanChips'
 import { PlanEditor } from '../components/PlanEditor'
 import { EditSheet } from '../components/EditSheet'
 import { useSwipe } from '../hooks/useSwipe'
+import { nativeSelection } from '../native'
 import { bakeOwnSegments } from '../timer/fork'
 
 const WEEKDAY = ['日', '一', '二', '三', '四', '五', '六']
@@ -291,7 +292,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
                         </span>)}
                   </>
                 )}
-                {!editingActive && <button className={`grp-toggle${on ? ' on' : ''}`} onClick={() => toggleColor(c)}>{on ? '出場' : '不出場'}</button>}
+                {!editingActive && <button className={`grp-toggle${on ? ' on' : ''}`} onClick={() => { nativeSelection(); toggleColor(c) }}>{on ? '出場' : '不出場'}</button>}
               </div>
               {on && isOpen && (isForked(c) || segments.length > 0) && (
                 <div className="grp-expand-body">

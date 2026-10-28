@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Session } from './types'
-import { loadSession, saveSession } from './storage/storage'
+import { listSessions, loadSession, saveSession } from './storage/storage'
 import { SessionList } from './screens/SessionList'
 import { SessionSetup } from './screens/SessionSetup'
 import { Timer } from './screens/Timer'
@@ -10,9 +10,16 @@ import { Help } from './screens/Help'
 type Screen = 'list' | 'setup' | 'timer' | 'results' | 'help'
 type Enter = '' | 'fromRight' | 'fromLeft'   // 滑入方向（左右滑動切頁用）
 
+// 重開 app 時今天有進行中的課 → 直接回碼表（中途切去別的 app 被系統回收，不用再從清單找）
+function resumeToday(): Session | null {
+  const today = new Date().toDateString()
+  const m = listSessions().find((x) => x.status === 'active' && new Date(x.createdAt).toDateString() === today)
+  return m ? loadSession(m.id) : null
+}
+
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('list')
-  const [session, setSession] = useState<Session | null>(null)
+  const [session, setSession] = useState<Session | null>(resumeToday)
+  const [screen, setScreen] = useState<Screen>(() => (session ? 'timer' : 'list'))
   const [enter, setEnter] = useState<Enter>('')
   const [editSession, setEditSession] = useState<Session | null>(null)   // 進行中課程「編輯」用
   const [resultsGroup, setResultsGroup] = useState<string | null>(null)  // 結果頁一進來就開的單組明細（碼表完成卡用）

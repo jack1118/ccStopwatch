@@ -1,0 +1,4 @@
+# 在 Mac 上執行／建置的檔案固定 LF（Windows autocrlf 轉成 CRLF 會讓 zsh 與 Xcode 壞掉）
+*.sh text eol=lf
+ios/** text=auto eol=lf
+*.png binary

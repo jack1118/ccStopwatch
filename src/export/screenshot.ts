@@ -1,7 +1,18 @@
 import { toPng } from 'html-to-image'
+import { isNative, nativeShareFile } from '../native'
+
+// iOS app 裡 <a download> 沒反應：一律改走系統分享面板（存相簿、LINE、IG、存到檔案）
+const base64Of = (dataUrl: string) => dataUrl.slice(dataUrl.indexOf(',') + 1)
+const blobToDataUrl = (blob: Blob) => new Promise<string>((resolve, reject) => {
+  const r = new FileReader()
+  r.onload = () => resolve(r.result as string)
+  r.onerror = () => reject(r.error)
+  r.readAsDataURL(blob)
+})
 
 export async function downloadPng(el: HTMLElement, filename: string): Promise<void> {
   const dataUrl = await toPng(el, { backgroundColor: '#0b0b0d', pixelRatio: 2 })
+  if (isNative) { await nativeShareFile(filename, base64Of(dataUrl), true); return }
   const a = document.createElement('a')
   a.href = dataUrl
   a.download = filename
@@ -31,6 +42,7 @@ export type ShareResult = 'shared' | 'downloaded' | 'cancelled'
  *  註：share() resolve 只代表系統收下了，不保證使用者真的發佈；下載也無完成事件，故回饋文案用「已傳送/已下載」。 */
 export async function sharePng(el: HTMLElement, filename: string): Promise<ShareResult> {
   const blob = await elementToPngBlob(el, 4)
+  if (isNative) return (await nativeShareFile(filename, base64Of(await blobToDataUrl(blob)), true)) ? 'shared' : 'cancelled'
   const file = new File([blob], filename, { type: 'image/png' })
   try {
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -53,6 +65,7 @@ export async function sharePng(el: HTMLElement, filename: string): Promise<Share
 /** 用「已備好的 blob」分享（呼叫端事先合成，點擊當下零等待，避免 iOS transient activation 失效）。
  *  優先系統分享（title:'' 修 iOS 把檔變純文字的坑）；不支援/失敗則下載。取消回 'cancelled'。 */
 export async function shareBlob(blob: Blob, filename: string): Promise<ShareResult> {
+  if (isNative) return (await nativeShareFile(filename, base64Of(await blobToDataUrl(blob)), true)) ? 'shared' : 'cancelled'   // 原生面板不受 user-gesture 限制
   const file = new File([blob], filename, { type: 'image/png' })
   try {
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -73,6 +86,7 @@ export async function shareBlob(blob: Blob, filename: string): Promise<ShareResu
 }
 
 export function downloadText(text: string, filename: string, mime = 'text/csv'): void {
+  if (isNative) { void nativeShareFile(filename, text, false).catch(() => {}); return }
   const blob = new Blob([text], { type: `${mime};charset=utf-8` })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')

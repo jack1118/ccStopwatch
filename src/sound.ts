@@ -1,3 +1,5 @@
+import { isNative, nativeAlarm, nativeTap } from './native'
+
 let ctx: AudioContext | null = null
 function audio(): AudioContext {
   const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
@@ -26,6 +28,7 @@ export function beep(): void {
     o.start()
     o.stop(c.currentTime + 0.26)
   } catch { /* 略過 */ }
+  if (isNative) { nativeAlarm(); return }   // iOS app：原生警示觸覺＋長震
   // 休息到點＝鬧鈴：Android 連續強震；iOS 連續觸覺（web 無法調震幅，只能靠時長/連發）
   try { navigator.vibrate?.([400, 120, 400, 120, 400]) } catch { /* 略過 */ }
   try { iosHaptic(6) } catch { /* 略過 */ }
@@ -124,7 +127,10 @@ function clickSound(): void {
 
 /** 點擊回饋：iOS 觸覺(17.4+) ＋ Android 震動 ＋（可選）點擊音效 */
 export function tapFeedback(): void {
-  try { navigator.vibrate?.([55, 35, 55]) } catch { /* 略過 */ }   // Android：雙脈衝最有感
-  try { iosHaptic(3) } catch { /* 略過 */ }                          // iOS：連發 3 次觸覺
+  if (isNative) nativeTap()                                          // iOS app：原生重擊觸覺
+  else {
+    try { navigator.vibrate?.([55, 35, 55]) } catch { /* 略過 */ }   // Android：雙脈衝最有感
+    try { iosHaptic(3) } catch { /* 略過 */ }                        // iOS：連發 3 次觸覺
+  }
   if (isTapSoundOn()) clickSound()
 }

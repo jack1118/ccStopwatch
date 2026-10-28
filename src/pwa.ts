@@ -13,7 +13,7 @@ function reloadOnce(): void {
 
 /** App 啟動時呼叫一次，註冊 service worker（僅正式環境）。dev/不支援 → no-op。 */
 export function initPwa(): void {
-  if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return
+  if (!import.meta.env.PROD || import.meta.env.MODE === 'ios' || !('serviceWorker' in navigator)) return   // iOS app 不用 SW
   const base = import.meta.env.BASE_URL
   wb = new Workbox(`${base}sw.js`, { scope: base, updateViaCache: 'none' })
   // 新 SW 接管時自動重載到新版（autoUpdate 會自動 skipWaiting）；首次安裝不重載

@@ -12,6 +12,7 @@ import { avgByDistance } from '../chart/chart'
 import { buildLapPlan } from '../timer/timer'
 import { useSwipe } from '../hooks/useSwipe'
 import { FitText } from '../components/FitText'
+import { nativeSelection } from '../native'
 
 interface Props {
   session: Session
@@ -160,8 +161,8 @@ export function Results({ session, enterAnim = '', onExit, onUpdate, initialGrou
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
             <button className="btn" onClick={() => setDetailId(null)}>← 返回總表</button>
             <div className="seg-toggle" role="group" aria-label="圖表類型">
-              <button className={mode === 'reps' ? 'on' : ''} aria-pressed={mode === 'reps'} onClick={() => setMode('reps')}>趟次</button>
-              <button className={mode === 'time' ? 'on' : ''} aria-pressed={mode === 'time'} onClick={() => setMode('time')}>時間</button>
+              <button className={mode === 'reps' ? 'on' : ''} aria-pressed={mode === 'reps'} onClick={() => { nativeSelection(); setMode('reps') }}>趟次</button>
+              <button className={mode === 'time' ? 'on' : ''} aria-pressed={mode === 'time'} onClick={() => { nativeSelection(); setMode('time') }}>時間</button>
             </div>
           </div>
           <div ref={detailShotRef}>

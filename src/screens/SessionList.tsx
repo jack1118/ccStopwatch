@@ -3,6 +3,7 @@ import type { SessionMeta } from '../types'
 import { listSessions, deleteSession } from '../storage/storage'
 import { useSwipe } from '../hooks/useSwipe'
 import { dateLabel } from '../format'
+import { confirmDestructive } from '../native'
 
 /** 開始時間 HH:MM；課名已以「M/D (週)」開頭（預設命名）就不重複日期，否則補上日期 */
 function whenLabel(m: SessionMeta): string {
@@ -26,8 +27,9 @@ export function SessionList({ enterAnim = '', onNew, onOpen, onEdit, onHelp }: P
   // 向左滑 → 開啟最近一筆課程（清單⇄碼表）
   const swipe = useSwipe({ onLeft: () => { if (items[0]) onOpen(items[0].id) } })
 
-  const remove = (id: string, name: string) => {
-    if (!window.confirm(`確定要刪除課程「${name}」嗎？此動作無法復原。`)) return
+  const remove = async (id: string, name: string) => {
+    const ok = await confirmDestructive({ title: `刪除「${name}」？`, message: '刪除後無法復原。', action: '刪除課程', webText: `確定要刪除課程「${name}」嗎？此動作無法復原。` })
+    if (!ok) return
     deleteSession(id)
     setItems(listSessions())
   }
