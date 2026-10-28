@@ -7,8 +7,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 const BUILD = new Date().toISOString().replace('T', ' ').slice(0, 16)
 
 // GitHub Pages 專案站台部署在 /ccStopwatch/ 子路徑；開發時用根路徑。
-export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/ccStopwatch/' : '/',
+// `--mode ios`：打包進 iOS app（Capacitor），用相對路徑、不產生 service worker。
+export default defineConfig(({ command, mode }) => ({
+  base: mode === 'ios' ? './' : command === 'build' ? '/ccStopwatch/' : '/',
   define: {
     __BUILD__: JSON.stringify(BUILD),
   },
@@ -22,6 +23,7 @@ export default defineConfig(({ command }) => ({
       },
     },
     VitePWA({
+      disable: mode === 'ios',
       registerType: 'autoUpdate',
       injectRegister: null,
       includeAssets: ['icon.svg', 'apple-touch-icon-180x180.png'],

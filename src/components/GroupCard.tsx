@@ -6,6 +6,7 @@ import { planShape } from '../timer/planText'
 import { fmtClockStr } from '../format'
 import { Clock } from './Clock'
 import { RunRing } from './RunRing'
+import { nativeLight, nativeSuccess } from '../native'
 
 interface Props {
   group: Group
@@ -79,8 +80,8 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
     startXY.current = { x: e.clientX, y: e.clientY }
     moved.current = false
     setPressed(true)
-    ringTimer.current = window.setTimeout(() => setHolding(true), TAP_MAX)
-    holdTimer.current = window.setTimeout(() => { setHolding(false); onStop(g.id) }, HOLD_MS)
+    ringTimer.current = window.setTimeout(() => { setHolding(true); nativeLight() }, TAP_MAX)   // 輕震：開始算長按
+    holdTimer.current = window.setTimeout(() => { setHolding(false); nativeSuccess(); onStop(g.id) }, HOLD_MS)   // 成功震：已停止（不必低頭看）
   }
   const onMove = (e: React.PointerEvent) => {
     if (moved.current) return
@@ -116,7 +117,7 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
   const [undoHolding, setUndoHolding] = useState(false)
   const startUndo = () => {
     setUndoHolding(true)
-    undoTimer.current = window.setTimeout(() => { setUndoHolding(false); onUndo(g.id) }, 900)
+    undoTimer.current = window.setTimeout(() => { setUndoHolding(false); nativeLight(); onUndo(g.id) }, 900)
   }
   const cancelUndo = () => {
     if (undoTimer.current) clearTimeout(undoTimer.current)

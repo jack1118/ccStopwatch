@@ -1,12 +1,15 @@
 :root { color-scheme: dark; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body, #root { margin: 0; height: 100%; }
+html, body { overscroll-behavior: none; }   /* 不要整頁橡皮筋回彈（網頁感） */
 body { overflow-x: hidden; }   /* 翻頁滑入動畫時不露出水平捲軸 */
 body {
   background: #0b0b0d; color: #fff;
   font-family: -apple-system, "PingFang TC", "Helvetica Neue", system-ui, sans-serif;
   -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;   /* 長按不跳系統選單/放大鏡（長按是「結束一組」） */
 }
+input, textarea { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }   /* 輸入框仍可選字、貼上 */
 button { font-family: inherit; color: inherit; }
 
 .app { max-width: 720px; margin: 0 auto; min-height: 100%;

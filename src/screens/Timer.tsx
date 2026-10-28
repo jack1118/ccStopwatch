@@ -10,6 +10,7 @@ import { useNow } from '../hooks/useNow'
 import { useWakeLock } from '../hooks/useWakeLock'
 import { beep, tapFeedback, isTapSoundOn, setTapSound, isUndoBtnOn, setUndoBtn } from '../sound'
 import { useSwipe } from '../hooks/useSwipe'
+import { isNative, requestAlertPermission, scheduleRestAlerts, cancelRestAlerts, nativeLight, nativeSelection, confirmDestructive, type RestAlert } from '../native'
 
 interface Props {
   session: Session
@@ -47,11 +48,12 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
   const toastGroup = stopToast && state.session.groups.find((g) => g.id === stopToast.groupId)
 
   // 結束整堂課：進行中/休息中立即停、未開始的也一併結束(課程才會標成已完成；0 圈的組結果頁不列) → 存檔 → 前往結果頁
-  const endAll = () => {
+  const endAll = async () => {
     const active = state.session.groups.filter(isActive)
     const idle = state.session.groups.filter((g) => g.state === 'idle')
-    const msg = `結束整堂課？\n進行中/休息中的 ${active.length} 組會立即停止` + (idle.length ? `，未開始的 ${idle.length} 組不列入結果` : '') + '。'
-    if (!window.confirm(msg)) return
+    const detail = `進行中/休息中的 ${active.length} 組會立即停止` + (idle.length ? `，未開始的 ${idle.length} 組不列入結果` : '') + '。'
+    const ok = await confirmDestructive({ title: '結束整堂課？', message: detail, action: '結束整堂課', webText: `結束整堂課？\n${detail}` })
+    if (!ok) return
     const t = Date.now()
     const final = [...active, ...idle].reduce((s, g) => timerReducer(s, { type: 'STOP', groupId: g.id, now: t }), state)
     saveSession(final.session)   // 立即存：切頁後本元件卸載，持久化 effect 不會再跑
@@ -77,6 +79,30 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
       }
     }
   }, [now, state.session])
+
+  // iOS app：鎖屏/切到背景時，把還沒到點的「休息到點」排成系統通知（螢幕關著也會震）；回前景就取消
+  const sessionRef = useRef(state.session)
+  useEffect(() => { sessionRef.current = state.session }, [state.session])
+  useEffect(() => {
+    if (!isNative) return
+    requestAlertPermission()
+    const onVis = () => {
+      if (document.visibilityState === 'visible') { void cancelRestAlerts(); return }
+      const s = sessionRef.current
+      const alerts: RestAlert[] = []
+      for (const g of s.groups) {
+        if (g.state !== 'resting' || g.restStartTs == null) continue
+        const target = buildLapPlan(s.plan, g)[g.reps.length - 1]?.restAfter ?? 0
+        if (target > 0) alerts.push({ at: g.restStartTs + target * 1000, title: `${NRC_LABEL[g.color]} 第${g.number}組`, body: '休息到點，該出發了' })
+      }
+      void scheduleRestAlerts(alerts)
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      document.removeEventListener('visibilitychange', onVis)
+      void cancelRestAlerts()
+    }
+  }, [])
 
   const count = state.session.groups.length
   const cols = count <= 4 ? 1 : 2
@@ -108,11 +134,11 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
         <h1 className="plan-title">{dateLabel(state.session.createdAt)}
           <span className="plan-time"> {pad2(started.getHours())}:{pad2(started.getMinutes())}</span></h1>
         <button className="btn tgl" aria-label="點擊音效開關" aria-pressed={soundOn}
-          onClick={() => { const v = !soundOn; setTapSound(v); setSoundOn(v) }}>
+          onClick={() => { nativeSelection(); const v = !soundOn; setTapSound(v); setSoundOn(v) }}>
           {soundOn ? '🔊' : '🔇'}
         </button>
         <button className="btn tgl slash" aria-label="復原鈕顯示開關" aria-pressed={showUndo}
-          onClick={() => { const v = !showUndo; setUndoBtn(v); setShowUndo(v) }}>
+          onClick={() => { nativeSelection(); const v = !showUndo; setUndoBtn(v); setShowUndo(v) }}>
           <span style={{ opacity: showUndo ? 1 : 0.35 }}>↩</span>
         </button>
         {/* 有組在跑/休息時＝「結束」整堂課（確認後停全部並看結果）；否則＝「結果」。左滑仍可隨時偷看結果 */}
@@ -159,6 +185,7 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
         <div className={`stop-toast${allDone ? ' above-bar' : ''}`} key={stopToast.key} role="status">
           <span>已結束 {stopToast.label}</span>
           <button className="stop-toast-undo" onClick={() => {
+            nativeLight()
             dispatch({ type: 'UNDO', groupId: stopToast.groupId, now: Date.now() })
             setStopToast(null)
           }}>復原</button>

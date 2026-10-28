@@ -1,9 +1,14 @@
 import { useEffect } from 'react'
+import { isNative, nativeKeepAwake } from '../native'
 
 // 螢幕防休眠；不支援的瀏覽器靜默略過。型別用 any 以相容各 lib 版本。
 export function useWakeLock(active: boolean): void {
   useEffect(() => {
     if (!active) return
+    if (isNative) {   // iOS app：原生防休眠（WKWebView 的 wakeLock 不可靠）
+      nativeKeepAwake(true)
+      return () => nativeKeepAwake(false)
+    }
     let lock: { release?: () => Promise<void> } | null = null
     const nav = navigator as unknown as {
       wakeLock?: { request: (t: 'screen') => Promise<typeof lock> }
