@@ -1,4 +1,24 @@
 :root { color-scheme: dark; }
+/* Ionic（iOS 元件）主題：沿用 app 的深底與綠色主色（:root.ios 要一起寫，否則被 dark 色盤的 :root.ios 蓋掉） */
+:root, :root.ios {
+  --ion-font-family: -apple-system, "PingFang TC", "Helvetica Neue", system-ui, sans-serif;
+  --ion-background-color: #0b0b0d;
+  --ion-background-color-rgb: 11, 11, 13;
+  --ion-item-background: #1c1c22;
+  --ion-toolbar-background: #0b0b0d;
+  --ion-color-primary: #30D158;
+  --ion-color-primary-rgb: 48, 209, 88;
+  --ion-color-primary-contrast: #03260f;
+  --ion-color-primary-contrast-rgb: 3, 38, 15;
+  --ion-color-primary-shade: #2ab84e;
+  --ion-color-primary-tint: #45d669;
+}
+.session-list { --ion-item-background: #1c1c22; background: transparent; }
+.session-list ion-item { --background: #1c1c22; --border-color: #2c2c32; }
+.session-list .item-name { font-size: 16px; font-weight: 700; line-height: 1.35; white-space: normal; }
+.session-list p { font-size: 13px; color: #9a9aa2; margin-top: 3px; }
+.list-footer ion-toolbar { --padding-start: 12px; --padding-end: 12px; --padding-top: 8px; --padding-bottom: 8px; }
+.list-footer .new-session { --border-radius: 12px; height: 50px; font-size: 17px; font-weight: 700; margin: 0; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body, #root { margin: 0; height: 100%; }
 html, body { overscroll-behavior: none; }   /* 不要整頁橡皮筋回彈（網頁感） */
@@ -12,28 +32,36 @@ body {
 input, textarea { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }   /* 輸入框仍可選字、貼上 */
 button { font-family: inherit; color: inherit; }
 
-.app { max-width: 720px; margin: 0 auto; min-height: 100%;
+/* 各頁內容：IonContent 裡的直式欄（導覽列已讓出瀏海；底部讓出 home 指示條） */
+.page-body { max-width: 720px; margin: 0 auto; min-height: 100%;
   display: flex; flex-direction: column;
-  padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom); }
-/* 翻頁滑動：水平手勢交給 JS，垂直照常捲動。註：touch-action 不放 .app(會擋住子層表格的水平捲動)，
-   改放實際滑動區(碼表格線)。結果頁靠 useSwipe 的 pointercancel 後備偵測，表格另立水平捲動容器。 */
+/* 碼表頁左滑看結果：水平手勢交給 JS，垂直照常捲動（只放碼表格線，不擋其他區域的水平捲動） */
 .timer-grid { touch-action: pan-y; }
-/* 撐開中間區，讓底部按鈕列沉到畫面下方（好按、善用空白） */
-.spacer { flex: 1; }
 
-/* 左右滑動切頁：新頁從側邊滑入 */
-@keyframes slideFromRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
-@keyframes slideFromLeft  { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-.app.enter-fromRight { animation: slideFromRight .25s ease-out; }
-.app.enter-fromLeft  { animation: slideFromLeft .25s ease-out; }
-@media (prefers-reduced-motion: reduce) {
-  .app.enter-fromRight, .app.enter-fromLeft { animation: none; }
-}
-
-.topbar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; }
-.topbar h1 { font-size: 18px; margin: 0; flex: 1; min-width: 0;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* 課表太長單行省略，不佔大區塊 */
+/* ── iOS 導覽列與分組清單 ── */
+/* 碼表導覽列：右側三顆鈕，置中的標題會被蓋住 → 標題改夾在左右鈕之間 */
+.timer-bar ion-title { position: relative; width: auto; padding: 0 4px; }
+/* 導覽列開關(音效/↩)：開＝綠色圖示、關＝灰色圖示(↩ 另加紅斜線)；按下淡出(iOS 導覽列按鈕手感) */
+.nav-tgl { position: relative; width: 40px; height: 44px; padding: 0; border: 0; background: transparent;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 24px;
+  color: var(--ion-color-primary); transition: opacity .1s; }
+.nav-tgl:active { opacity: .35; }
+.nav-tgl[aria-pressed="false"] { color: #8e8e93; }
+.nav-tgl.slash[aria-pressed="false"]::after { content: ''; position: absolute; left: 22%; right: 22%;
+  top: calc(50% - 1px); height: 2px; border-radius: 1px; background: #ff6b5e; transform: rotate(-38deg); }
+/* 分組清單（inset grouped）：組外灰色小標題／說明，與 IonList inset（左右 16px、圓角 10px）對齊 */
+.ios-head { font-size: 13px; color: #8e8e93; padding: 0 32px; margin: 22px 0 -10px; }
+.ios-foot { font-size: 13px; color: #8e8e93; line-height: 1.45; padding: 0 32px; margin: -10px 0 0; }
+.ios-foot + .ios-foot { margin-top: 4px; }
+.ios-card { margin: 16px; border-radius: 10px; background: var(--ion-item-background); overflow: hidden; }
+/* 設定 modal：底色同頁面深底、卡片 #1c1c22（色盤預設的 modal 灰底會跟卡片糊在一起） */
+:root.ios ion-modal.setup-modal { --ion-background-color: #0b0b0d; --ion-toolbar-background: #161619; }
+.ios-list ion-item { --border-color: #2c2c32; }
+/* IonItem 內的原生輸入框：透明無框，像 iOS 表單列 */
+.item-input { flex: 1; width: 100%; min-height: 44px; padding: 0; border: 0; outline: 0;
+  background: transparent; color: #fff; font: inherit; font-size: 17px; }
+.item-input::placeholder { color: #6e6e74; }
 
 /* 按圈瞬間全畫面大秒數（點擊穿透、約1.2s 自動消失，不擋連點） */
 .lap-flash { position: fixed; inset: 0; z-index: 50; pointer-events: none;
@@ -60,12 +88,6 @@ button { font-family: inherit; color: inherit; }
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 /* 碼表頁頂列：開課時間（同一天多堂課分得出來） */
 .plan-time { font-size: 15px; font-weight: 600; color: #b3b3b9; }   /* 略小：390px 寬時頂列 4 顆鈕下仍放得下 */
-/* 頂列開關(🔊/↩)：除透明度外，開＝實心底＋亮框、關＝透明底＋暗框(↩ 另加斜線) */
-.btn.tgl { position: relative; }
-.btn.tgl[aria-pressed="true"] { background: #3a3a42; box-shadow: inset 0 0 0 1.5px #8e8e96; }
-.btn.tgl[aria-pressed="false"] { background: transparent; box-shadow: inset 0 0 0 1.5px #3a3a42; }
-.btn.tgl.slash[aria-pressed="false"]::after { content: ''; position: absolute; left: 20%; right: 20%;
-  top: calc(50% - 1px); height: 2px; border-radius: 1px; background: #ff6b5e; transform: rotate(-38deg); }
 /* 結束一組後的復原 toast：底部置中、窄、5 秒自動消失；只有本體可點，不擋其他卡片 */
 .stop-toast { position: fixed; left: 50%; transform: translateX(-50%); z-index: 40;
   bottom: calc(14px + env(safe-area-inset-bottom));
@@ -82,8 +104,6 @@ button { font-family: inherit; color: inherit; }
   font-size: 14px; font-weight: 600; }
 .btn.primary { background: #30D158; color: #03260f; }
 .btn.danger { background: #3a2020; color: #ff6b5e; }
-/* 次要按鈕：無底色文字樣式，不與主要動作搶視覺 */
-.btn.quiet { background: transparent; color: #b4b4bc; font-weight: 500; }
 /* 破壞性次要：無底色紅字，與相鄰按鈕拉開距離避免誤觸 */
 .btn.quiet-danger { background: transparent; color: #ff6b5e; font-weight: 500; margin-left: 10px; }
 
@@ -361,10 +381,10 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .status-chip { font-weight: 800; color: #b3b3b9; }
 .status-chip.live { color: #30D158; }
 /* 使用說明 */
-.help { padding: 4px 14px 24px; }
-.help section { background: #15151a; border: 1px solid #26262e; border-radius: 14px;
-  padding: 12px 14px; margin-bottom: 12px; }
-.help-bar h1 { font-size: 23px; }   /* 階梯 14 → 18 → 23，相鄰 ≥1.25 */
+.help { padding: 4px 0 0; }
+.help section { background: var(--ion-item-background); border-radius: 10px;
+  padding: 12px 16px; margin: 0 16px 16px; }
+.help-version { display: block; text-align: center; font-size: 13px; margin: -4px 0 24px; }
 .help h2 { font-size: 18px; margin: 0 0 8px; }
 .help p, .help li { font-size: 14px; color: #cfcfd4; line-height: 1.75; margin: 4px 0; }
 .help ol, .help ul { margin: 4px 0; padding-left: 20px; }
@@ -413,6 +433,15 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .field-row:last-child { margin-bottom: 0; }
 .field-row .rl { width: 84px; flex: 0 0 auto; font-size: 14px; color: #cfcfd4; }
 .field-row .ru { flex: 0 0 auto; font-size: 14px; color: #9a9aa0; }
+/* 窄螢幕（375）：標籤＋步進器＋單位要擠得下同一行，單位才不會掉到下一行 */
+@media (max-width: 400px) {
+  .field-row { gap: 6px; }
+  .field-row .rl { width: 72px; }
+  .stepper button { width: 40px; }
+  .stepper input { width: 56px; }
+  .item-box { padding-left: 6px; }
+  .item-box .field-row .btn.danger { padding-left: 10px; padding-right: 10px; }
+}
 /* 較長的說明：獨立一行小灰字，不與步進器搶寬度 */
 .field-hint { flex-basis: 100%; width: 100%; font-size: 12.5px; line-height: 1.45; color: #a3a3ab; margin: 1px 0 0; }
 /* 名稱欄解析課表的回饋（失敗＝橘黃、成功＝綠） */
@@ -420,16 +449,20 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .name-msg.fail { color: #ffb340; }
 .name-msg.ok { color: #30D158; }
 /* 進階設定：預設收合；summary 做成 44px 以上的觸控列 */
-.adv { margin: 4px 14px 8px; background: #15151a; border-radius: 12px; }
-.adv summary { min-height: 48px; padding: 0 14px; display: flex; align-items: center;
-  font-size: 15px; font-weight: 700; color: #cfcfd4; cursor: pointer; list-style: none; }
+.adv.ios-card { margin-top: 22px; }
+.adv summary { min-height: 48px; padding: 0 16px; display: flex; align-items: center;
+  font-size: 17px; color: #fff; cursor: pointer; list-style: none; }
 .adv summary::-webkit-details-marker { display: none; }
 .adv summary::after { content: '展開'; margin-left: auto; font-size: 13px; font-weight: 600; color: #a3a3ab; }
 .adv[open] summary::after { content: '收合'; }
-.adv-body .sec-block { padding: 8px 12px; }
-/* 設定頁底列：永遠貼在畫面底部（開始上課／儲存變更） */
-.bottombar.setup-bar { position: sticky; bottom: 0; z-index: 20; background: #0b0b0d;
-  border-top: 1px solid #26262e; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); }
+.adv-body { border-top: .55px solid #2c2c32; }
+.adv-body .sec-block { padding: 10px 16px; }
+/* 設定頁：課表 chips 放在清單列裡；組別列在同一張卡片內以細線分隔 */
+.ios-list .plan-chips { margin: 10px 0; }
+.setup-note { margin: 14px 0 0; }
+.grp-card .grp-row { background: transparent; border-radius: 0; margin: 0; padding: 8px 12px 8px 16px; }
+.grp-card > div + div { border-top: .55px solid #2c2c32; }
+.grp-card .grp-expand-body { margin: 0 12px 12px; }
 /* 配速膠囊：醒目顯示每公里配速 */
 .pace-pill { flex: 0 0 auto; font-size: 12.5px; font-weight: 800; color: #062c33;
   background: #4fd6e8; padding: 1px 9px; border-radius: 999px; white-space: nowrap; margin-left: 4px; }
@@ -441,11 +474,18 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .grp-expand { font-size: 13px; font-weight: 700; padding: 7px 10px; min-height: 44px; border-radius: 9px;
   border: 0; background: #2c2c2e; color: #cfcfd4; }
 .grp-sum { font-size: 13px; color: #9a9aa0; }
+/* 各組實際課表一覽：每段一行，對齊色塊左緣 */
+.grp-plan { padding: 0 12px 10px 16px; margin-top: -2px; font-size: 14px; line-height: 1.5; color: #d1d1d6;
+  font-variant-numeric: tabular-nums; }
 .grp-expand-body { background: #15151a; border-radius: 10px; padding: 10px 12px;
   margin: -2px 0 8px; }
 
 /* ── 結果 ── */
-.panel { background: #15151a; border-radius: 16px; margin: 8px 12px; padding: 14px; }
+.panel { background: #15151a; border-radius: 12px; margin: 8px 16px; padding: 14px; }
+.panel h3 { margin: 8px 0 6px; }
+.res-title { margin: 6px 20px 4px; font-size: inherit; }
+.detail-mode { align-self: flex-start; }
+.ios-list .dot { margin-inline-end: 12px; }
 .legend { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
 .chip { display: flex; align-items: center; gap: 5px; font-size: 12px;
   background: #26262e; padding: 4px 9px; border-radius: 14px; border: 0; }
@@ -478,18 +518,13 @@ table.splits tbody tr:active td:first-child { background: #28324a; }
 .area-stat span { font-size: 11px; color: #9a9aa0; margin-left: 6px; }
 .bottombar { display: flex; gap: 8px; padding: 10px 12px; }
 .bottombar .btn { flex: 1; }
-/* 結果頁：分享卡獨占一列(主要)，截圖/CSV 並排為次要 */
-.bottombar.result-actions { flex-wrap: wrap; }
-.bottombar.result-actions .btn.primary { flex: 1 0 100%; padding: 13px; font-size: 16px; }
 
-/* ── 底部編輯彈窗 ── */
-.sheet-backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.6);
-  display: flex; align-items: flex-end; justify-content: center; }
-.sheet { width: 100%; max-width: 480px; background: #15151a; border-radius: 18px 18px 0 0;
-  padding: 18px 18px calc(18px + env(safe-area-inset-bottom)); box-sizing: border-box; }
-.sheet h3 { margin: 0 0 14px; font-size: 16px; }
+/* ── 編輯 chip 的半高 sheet（IonModal） ── */
+.edit-sheet { --background: #1c1c22; }
+.edit-sheet ion-toolbar { --background: #1c1c22; }
+.edit-sheet ion-content { --background: #1c1c22; }
+.sheet { padding: 12px 18px; }
 .sheet .field-row { margin: 6px 0; }
-.sheet .sheet-done { margin-top: 16px; width: 100%; }
 
 /* ── 課表可點 chip 列 ── */
 .plan-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0 10px; }
@@ -498,6 +533,20 @@ table.splits tbody tr:active td:first-child { background: #28324a; }
   background: #26262e; color: #fff; border: 1px solid #3a3a42; border-radius: 14px; }
 .plan-chip.empty { font-weight: 500; opacity: .6; border-style: dashed; border-color: #55555f; }
 .plan-paren { opacity: .6; font-size: 15px; }
+/* 設定頁：每段 chips 下方的跑法預覽＋段間銜接（小灰字，只在步與步之間換行） */
+.plan-chips.with-flow { flex-direction: column; align-items: stretch; gap: 10px; width: 100%; }
+.plan-flow { font-size: 13px; line-height: 1.45; color: #a3a3ab; margin-top: 6px; word-break: keep-all; }
+.plan-next { font-size: 12.5px; color: #8e8e93; margin-top: 10px; white-space: nowrap; }
+/* 範本快選列 */
+.tpl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 0; width: 100%; }
+.tpl-label { font-size: 13px; color: #8e8e93; margin-right: 2px; white-space: nowrap; }
+.tpl-chip { min-height: 44px; padding: 6px 13px; font-size: 14px; font-weight: 600; white-space: nowrap;
+  background: #2c2c2e; color: #fff; border: 1px solid transparent; border-radius: 999px; }
+.tpl-chip.on { border-color: var(--ion-color-primary); color: var(--ion-color-primary); background: rgba(48, 209, 88, .12); }
+/* 新增按鈕下方的一行說明 */
+.add-title { color: var(--ion-color-primary); }
+.ios-list .add-hint, .add-hint { font-size: 12.5px; line-height: 1.45; color: #8e8e93; margin: 4px 0 0; word-break: keep-all; }
+.seg-card .add-hint { margin-top: 6px; }
 
 .gplan { font-size: 13px; font-weight: 700; line-height: 1.15; padding: 0 5px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }

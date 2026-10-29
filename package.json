@@ -21,9 +21,13 @@
     "@capacitor/ios": "^8.5.3",
     "@capacitor/local-notifications": "^8.3.1",
     "@capacitor/share": "^8.0.3",
+    "@ionic/react": "^9.0.10",
+    "@ionic/react-router": "^9.0.10",
     "html-to-image": "^1.11.13",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "react-router": "^6.30.6",
+    "react-router-dom": "^6.30.6",
     "workbox-window": "^7.4.1"
   },
   "devDependencies": {

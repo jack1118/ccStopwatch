@@ -38,12 +38,15 @@ export interface PlannedLap {
   lapsInItem: number  // 此距離共幾圈
 }
 
+/** 第 n 組比第 1 組多給的秒數：gapSec 是「每組每圈」加秒，依距離比例換算（場地 400、gap 4 → 每 100m 1 秒：200m +2、1000m +10） */
+export function gapFor(item: Item, lapMeters: number, groupNumber: number): number {
+  return Math.round(((item.gapSec ?? 0) * item.meters * (groupNumber - 1)) / lapMeters)
+}
+
 function targetForItem(item: Item, group: Group, lapMeters: number): number | null {
   const own = group.segTarget?.[item.id]
   if (own != null && own > 0) return own
-  // gapSec 是「每組每圈」加秒 → 乘上此距離的圈數，再依組號累加
-  if (item.targetSec && item.targetSec > 0)
-    return item.targetSec + (item.gapSec ?? 0) * lapsOf(item.meters, lapMeters) * (group.number - 1)
+  if (item.targetSec && item.targetSec > 0) return item.targetSec + gapFor(item, lapMeters, group.number)
   return null
 }
 

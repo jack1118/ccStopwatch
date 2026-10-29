@@ -1,15 +1,16 @@
 import type { Item, Segment } from '../types'
 import { Stepper } from './Stepper'
 import { NRC_ORDER, NRC_LABEL, NRC_NUM } from '../constants'
-import { itemsOf, lapsOf } from '../timer/timer'
+import { gapFor, itemsOf, lapsOf } from '../timer/timer'
 import { segLabel } from '../timer/planText'
 import { useState } from 'react'
 import { nativeSelection } from '../native'
 
 const uid = () => globalThis.crypto?.randomUUID?.() ?? `id${Math.random().toString(36).slice(2)}`
 const gapPerLap = (lapMeters: number) => Math.max(1, Math.round(lapMeters / 100))
-const newItem = (meters: number, restSec: number, lapMeters = 400): Item =>
-  ({ id: uid(), meters, restSec, targetSec: Math.round((96 * meters) / 400), gapSec: gapPerLap(lapMeters) })
+// targetSec 預設依 400＝96 秒等速推算；組合加的 200m 另給較快的 44 秒（短距離一定比較快）
+const newItem = (meters: number, restSec: number, lapMeters = 400, targetSec = Math.round((96 * meters) / 400)): Item =>
+  ({ id: uid(), meters, restSec, targetSec, gapSec: gapPerLap(lapMeters) })
 
 function fmtPace(sec: number, meters: number): string {
   if (!sec || !meters) return ''
@@ -32,7 +33,6 @@ export function PlanEditor({ segments, lapMeters, onChange, editingActive = fals
   const [targetMode, setTargetMode] = useState<Record<string, 'dist' | 'lap'>>({})
   const modeOf = (id: string) => targetMode[id] ?? 'lap'
   const setMode = (id: string, m: 'dist' | 'lap') => setTargetMode((p) => ({ ...p, [id]: m }))
-  const gapTotal = (it: Item) => (it.gapSec ?? 0) * lapsOf(it.meters, lapMeters)
 
   const set = (next: Segment[]) => onChange(next)
   const addSegment = () => set([...segments, { id: uid(), reps: 8, items: [newItem(400, 90, lapMeters)] }])
@@ -40,7 +40,7 @@ export function PlanEditor({ segments, lapMeters, onChange, editingActive = fals
   const patchSegment = (id: string, patch: Partial<Segment>) =>
     set(segments.map((s) => (s.id === id ? { ...s, ...patch } : s)))
   const addItem = (segId: string) =>
-    set(segments.map((s) => s.id === segId ? { ...s, items: [...itemsOf(s), newItem(200, 60, lapMeters)] } : s))
+    set(segments.map((s) => s.id === segId ? { ...s, items: [...itemsOf(s), newItem(200, 60, lapMeters, 44)] } : s))
   const removeItem = (segId: string, itemId: string) =>
     set(segments.map((s) => s.id === segId ? { ...s, items: itemsOf(s).filter((it) => it.id !== itemId) } : s))
   const patchItem = (segId: string, itemId: string, patch: Partial<Item>) =>
@@ -114,7 +114,7 @@ export function PlanEditor({ segments, lapMeters, onChange, editingActive = fals
                     <span className="rl">每組每圈＋</span>
                     <Stepper value={it.gapSec ?? 0} step={1} min={0} onChange={(v) => patchItem(seg.id, it.id, { gapSec: v })} />
                     <span className="ru">秒/圈</span>
-                    <span className="field-hint">每往後一組、每圈多給幾秒。例：設 2 → 黑組比黃組每圈慢 2 秒、紫組慢 4 秒（改場地會重算）</span>
+                    <span className="field-hint">每往後一組、每圈多給幾秒，短於或長於一圈依距離換算。例：設 4 → 黑組比黃組每 100m 慢 1 秒（200m 慢 2 秒）、紫組再加倍（改場地會重算）</span>
                   </div>
                 )}
                 <div className="field-row">
@@ -128,7 +128,7 @@ export function PlanEditor({ segments, lapMeters, onChange, editingActive = fals
                 {showGroupTargets && (it.targetSec ?? 0) > 0 && (
                   <div className="target-preview">
                     <b>各組目標（{it.meters}m）</b>
-                    {NRC_ORDER.map((c) => ` ${NRC_LABEL[c]}${(it.targetSec ?? 0) + gapTotal(it) * (NRC_NUM[c] - 1)}`).join('・')}
+                    {NRC_ORDER.map((c) => ` ${NRC_LABEL[c]}${(it.targetSec ?? 0) + gapFor(it, lapMeters, NRC_NUM[c])}`).join('・')}
                   </div>
                 )}
               </div>
@@ -137,10 +137,12 @@ export function PlanEditor({ segments, lapMeters, onChange, editingActive = fals
             {!editingActive && items.length >= 2 && (
               <button className="btn" style={{ marginLeft: 8 }} onClick={() => mirrorSegment(seg.id)}>鏡像(金字塔)</button>
             )}
+            {!editingActive && <div className="add-hint">400 接 200 算一組，<span className="nw">例：(400m + 200m) × 8＝跑 8 組</span></div>}
           </div>
         )
       })}
       {!editingActive && <button className="btn" onClick={addSegment}>＋ 新增項目</button>}
+      {!editingActive && <div className="add-hint">前面的趟數跑完再換下一段，<span className="nw">例：400m × 6 接 200m × 4</span></div>}
     </>
   )
 }

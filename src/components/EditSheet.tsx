@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
+import { IonModal, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent } from '@ionic/react'
 import type { Item, Segment } from '../types'
 import { Stepper } from './Stepper'
 
@@ -21,14 +22,17 @@ interface Props {
   onPatchItem: (itemId: string, patch: Partial<Item>) => void
   onPatchSeg: (segId: string, patch: Partial<Segment>) => void
   onClose: () => void
+  isOpen?: boolean
+  onDidDismiss?: () => void   // 關閉動畫結束（含下滑關閉）
 }
 
-export function EditSheet({ title, field, seg, item, lapMeters, repMin, distanceLocked, onPatchItem, onPatchSeg, onClose }: Props) {
+export function EditSheet({ title, field, seg, item, lapMeters, repMin, distanceLocked, onPatchItem, onPatchSeg, onClose, isOpen = true, onDidDismiss }: Props) {
   useEffect(() => {
+    if (!isOpen) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [onClose, isOpen])
 
   const target = item.targetSec ?? 0
   let body: ReactNode
@@ -69,13 +73,20 @@ export function EditSheet({ title, field, seg, item, lapMeters, repMin, distance
     )
   }
 
+  // iOS 半高 sheet：約 260px 高（依視窗換算成 breakpoint），可下滑關閉；右上「完成」
+  const bp = Math.min(1, Math.round((260 / window.innerHeight) * 100) / 100)
   return (
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet" role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
-        <h3>{title}</h3>
-        {body}
-        <button className="btn primary sheet-done" onClick={onClose}>完成</button>
-      </div>
-    </div>
+    <IonModal isOpen={isOpen} breakpoints={[0, bp]} initialBreakpoint={bp} className="edit-sheet"
+      aria-label={title} onDidDismiss={onDidDismiss}>
+      <IonHeader>
+        <IonToolbar>
+          <IonTitle>{title}</IonTitle>
+          <IonButtons slot="end"><IonButton strong onClick={onClose}>完成</IonButton></IonButtons>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent scrollY={false}>
+        <div className="sheet">{body}</div>
+      </IonContent>
+    </IonModal>
   )
 }

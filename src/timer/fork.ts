@@ -1,5 +1,5 @@
 import type { Group, Item, Plan, Segment } from '../types'
-import { effectiveSegments, getLapMeters, itemsOf, lapsOf } from './timer'
+import { effectiveSegments, gapFor, getLapMeters, itemsOf } from './timer'
 
 const uid = () => globalThis.crypto?.randomUUID?.() ?? `id${Math.random().toString(36).slice(2)}`
 
@@ -18,7 +18,7 @@ export function bakeOwnSegments(plan: Plan, group: Group): Segment[] {
       const baked = ownTarget != null && ownTarget > 0
         ? ownTarget
         : (it.targetSec && it.targetSec > 0
-            ? it.targetSec + (it.gapSec ?? 0) * lapsOf(it.meters, L) * (group.number - 1)
+            ? it.targetSec + gapFor(it, L, group.number)
             : (it.targetSec ?? 0))
       return {
         id: uid(),

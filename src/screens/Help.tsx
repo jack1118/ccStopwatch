@@ -1,5 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
+import {
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
+  IonList, IonItem, IonLabel, IonNote,
+} from '@ionic/react'
 import { checkForUpdate } from '../pwa'
+import { NavBack } from '../components/NavBack'
 
 interface Props {
   onBack: () => void
@@ -24,12 +29,19 @@ export function Help({ onBack }: Props) {
       timerRef.current = window.setTimeout(() => setUpd('idle'), 15000)   // 重載沒發生的保底，避免永遠卡住（> pwa 12s）
     }
   }
+  const busy = upd === 'checking' || upd === 'updating'
   return (
-    <div className="app">
-      <div className="topbar help-bar">
-        <button className="btn" onClick={onBack}>←</button>
-        <h1>使用說明</h1>
-      </div>
+    <IonPage>
+      <IonHeader translucent>
+        <IonToolbar>
+          <NavBack text="跑班碼表" onBack={onBack} />
+          <IonTitle>使用說明</IonTitle>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent fullscreen>
+        <IonHeader collapse="condense">
+          <IonToolbar><IonTitle size="large">使用說明</IonTitle></IonToolbar>
+        </IonHeader>
 
       <div className="help">
         <section>
@@ -44,7 +56,7 @@ export function Help({ onBack }: Props) {
             <li>設定<b>場地一圈</b>、<b>課表</b>、哪幾組<b>出場</b>。</li>
             <li>「<b>開始上課</b>」進入計時畫面。</li>
             <li>結束後看「<b>結果</b>」的分段圖表。</li>
-            <li>左右<b>滑動</b>可在 清單 ⇄ 碼表 ⇄ 結果 之間切換。</li>
+            <li>從螢幕<b>左邊緣往右滑</b>回上一頁；計時頁整頁<b>往左滑</b>看結果。</li>
             <li>清單上進行中的課程可「<b>編輯</b>」（只改尚未跑的部分）或刪除。</li>
           </ol>
         </section>
@@ -57,8 +69,8 @@ export function Help({ onBack }: Props) {
             <li><b>休息</b>：時鐘<b>倒數</b>剩餘秒；最後 3 秒紅色 <b>3-2-1-Go</b>；到點卡片<b>紅色</b>閃框＋嗶聲提醒出發（超時越久閃越快、並顯示 +N 秒）。</li>
             <li><b>閃燈顏色</b>：<b>綠色</b>＝下一個該按哪組（提示）；<b>紅色</b>＝某組趟休到點該出發。</li>
             <li><b>長按卡片</b>約 1.5 秒（紅框繞滿）＝結束該組。</li>
-            <li><b>復原鈕（↩）預設隱藏</b>：計時頁右上 🔊 旁的 <b>↩ 開關</b>打開後，卡片才出現 ↩；長按 ↩ 約 0.9 秒＝復原上一步。</li>
-            <li><b>音效</b>：🔊 可切換點擊聲。</li>
+            <li><b>復原鈕（↩）預設隱藏</b>：計時頁右上喇叭圖示旁的 <b>↩ 開關</b>打開後，卡片才出現 ↩；長按 ↩ 約 0.9 秒＝復原上一步。</li>
+            <li><b>音效</b>：計時頁右上的喇叭圖示可切換點擊聲。</li>
           </ul>
         </section>
 
@@ -103,13 +115,15 @@ export function Help({ onBack }: Props) {
           </ul>
         </section>
 
-        <div style={{ textAlign: 'center', marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <button className="btn" disabled={upd === 'checking' || upd === 'updating'} onClick={() => void onCheck()}>
-            {upd === 'checking' ? '檢查中…' : upd === 'updating' ? '更新中…' : upd === 'latest' ? '已是最新版' : '檢查更新'}
-          </button>
-          <span style={{ opacity: .5, fontSize: 12 }}>版本 {__BUILD__}</span>
-        </div>
       </div>
-    </div>
+      {/* 像「設定 › 一般 › 關於」：可點的一列＋下方灰字版本 */}
+      <IonList inset className="help-update">
+        <IonItem button detail={false} disabled={busy} onClick={() => void onCheck()}>
+          <IonLabel color="primary">{upd === 'checking' ? '檢查中…' : upd === 'updating' ? '更新中…' : upd === 'latest' ? '已是最新版' : '檢查更新'}</IonLabel>
+        </IonItem>
+      </IonList>
+      <IonNote className="help-version">版本 {__BUILD__}</IonNote>
+      </IonContent>
+    </IonPage>
   )
 }

@@ -1,5 +1,6 @@
 import type { Item, Segment } from '../types'
 import { itemsOf } from './timer'
+import { fmtClockStr } from '../format'
 
 const uid = () => globalThis.crypto?.randomUUID?.() ?? `id${Math.random().toString(36).slice(2)}`
 
@@ -40,6 +41,15 @@ export function planSummary(segments: Segment[], lapMeters = 400, compact = fals
   return segments.map((s) => segLabel(s, lapMeters, compact)).join(' ')
 }
 
+/** 各組課表一覽：每段一行簡寫（400×10 p96 r90）；每公里配速依該組實際目標秒重算（組間加秒後配速不同） */
+export function groupPlanLines(segments: Segment[], lapMeters = 400): string[] {
+  return segments.map((seg) => segLabel({
+    ...seg,
+    items: itemsOf(seg).map((it) => (it.paceSecPerKm && it.targetSec
+      ? { ...it, paceSecPerKm: Math.round((it.targetSec * 1000) / it.meters) } : it)),
+  }, lapMeters, true))
+}
+
 /** 最精簡課表摘要：只「距離×趟」，不含配速/休息。單一：1200×3；組合：(400+200)×8；多段以全形＋串接。 */
 export function planShape(segments: Segment[]): string {
   return segments.map((seg) => {
@@ -49,6 +59,43 @@ export function planShape(segments: Segment[]): string {
       : `${distLabel(items[0], true)}×${seg.reps}`
   }).join('＋')
 }
+
+// 休息秒：≥60 → m:ss，否則 Ns
+function restLabel(sec: number): string {
+  return sec >= 60 ? fmtClockStr(sec) : `${sec}s`
+}
+
+/**
+ * 跑法預覽（只看共用課表值，不含逐組覆寫）。每段一行：
+ *   組合 `400 → 休 1:30 → 200 → 休 1:00，重複 3 組`、單一 `400 → 休 1:30，重複 10 趟`。
+ * next＝與下一段之間的銜接說明（用本段最後一個距離的休息）；最後一段為 null。
+ * 只跑 1 組時，最後距離的休息不屬於本段（是銜接或全程結束）→ 不列在行內。
+ */
+export function planFlow(segments: Segment[]): { line: string; next: string | null }[] {
+  return segments.map((seg, si) => {
+    const items = itemsOf(seg)
+    const unit = items.length > 1 ? '組' : '趟'
+    const steps: string[] = []
+    items.forEach((it, ii) => {
+      steps.push(distLabel(it, true))
+      const isLastItem = ii === items.length - 1
+      if (it.restSec > 0 && !(isLastItem && seg.reps <= 1)) steps.push(`休 ${restLabel(it.restSec)}`)
+    })
+    const line = `${steps.join(' → ')}，${seg.reps > 1 ? `重複 ${seg.reps} ${unit}` : `跑 1 ${unit}`}`
+    if (si === segments.length - 1) return { line, next: null }
+    const rest = items[items.length - 1].restSec
+    return { line, next: rest > 0 ? `↓ 休 ${restLabel(rest)} 後接著跑下一段` : '↓ 不休息，直接接下一段' }
+  })
+}
+
+/** 範本快選：以課表文字定義（走 parsePlan，與名稱欄語法一致；p＝每圈秒） */
+export const PLAN_TEMPLATES: { label: string; text: string }[] = [
+  { label: '400×10', text: '400m×10 p96s r90s' },
+  // 越短越快、越長越慢（以 400＝96 秒為基準）：200＝44 秒(p88)、600＝2:30(p100)、1000＝4:10(p100)
+  { label: '(400+200)×8', text: '(400m p96s r60s+200m p88s r90s)×8' },
+  { label: '金字塔', text: '(200m p88s r60s+400m p96s r90s+600m p100s r120s+400m p96s r90s+200m p88s r60s)×1' },
+  { label: '1000×3 接 200×6', text: '1000m×3 p100s r180s 200m×6 p88s r60s' },
+]
 
 function parseItem(raw: string, gapSec: number, lapMeters: number): Item | null {
   // 距離：先試 Nk(可小數)，再試 Nm(整數，m 可省)

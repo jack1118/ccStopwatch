@@ -1,5 +1,7 @@
 import { it, expect } from 'vitest'
-import { parsePlan, planSummary, segChips, planShape } from './planText'
+import { parsePlan, planSummary, segChips, planShape, planFlow, PLAN_TEMPLATES, groupPlanLines } from './planText'
+import { bakeOwnSegments } from './fork'
+import type { Group } from '../types'
 
 it('解析單一段落 300m×10 p72s r90s（p=每圈秒，依場地換算）', () => {
   const segs = parsePlan('300m×10 p72s r90s', 400)!
@@ -243,5 +245,89 @@ describe('planShape — 只距離×趟', () => {
   })
   it('公里單位：用 k', () => {
     expect(planShape([{ id: 's', reps: 1, items: [{ id: 'a', meters: 3000, unit: 'k', restSec: 0 }] }])).toBe('3k×1')
+  })
+})
+
+describe('planFlow — 跑法預覽', () => {
+  const flow = (text: string) => planFlow(parsePlan(text, 400)!)
+  it('單一距離：距離 → 休，重複 N 趟；最後一段無銜接', () => {
+    expect(flow('400m×10 p96s r90s')).toEqual([{ line: '400 → 休 1:30，重複 10 趟', next: null }])
+  })
+  it('組合：依序列出距離與休息，重複 N 組', () => {
+    expect(flow('(400m r90s+200m r60s)×3')[0].line).toBe('400 → 休 1:30 → 200 → 休 1:00，重複 3 組')
+  })
+  it('休息 <60 秒用 Ns；0 休息不列', () => {
+    expect(flow('(400m+200m r45s)×4')[0].line).toBe('400 → 200 → 休 45s，重複 4 組')
+  })
+  it('多段：銜接用上一段最後距離的休息；0 休息 → 直接接下一段', () => {
+    const f = flow('1000m×3 r180s 200m×6 r60s')
+    expect(f[0]).toEqual({ line: '1000 → 休 3:00，重複 3 趟', next: '↓ 休 3:00 後接著跑下一段' })
+    expect(f[1].next).toBeNull()
+    expect(flow('400m×2 200m×4 r30s')[0].next).toBe('↓ 不休息，直接接下一段')
+  })
+  it('只跑 1 組：最後距離的休息不列在行內（屬銜接或全程結束）', () => {
+    expect(flow('(200m r60s+400m r90s+200m r60s)×1')[0].line).toBe('200 → 休 1:00 → 400 → 休 1:30 → 200，跑 1 組')
+  })
+  it('空課表 → 空陣列', () => {
+    expect(planFlow([])).toEqual([])
+  })
+})
+
+describe('PLAN_TEMPLATES — 範本都能解析成預期段落', () => {
+  const byLabel = (l: string) => parsePlan(PLAN_TEMPLATES.find((t) => t.label === l)!.text, 400)!
+  const shape = (l: string) => byLabel(l).map((s) => ({
+    reps: s.reps,
+    items: s.items!.map((i) => [i.meters, i.targetSec, i.restSec]),   // [距離, 整段目標秒, 休息]
+  }))
+  it('共 4 個，全部解析成功', () => {
+    expect(PLAN_TEMPLATES.map((t) => t.label)).toEqual(['400×10', '(400+200)×8', '金字塔', '1000×3 接 200×6'])
+    for (const t of PLAN_TEMPLATES) expect(parsePlan(t.text, 400)).not.toBeNull()
+  })
+  it('400×10：400m 96 秒、休 90', () => {
+    expect(shape('400×10')).toEqual([{ reps: 10, items: [[400, 96, 90]] }])
+  })
+  it('(400+200)×8：200 比 400 快（44 秒）', () => {
+    expect(shape('(400+200)×8')).toEqual([{ reps: 8, items: [[400, 96, 60], [200, 44, 90]] }])
+  })
+  it('金字塔：200 44 秒、400 96 秒、600 2:30，休 60/90/120/90/60', () => {
+    expect(shape('金字塔')).toEqual([{ reps: 1, items: [[200, 44, 60], [400, 96, 90], [600, 150, 120], [400, 96, 90], [200, 44, 60]] }])
+  })
+  it('1000×3 接 200×6：1000 4:10、200 44 秒', () => {
+    expect(shape('1000×3 接 200×6')).toEqual([
+      { reps: 3, items: [[1000, 250, 180]] },
+      { reps: 6, items: [[200, 44, 60]] },
+    ])
+  })
+  it('範本預覽文字', () => {
+    expect(planFlow(byLabel('400×10')).map((f) => f.line)).toEqual(['400 → 休 1:30，重複 10 趟'])
+    expect(planFlow(byLabel('(400+200)×8'))[0].line).toBe('400 → 休 1:00 → 200 → 休 1:30，重複 8 組')
+    expect(planFlow(byLabel('金字塔'))[0].line).toBe('200 → 休 1:00 → 400 → 休 1:30 → 600 → 休 2:00 → 400 → 休 1:30 → 200，跑 1 組')
+    expect(planFlow(byLabel('1000×3 接 200×6'))).toEqual([
+      { line: '1000 → 休 3:00，重複 3 趟', next: '↓ 休 3:00 後接著跑下一段' },
+      { line: '200 → 休 1:00，重複 6 趟', next: null },
+    ])
+  })
+})
+
+describe('groupPlanLines — 各組實際課表一覽', () => {
+  const g = (number: number, over: Partial<Group> = {}): Group => ({
+    id: 'g', color: 'black', number, athletes: [], state: 'idle', runStartTs: null, restStartTs: null,
+    reps: [], targetPaceSec: null, segReps: {}, segTarget: {}, segRest: {}, ...over,
+  })
+  it('依組號加秒、套用逐組趟數與間休覆寫', () => {
+    const segs = parsePlan('400m×10 p96s r90s', 400)!
+    segs[0].items![0].gapSec = 4
+    const plan = { segments: segs, lapMeters: 400 }
+    expect(groupPlanLines(bakeOwnSegments(plan, g(1)), 400)).toEqual(['400×10 p96 r90'])
+    const id = segs[0].id, itemId = segs[0].items![0].id
+    expect(groupPlanLines(bakeOwnSegments(plan, g(2, { segReps: { [id]: 8 }, segRest: { [itemId]: 60 } })), 400))
+      .toEqual(['400×8 p100 r60'])
+  })
+  it('每公里配速依該組目標秒重算；多段每段一行', () => {
+    const segs = parsePlan('1k×3 @4:00 r120s 200m×6 p96s r60s', 400)!
+    segs[0].items![0].gapSec = 2
+    const lines = groupPlanLines(bakeOwnSegments({ segments: segs, lapMeters: 400 }, g(2)), 400)
+    expect(lines).toHaveLength(2)
+    expect(lines[0]).toBe('1k×3 @4:05 r120')   // 1000m＝2.5 圈 × 每圈+2 → +5 秒
   })
 })

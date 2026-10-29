@@ -1,4 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
+import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonIcon } from '@ionic/react'
+import { volumeHigh, volumeMute, arrowUndo } from 'ionicons/icons'
 import type { Session } from '../types'
 import { timerReducer, initTimerState } from '../timer/reducer'
 import { elapsedSec, buildLapPlan } from '../timer/timer'
@@ -10,18 +12,18 @@ import { useNow } from '../hooks/useNow'
 import { useWakeLock } from '../hooks/useWakeLock'
 import { beep, tapFeedback, isTapSoundOn, setTapSound, isUndoBtnOn, setUndoBtn } from '../sound'
 import { useSwipe } from '../hooks/useSwipe'
+import { NavBack } from '../components/NavBack'
 import { isNative, requestAlertPermission, scheduleRestAlerts, cancelRestAlerts, nativeLight, nativeSelection, confirmDestructive, type RestAlert } from '../native'
 
 interface Props {
   session: Session
-  enterAnim?: '' | 'fromRight' | 'fromLeft'
   onExit: () => void
   onFinish: (session: Session, groupId?: string) => void   // groupId：直接打開該組單組明細
 }
 
 const pad2 = (n: number) => String(n).padStart(2, '0')
 
-export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
+export function Timer({ session, onExit, onFinish }: Props) {
   const [state, dispatch] = useReducer(timerReducer, session, initTimerState)
   const isActive = (g: Session['groups'][number]) => g.state === 'running' || g.state === 'resting'
   const anyActive = state.session.groups.some(isActive)
@@ -55,8 +57,10 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
     const ok = await confirmDestructive({ title: '結束整堂課？', message: detail, action: '結束整堂課', webText: `結束整堂課？\n${detail}` })
     if (!ok) return
     const t = Date.now()
-    const final = [...active, ...idle].reduce((s, g) => timerReducer(s, { type: 'STOP', groupId: g.id, now: t }), state)
-    saveSession(final.session)   // 立即存：切頁後本元件卸載，持久化 effect 不會再跑
+    const stops = [...active, ...idle].map((g) => ({ type: 'STOP' as const, groupId: g.id, now: t }))
+    const final = stops.reduce(timerReducer, state)
+    saveSession(final.session)   // 立即存，再交給結果頁
+    stops.forEach((a) => dispatch(a))   // 碼表頁留在導覽堆疊裡：返回時要看到已結束，不能還是舊的計時狀態
     onFinish(final.session)
   }
   const started = new Date(state.session.createdAt)
@@ -123,29 +127,35 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
     if (remaining < bestRemaining) { bestRemaining = remaining; nextRunId = g.id }
   }
 
-  // 向左滑 → 看結果；向右滑 → 回清單
-  const swipe = useSwipe({ onLeft: () => onFinish(state.session), onRight: onExit })
+  // 向左滑 → 看結果；返回改由 Ionic 左緣跟手手勢處理（整頁右滑會在按圈時誤退出）
+  const swipe = useSwipe({ onLeft: () => onFinish(state.session) })
 
   return (
-    <div className={`app${enterAnim ? ' enter-' + enterAnim : ''}`} {...swipe}>
-      <div className="topbar">
-        <button className="btn" onClick={onExit}>←</button>
-        {/* 日期＋開課時間：同一天兩堂課也分得出來 */}
-        <h1 className="plan-title">{dateLabel(state.session.createdAt)}
-          <span className="plan-time"> {pad2(started.getHours())}:{pad2(started.getMinutes())}</span></h1>
-        <button className="btn tgl" aria-label="點擊音效開關" aria-pressed={soundOn}
-          onClick={() => { nativeSelection(); const v = !soundOn; setTapSound(v); setSoundOn(v) }}>
-          {soundOn ? '🔊' : '🔇'}
-        </button>
-        <button className="btn tgl slash" aria-label="復原鈕顯示開關" aria-pressed={showUndo}
-          onClick={() => { nativeSelection(); const v = !showUndo; setUndoBtn(v); setShowUndo(v) }}>
-          <span style={{ opacity: showUndo ? 1 : 0.35 }}>↩</span>
-        </button>
-        {/* 有組在跑/休息時＝「結束」整堂課（確認後停全部並看結果）；否則＝「結果」。左滑仍可隨時偷看結果 */}
-        {anyActive
-          ? <button className="btn danger" onClick={endAll}>結束</button>
-          : <button className="btn" onClick={() => onFinish(state.session)}>結果</button>}
-      </div>
+    <>
+      <IonHeader>
+        <IonToolbar className="timer-bar">
+          <NavBack text="清單" onBack={onExit} />
+          {/* 日期＋開課時間：同一天兩堂課也分得出來（課名太長，導覽列放不下） */}
+          <IonTitle>{dateLabel(state.session.createdAt)}
+            <span className="plan-time"> {pad2(started.getHours())}:{pad2(started.getMinutes())}</span></IonTitle>
+          <IonButtons slot="end">
+            <button className="nav-tgl" aria-label="點擊音效開關" aria-pressed={soundOn}
+              onClick={() => { nativeSelection(); const v = !soundOn; setTapSound(v); setSoundOn(v) }}>
+              <IonIcon icon={soundOn ? volumeHigh : volumeMute} aria-hidden="true" />
+            </button>
+            <button className="nav-tgl slash" aria-label="復原鈕顯示開關" aria-pressed={showUndo}
+              onClick={() => { nativeSelection(); const v = !showUndo; setUndoBtn(v); setShowUndo(v) }}>
+              <IonIcon icon={arrowUndo} aria-hidden="true" />
+            </button>
+            {/* 有組在跑/休息時＝「結束」整堂課（確認後停全部並看結果）；否則＝「結果」。左滑仍可隨時偷看結果 */}
+            {anyActive
+              ? <IonButton color="danger" strong onClick={endAll}>結束</IonButton>
+              : <IonButton strong onClick={() => onFinish(state.session)}>結果</IonButton>}
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent scrollY>
+      <div className="page-body" {...swipe}>
       <div className={`timer-grid cols-${cols}`}>
         {state.session.groups.map((g) => (
           <GroupCard
@@ -180,6 +190,9 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
           <button className="btn primary" onClick={() => onFinish(state.session)}>查看分段圖表 →</button>
         </div>
       )}
+      </div>
+      </IonContent>
+      {/* 浮層放在 IonContent 外：才蓋得過導覽列 */}
       {/* 只在該組仍是完成狀態時顯示（已用 ↩ 復原就收掉，避免多退一步） */}
       {stopToast && toastGroup?.state === 'done' && (
         <div className={`stop-toast${allDone ? ' above-bar' : ''}`} key={stopToast.key} role="status">
@@ -200,6 +213,6 @@ export function Timer({ session, enterAnim = '', onExit, onFinish }: Props) {
         </div>
       )}
       <div className="sr-only" aria-live="polite">{announce}</div>
-    </div>
+    </>
   )
 }
