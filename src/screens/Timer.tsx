@@ -1,7 +1,7 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
 import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonIcon, useIonActionSheet } from '@ionic/react'
 import { dueCues, cueSentences, CUE_TONE } from '../timer/cues'
-import { isVoiceOn, setVoiceOn, speak, voiceStatus, voiceLog, zhVoices, chosenVoiceName, setChosenVoice } from '../voice'
+import { isVoiceOn, setVoiceOn, speak, zhVoices, voiceLabels, pickVoice, setChosenVoice } from '../voice'
 import { volumeHigh, volumeMute, arrowUndo } from 'ionicons/icons'
 import type { Session } from '../types'
 import { timerReducer, initTimerState } from '../timer/reducer'
@@ -92,17 +92,18 @@ export function Timer({ session, onExit, onFinish }: Props) {
   // 聲音清單：點一下試聽並選用（選單不收，方便連續比較）
   const openVoicePicker = () => {
     const voices = zhVoices()
-    const short = (n: string) => n.replace(/^Microsoft\s+/, '').replace(/\s*-\s*Chinese.*$/, '').replace(/\s*Online.*$/, '')
+    const labels = voiceLabels(voices)
+    const cur = pickVoice()
     void presentVoiceSheet({
       header: '換聲音',
       subHeader: voices.length
-        ? `點一下試聽並選用，最後點的就是目前的聲音\n目前：${short(chosenVoiceName() ?? voices[0].name)}`
+        ? `點一下試聽並選用，最後點的就是目前的聲音\n目前：${labels[voices.findIndex((v) => v.voiceURI === cur?.voiceURI)] ?? labels[0]}`
         : '這個裝置找不到中文聲音',
       cssClass: 'sound-sheet',
       buttons: [
-        ...voices.map((v) => ({
-          text: `${short(v.name)}（${v.lang}${v.localService ? '' : '・線上'}）`,
-          handler: () => { setChosenVoice(v.name); speak('黃組，出發！', true, CUE_TONE.go); return false },
+        ...voices.map((v, i) => ({
+          text: `${labels[i]}（${v.lang}${v.localService ? '' : '・線上'}）`,
+          handler: () => { setChosenVoice(v); speak('黃組，出發！', true, CUE_TONE.go); return false },
         })),
         { text: '完成', role: 'cancel' },
       ],
@@ -116,7 +117,6 @@ export function Timer({ session, onExit, onFinish }: Props) {
     if (!cues.length) return
     cues.forEach((c) => spoken.current.add(c.key))
     if (voiceOn) cueSentences(cues).forEach((s) => speak(s.text, false, CUE_TONE[s.kind]))
-    else voiceLog(`語音提示關閉，略過 ${cues.length} 則提示`)
   }, [now, state.session, voiceOn])
 
   // iOS app：鎖屏/切到背景時，把還沒到點的「休息到點」排成系統通知（螢幕關著也會震）；回前景就取消
@@ -184,7 +184,7 @@ export function Timer({ session, onExit, onFinish }: Props) {
                 void presentSheet({
                   header: '聲音',
                   // 按鈕寫「動作」不寫「狀態」（寫「語音提示：開」會被當成狀態去點，結果反而關掉）；目前狀態放副標
-                  subHeader: `目前：語音提示${voiceOn ? '開' : '關'}、點擊音效${soundOn ? '開' : '關'}\n\n最近語音：\n${voiceStatus()}`,
+                  subHeader: `目前：語音提示${voiceOn ? '開' : '關'}、點擊音效${soundOn ? '開' : '關'}`,
                   cssClass: 'sound-sheet',
                   buttons: [
                     { text: voiceOn ? '關閉語音提示' : '開啟語音提示', handler: () => { setVoiceOn(!voiceOn); setVoiceOnState(!voiceOn) } },
