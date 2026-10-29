@@ -47,7 +47,7 @@ interface Props {
   big: boolean
 }
 
-/** 進行中跑燈進度環：SVG 沿圓角邊框依「邊長」均勻填色 + 亮綠實心圓點貼在頭部（超時整圈轉紅閃） */
+/** 進行中跑燈進度環：SVG 沿圓角邊框依「邊長」均勻填色 + 亮綠實心圓點貼在頭部（超時整圈細紅線、不閃） */
 export function RunRing({ progress, over, big }: Props) {
   const ref = useRef<HTMLSpanElement>(null)
   const [size, setSize] = useState({ w: 0, h: 0 })
@@ -73,7 +73,7 @@ export function RunRing({ progress, over, big }: Props) {
       <svg className="run-svg" width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
         <path className="run-track" d={d} strokeWidth={sw} />
         {/* 深色描邊底線：白/紅填色在黃、紅、綠卡上都有黑邊托住，看得見 */}
-        <path className="run-fill-under" d={d} strokeWidth={sw + 4}
+        <path className={`run-fill-under${over ? ' over' : ''}`} d={d} strokeWidth={sw + 4}
           strokeDasharray={g.total} strokeDashoffset={g.total * (1 - p)} />
         <path className={`run-fill${over ? ' over' : ''}`} d={d} strokeWidth={sw}
           strokeDasharray={g.total} strokeDashoffset={g.total * (1 - p)} />

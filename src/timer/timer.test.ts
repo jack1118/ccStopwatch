@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { elapsedSec, getLapMeters, lapsOf, itemsOf, buildLapPlan, totalLaps, paceTone, gapFor } from './timer'
+import { elapsedSec, getLapMeters, lapsOf, itemsOf, buildLapPlan, totalLaps, paceTone, gapFor, urgentRestId } from './timer'
 import type { Group, Plan } from '../types'
 
 const baseGroup: Group = {
@@ -128,5 +128,25 @@ describe('gapFor — 依距離比例加秒（每 100m 1 秒）', () => {
     expect(gapFor(it2(1000), 400, 2)).toBe(10)
     expect(gapFor(it2(200), 400, 3)).toBe(4)
     expect(gapFor(it2(400), 400, 1)).toBe(0)
+  })
+})
+
+describe('urgentRestId — 多組休息到點只閃最久沒出發的', () => {
+  // 400m×10 休 90 秒；各組只差 restStartTs
+  const plan: Plan = { segments: [{ id: 's', reps: 10, items: [{ id: 'a', meters: 400, restSec: 90, targetSec: 96 }] }] }
+  const rest = (id: string, startSec: number): Group => ({
+    ...baseGroup, id, state: 'resting', restStartTs: startSec * 1000, reps: [{ index: 0, runSec: 96, restSec: 0 }],
+  })
+  const run = (id: string): Group => ({ ...baseGroup, id, state: 'running', runStartTs: 0 })
+  it('取最早到點者；送走後換下一組；未到點/跑步中不算', () => {
+    const gs = [run('y'), rest('k', 20), rest('p', 10), rest('b', 200)]
+    expect(urgentRestId(plan, gs, 500_000)).toBe('p')                                 // p 超時最久
+    expect(urgentRestId(plan, gs.filter((g) => g.id !== 'p'), 500_000)).toBe('k')     // 送走 p → k 接手
+    expect(urgentRestId(plan, [rest('b', 200)], 286_000)).toBeUndefined()             // 剩 4 秒：還沒到點
+    expect(urgentRestId(plan, [rest('b', 200)], 287_000)).toBe('b')                   // 最後 3 秒倒數起算
+    expect(urgentRestId(plan, [run('y')], 500_000)).toBeUndefined()
+  })
+  it('同時到點 → 組序在前者', () => {
+    expect(urgentRestId(plan, [rest('k', 0), rest('p', 0)], 100_000)).toBe('k')
   })
 })

@@ -14,6 +14,7 @@ interface Props {
   now: number
   big: boolean
   hint?: boolean        // 下一個該按的組 → 外框閃燈提示
+  queued?: boolean      // 休息到點但另有更久沒出發的組 → 斜紋框靜止不閃（同時只閃一張）
   showUndo?: boolean    // 是否顯示「復原上一步」角落鈕（預設關，由計時頁開關控制）
   onStart: (id: string) => void
   onLap: (id: string) => void
@@ -35,7 +36,7 @@ function StatPill({ on, padX, children }: { on: boolean; padX?: number; children
   )
 }
 
-export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, onStart, onLap, onNext, onUndo, onStop, onOpen }: Props) {
+export function GroupCard({ group: g, plan, now, big, hint, queued = false, showUndo = false, onStart, onLap, onNext, onUndo, onStop, onOpen }: Props) {
   const secSize = big ? 140 : 70
   const minSize = big ? 54 : 32
   const Title = (
@@ -43,7 +44,8 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
   )
   const cardStyle = { background: NRC_HEX[g.color], color: NRC_TEXT[g.color] }
   // 黃/綠卡用深色字：CSS 依 .ink-dark 調整次要元素(直書標籤陰影、進度條)
-  const cardCls = `card${big ? ' big' : ''}${NRC_TEXT[g.color] !== '#ffffff' ? ' ink-dark' : ''}`
+  // 紅組：紅色警示框/斜紋在紅底上看不見 → CSS 依 .grp-red 改用白色
+  const cardCls = `card${big ? ' big' : ''}${NRC_TEXT[g.color] !== '#ffffff' ? ' ink-dark' : ''}${g.color === 'red' ? ' grp-red' : ''}`
   const lapPlan = buildLapPlan(plan, g)
   const shape = planShape(effectiveSegments(plan, g))
   const lastRep = g.reps[g.reps.length - 1]
@@ -171,7 +173,7 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
     const runSec = ticking ? elapsedSec(g.runStartTs as number, now) : 0
     const ref = cur?.target ?? g.targetPaceSec ?? (lastRep ? lastRep.runSec : null)
     const tone = paceTone(runSec, ref, 10)   // 剩 10 秒內轉橘、超過轉紅
-    // 跑燈進度環：外框填滿，繞滿一圈＝該趟目標時間；超過→整圈轉紅持續閃
+    // 跑燈進度環：外框填滿，繞滿一圈＝該趟目標時間；超過→整圈細紅線(不閃，不搶出發提示)
     const hasRef = ticking && ref != null && ref > 0
     const runProgress = hasRef ? runSec / (ref as number) : 0
     const runOver = hasRef && runSec > (ref as number)
@@ -231,8 +233,8 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
   const tone = paceTone(restSec, target > 0 ? target : null, 10)   // 剩 10 秒內轉橘、超過轉紅
   const pct = target > 0 ? Math.min(100, (restSec / target) * 100) : 0
   const goNow = target > 0 && restSec >= target - 3   // 最後 3 秒起 →「Go」＋綠光催促，呼吸停
-  // 多卡同時到點：超時越久閃越快(0.85s→0.25s)，讓使用者知道先按哪個
-  const blinkDur = Math.max(0.25, 0.85 - Math.max(0, restSec - target) * 0.01)
+  // 超時越久閃越快(0.85s→0.35s)；多卡同時到點只有最急的那張閃（其餘 queued 靜止）
+  const blinkDur = Math.max(0.35, 0.85 - Math.max(0, restSec - target) * 0.01)   // 下限 0.35s：閃爍不超過每秒 3 次
   // 倒數模式：有目標休息時顯示剩餘並倒數；到 0 後顯示超時 +往上加（紅）。無目標→照舊往上計時
   const restOver = target > 0 && restSec > target
   const restShown = target > 0 ? (restOver ? restSec - target : target - restSec) : restSec
@@ -243,9 +245,9 @@ export function GroupCard({ group: g, plan, now, big, hint, showUndo = false, on
   const bDelay = g.restStartTs != null ? -(g.restStartTs % 4500) : 0
   // 休息不變暗：維持鮮明組色，靠左側大「趟休」＋進度條＋出發提示來區分
   return (
-    <div className={`${cardCls} resting${goNow ? ' blink-go' : ''}${showUndo ? ' has-undo' : ''}`} data-testid="card"
+    <div className={`${cardCls} resting${goNow ? ` blink-go${queued ? ' still' : ''}` : ''}${showUndo ? ' has-undo' : ''}`} data-testid="card"
       style={{ ...cardStyle, ...flashStyle, ['--bdelay' as string]: `${bDelay}ms`,
-        ...(goNow ? { animationDuration: `${blinkDur}s` } : {}) } as React.CSSProperties}>
+        ...(goNow && !queued ? { animationDuration: `${blinkDur}s` } : {}) } as React.CSSProperties}>
       <div className="ctop">
         {Title}
         <span className="reptag">

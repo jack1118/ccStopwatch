@@ -1,9 +1,11 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
-import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonIcon } from '@ionic/react'
+import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonIcon, useIonActionSheet } from '@ionic/react'
+import { dueCues, cueSentences, CUE_TONE } from '../timer/cues'
+import { isVoiceOn, setVoiceOn, speak, voiceStatus, voiceLog, zhVoices, chosenVoiceName, setChosenVoice } from '../voice'
 import { volumeHigh, volumeMute, arrowUndo } from 'ionicons/icons'
 import type { Session } from '../types'
 import { timerReducer, initTimerState } from '../timer/reducer'
-import { elapsedSec, buildLapPlan } from '../timer/timer'
+import { elapsedSec, buildLapPlan, urgentRestId } from '../timer/timer'
 import { dateLabel } from '../format'
 import { NRC_CHART, NRC_LABEL } from '../constants'
 import { saveSession } from '../storage/storage'
@@ -30,6 +32,9 @@ export function Timer({ session, onExit, onFinish }: Props) {
   const now = useNow(true)
   useWakeLock(anyActive)
   const [soundOn, setSoundOn] = useState(isTapSoundOn())
+  const [voiceOn, setVoiceOnState] = useState(isVoiceOn())
+  const [presentSheet] = useIonActionSheet()
+  const [presentVoiceSheet] = useIonActionSheet()   // 聲音清單另用一個：同一個 hook 在前一張還沒收完時不會再開
   const [showUndo, setShowUndo] = useState(isUndoBtnOn())
   // 按圈瞬間全畫面彈出大秒數（給教練喊聲、跑者知道這圈幾秒）
   const [flash, setFlash] = useState<{ sec: number; color: string; label: string; key: number } | null>(null)
@@ -84,6 +89,36 @@ export function Timer({ session, onExit, onFinish }: Props) {
     }
   }, [now, state.session])
 
+  // 聲音清單：點一下試聽並選用（選單不收，方便連續比較）
+  const openVoicePicker = () => {
+    const voices = zhVoices()
+    const short = (n: string) => n.replace(/^Microsoft\s+/, '').replace(/\s*-\s*Chinese.*$/, '').replace(/\s*Online.*$/, '')
+    void presentVoiceSheet({
+      header: '換聲音',
+      subHeader: voices.length
+        ? `點一下試聽並選用，最後點的就是目前的聲音\n目前：${short(chosenVoiceName() ?? voices[0].name)}`
+        : '這個裝置找不到中文聲音',
+      cssClass: 'sound-sheet',
+      buttons: [
+        ...voices.map((v) => ({
+          text: `${short(v.name)}（${v.lang}${v.localService ? '' : '・線上'}）`,
+          handler: () => { setChosenVoice(v.name); speak('黃組，出發！', true, CUE_TONE.go); return false },
+        })),
+        { text: '完成', role: 'cancel' },
+      ],
+    })
+  }
+
+  // 語音提示：出發預告／出發／快到了／超時；同一刻同類合併成一句（出發的嗶聲由上面照舊先響）
+  const spoken = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    const cues = dueCues(state.session, now, spoken.current)
+    if (!cues.length) return
+    cues.forEach((c) => spoken.current.add(c.key))
+    if (voiceOn) cueSentences(cues).forEach((s) => speak(s.text, false, CUE_TONE[s.kind]))
+    else voiceLog(`語音提示關閉，略過 ${cues.length} 則提示`)
+  }, [now, state.session, voiceOn])
+
   // iOS app：鎖屏/切到背景時，把還沒到點的「休息到點」排成系統通知（螢幕關著也會震）；回前景就取消
   const sessionRef = useRef(state.session)
   useEffect(() => { sessionRef.current = state.session }, [state.session])
@@ -127,6 +162,9 @@ export function Timer({ session, onExit, onFinish }: Props) {
     if (remaining < bestRemaining) { bestRemaining = remaining; nextRunId = g.id }
   }
 
+  // 多組休息到點：只有最久沒出發的那組閃斜紋，其餘靜態斜紋（送走後下一組接手）
+  const urgentId = urgentRestId(state.session.plan, state.session.groups, now)
+
   // 向左滑 → 看結果；返回改由 Ionic 左緣跟手手勢處理（整頁右滑會在按圈時誤退出）
   const swipe = useSwipe({ onLeft: () => onFinish(state.session) })
 
@@ -139,9 +177,25 @@ export function Timer({ session, onExit, onFinish }: Props) {
           <IonTitle>{dateLabel(state.session.createdAt)}
             <span className="plan-time"> {pad2(started.getHours())}:{pad2(started.getMinutes())}</span></IonTitle>
           <IonButtons slot="end">
-            <button className="nav-tgl" aria-label="點擊音效開關" aria-pressed={soundOn}
-              onClick={() => { nativeSelection(); const v = !soundOn; setTapSound(v); setSoundOn(v) }}>
-              <IonIcon icon={soundOn ? volumeHigh : volumeMute} aria-hidden="true" />
+            {/* 聲音選單：點擊音效、語音提示各自開關（兩個都關才顯示靜音圖示） */}
+            <button className="nav-tgl" aria-label="聲音設定" aria-pressed={soundOn || voiceOn}
+              onClick={() => {
+                nativeSelection()
+                void presentSheet({
+                  header: '聲音',
+                  // 按鈕寫「動作」不寫「狀態」（寫「語音提示：開」會被當成狀態去點，結果反而關掉）；目前狀態放副標
+                  subHeader: `目前：語音提示${voiceOn ? '開' : '關'}、點擊音效${soundOn ? '開' : '關'}\n\n最近語音：\n${voiceStatus()}`,
+                  cssClass: 'sound-sheet',
+                  buttons: [
+                    { text: voiceOn ? '關閉語音提示' : '開啟語音提示', handler: () => { setVoiceOn(!voiceOn); setVoiceOnState(!voiceOn) } },
+                    { text: soundOn ? '關閉點擊音效' : '開啟點擊音效', handler: () => { setTapSound(!soundOn); setSoundOn(!soundOn) } },
+                    { text: '測試語音', handler: () => { speak('測試，黃組，出發！', true, CUE_TONE.go); return false } },   // 手勢內直接念：同時解鎖語音；選單不收
+                    { text: '換聲音', handler: () => { setTimeout(openVoicePicker, 350) } },   // 等這個選單收起再開聲音清單
+                    { text: '完成', role: 'cancel' },
+                  ],
+                })
+              }}>
+              <IonIcon icon={soundOn || voiceOn ? volumeHigh : volumeMute} aria-hidden="true" />
             </button>
             <button className="nav-tgl slash" aria-label="復原鈕顯示開關" aria-pressed={showUndo}
               onClick={() => { nativeSelection(); const v = !showUndo; setUndoBtn(v); setShowUndo(v) }}>
@@ -160,7 +214,7 @@ export function Timer({ session, onExit, onFinish }: Props) {
         {state.session.groups.map((g) => (
           <GroupCard
             key={g.id} group={g} plan={state.session.plan} now={now} big={big}
-            hint={g.id === nextStartId || g.id === nextRunId} showUndo={showUndo}
+            hint={g.id === nextStartId || g.id === nextRunId} queued={g.id !== urgentId} showUndo={showUndo}
             onStart={(id) => { tapFeedback(); dispatch({ type: 'START', groupId: id, now: Date.now() }) }}
             onLap={(id) => {
               tapFeedback()

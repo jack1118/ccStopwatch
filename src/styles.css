@@ -192,19 +192,23 @@ button { font-family: inherit; color: inherit; }
   animation: fillring .9s linear forwards;   /* 600ms 才出現、1.5s 繞滿 → 0.9s */
 }
 
-/* 進行中跑燈進度環(SVG)：沿圓角邊框依邊長均勻填色 + 亮綠實心圓點貼頭部;超過→整圈轉紅持續閃 */
+/* 進行中跑燈進度環(SVG)：沿圓角邊框依邊長均勻填色 + 亮綠實心圓點貼頭部;超過→整圈細紅線(不閃) */
 .run-ring-wrap { position: absolute; inset: 0; pointer-events: none; z-index: 1; }   /* 在文字之下：綠點/填色不會蓋住文字 */
 .run-svg { position: absolute; inset: 0; overflow: visible; }
 .run-track { fill: none; stroke: rgba(255,255,255,.18); }
 /* 填色下墊一條較寬的深色底線 → 白/紅填色兩側各露 2px 黑邊，紅卡/黃卡上也看得見 */
 .run-fill-under { fill: none; stroke: rgba(12,12,16,.8); stroke-linecap: round; }
 .run-fill { fill: none; stroke: rgba(255,255,255,.95); stroke-linecap: round; }
-.run-fill.over { stroke: #FF2D1A; animation: ringpulse .7s ease-in-out infinite; }
+/* 跑步超時：教練無事可按 → 不搶「該出發」的注意力：細線、半透明、不閃不發光（超時由膠囊紅字表示） */
+.run-fill.over { stroke: #FF2D1A; stroke-width: 3px; opacity: .6; }
+.run-fill-under.over { stroke-width: 5px; stroke: rgba(12,12,16,.45); }
 /* 頭部圓點：深色描邊托住亮綠/紅，綠卡/紅卡上不會融進底色 */
 .run-dot { fill: #4cff78; stroke: #0c0c10; stroke-width: 2.5;
   filter: drop-shadow(0 0 5px rgba(76,255,120,.95)); }
-.run-dot.over { fill: #FF2D1A; filter: drop-shadow(0 0 5px rgba(255,45,26,.95)); }
-@keyframes ringpulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+.run-dot.over { fill: #FF2D1A; filter: none; opacity: .6; }
+/* 紅組：紅色警示在紅底看不見 → 改白 */
+.card.grp-red .run-fill.over { stroke: #fff; }
+.card.grp-red .run-dot.over { fill: #fff; }
 
 /* 上趟（過去）/ Next（接下來）兩種視覺區隔的資訊 chip */
 .metarow { display: flex; justify-content: space-between; align-items: center;
@@ -309,6 +313,10 @@ button.restwrap { background: transparent; border: 0; color: inherit;
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude; }
+.card.grp-red.blink-go::before { background: repeating-linear-gradient(-45deg, #fff 0 7px, #0c0c10 7px 13px); }
+/* 多組同時到點：只有最久沒出發的閃，其餘(.still)斜紋框靜止、不發光 → 一眼看出先送哪組 */
+.card.blink-go.still { animation: none; }
+.card.blink-go.still::before { animation: none; opacity: .45; }   /* 低於閃爍框的平均亮度，才不會反客為主 */
 
 /* ── 休息卡呼吸：柔白外光暈 +「趟休」字同步呼吸（4.5s 吸快吐慢，貼近 Apple 睡眠呼吸燈） ── */
 /* 峰值落在 35%：吸氣 ~1.6s 快、吐氣 ~2.9s 慢；快到點/該出發(.blink)時自動停，交給綠光催促 */
@@ -359,11 +367,10 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .card.big .stat-pill { padding: 4px 12px 6px; margin: -4px 0 -6px; border-radius: 18px; }
 .rest-main .stat-pill, .card.big .rest-main .stat-pill { margin-bottom: 0; }   /* 下方緊貼進度條，不可壓到 */
 
-/* 減少動態：閃框/紅環脈動/秒數跳動全部停，改靜態粗框/靜態紅環（狀態仍可辨識） */
+/* 減少動態：閃框/秒數跳動全部停，改靜態粗框（狀態仍可辨識） */
 @media (prefers-reduced-motion: reduce) {
   .card.blink, .card.blink-go { animation: none; }
   .card.blink::before, .card.blink-go::before { animation: none; opacity: 1; }
-  .run-fill.over { animation: none; }
   .clock .sec.tick { animation: none; }
 }
 
@@ -551,3 +558,6 @@ table.splits tbody tr:active td:first-child { background: #28324a; }
 .gplan { font-size: 13px; font-weight: 700; line-height: 1.15; padding: 0 5px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
 .card.big .gplan { font-size: 14px; }
+
+/* 聲音選單：最近語音紀錄逐行顯示 */
+.sound-sheet .action-sheet-sub-title { white-space: pre-line; text-align: left; }

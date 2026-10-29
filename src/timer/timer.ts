@@ -105,6 +105,23 @@ export function totalLaps(plan: Plan, group: Group): number {
 }
 
 /**
+ * 多組同時休息到點（含最後 3 秒倒數）：回傳「最早到點＝最久沒出發」那組的 id，只讓它閃。
+ * 其餘到點組由呼叫端畫靜態斜紋；送走這組後下一組自動接手。無到點組 → undefined。
+ */
+export function urgentRestId(plan: Plan, groups: Group[], now: number): string | undefined {
+  let best: string | undefined
+  let bestDue = Infinity
+  for (const g of groups) {
+    if (g.state !== 'resting' || g.restStartTs == null) continue
+    const target = buildLapPlan(plan, g)[g.reps.length - 1]?.restAfter ?? 0
+    if (target <= 0 || elapsedSec(g.restStartTs, now) < target - 3) continue   // 與 GroupCard goNow 同門檻
+    const due = g.restStartTs + target * 1000
+    if (due < bestDue) { bestDue = due; best = g.id }   // 同時到點 → 組序在前者
+  }
+  return best
+}
+
+/**
  * 依目前秒數與參考秒數判斷顏色狀態。
  * - 超過參考 → 'over'（紅）；接近（剩 warnWithin 秒內）→ 'warn'（橘紅）；否則 undefined。
  */
