@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react'
+import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonList, IonItem, IonLabel } from '@ionic/react'
 import type { Group, Item, NRCColor, Segment, Session } from '../types'
 import { Stepper } from '../components/Stepper'
 import { NRC_ORDER, NRC_NUM, NRC_HEX, NRC_LABEL } from '../constants'
-import { itemsOf, lapsOf } from '../timer/timer'
-import { planSummary, parsePlan } from '../timer/planText'
+import { gapFor, itemsOf, lapsOf } from '../timer/timer'
+import { planSummary, parsePlan, PLAN_TEMPLATES, groupPlanLines } from '../timer/planText'
 import type { PlanChip } from '../timer/planText'
 import { PlanChips } from '../components/PlanChips'
 import { PlanEditor } from '../components/PlanEditor'
 import { EditSheet } from '../components/EditSheet'
-import { useSwipe } from '../hooks/useSwipe'
-import { nativeSelection } from '../native'
+import { nativeSelection, confirmDestructive } from '../native'
 import { bakeOwnSegments } from '../timer/fork'
 
 const WEEKDAY = ['日', '一', '二', '三', '四', '五', '六']
@@ -18,14 +18,15 @@ function todayLabel(): string {          // 田徑慣例：含星期，例 6/3 (
   return `${d.getMonth() + 1}/${d.getDate()} (${WEEKDAY[d.getDay()]})`
 }
 
-const uid = () => crypto.randomUUID()
+const uid = () => globalThis.crypto?.randomUUID?.() ?? `id${Math.random().toString(36).slice(2)}`   // randomUUID 只在 https/localhost 有
 const DEFAULT_ON: NRCColor[] = ['yellow', 'black', 'purple', 'blue', 'green']
 // 組別 pill 字色：黃、綠底用深色字才夠對比（白字僅 1.93:1／3.11:1），其餘維持白字
 const PILL_TEXT: Partial<Record<NRCColor, string>> = { yellow: '#111', green: '#111' }
 
 const gapPerLap = (lapMeters: number) => Math.max(1, Math.round(lapMeters / 100))   // 每圈 100m 加 1 秒
-const newItem = (meters: number, restSec: number, lapMeters = 400): Item =>
-  ({ id: uid(), meters, restSec, targetSec: Math.round((96 * meters) / 400), gapSec: gapPerLap(lapMeters) })
+// targetSec 預設依 400＝96 秒等速推算；組合加的 200m 另給較快的 44 秒（短距離一定比較快）
+const newItem = (meters: number, restSec: number, lapMeters = 400, targetSec = Math.round((96 * meters) / 400)): Item =>
+  ({ id: uid(), meters, restSec, targetSec, gapSec: gapPerLap(lapMeters) })
 
 // 配速：秒數 ÷ (距離/1000) → 每公里 m:ss
 function fmtPace(sec: number, meters: number): string {
@@ -37,9 +38,9 @@ function fmtPace(sec: number, meters: number): string {
 interface Props {
   initial?: Session
   editingActive?: boolean    // 編輯進行中課程：鎖定距離/場地/結構，只改目標/休息/趟數，保留已跑進度
-  enterAnim?: '' | 'fromRight' | 'fromLeft'
   onStart: (session: Session) => void
   onCancel: () => void
+  onDirtyChange?: (dirty: boolean) => void    // 讓外層在下滑關閉時決定要不要確認
 }
 
 interface GroupCfg {
@@ -64,7 +65,8 @@ function initGroupCfg(initial?: Session): Record<NRCColor, GroupCfg> {
   return cfg
 }
 
-export function SessionSetup({ initial, editingActive = false, enterAnim = '', onStart, onCancel }: Props) {
+// 以 iOS 卡片式 modal 呈現（App 的 IonModal 內）：導覽列＋可捲動內容
+export function SessionSetup({ initial, editingActive = false, onStart, onCancel, onDirtyChange }: Props) {
   const [today] = useState(todayLabel)
   const [name, setName] = useState(initial?.name ?? today)
   const [nameTouched, setNameTouched] = useState(!!initial)
@@ -81,15 +83,13 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
     () => new Set((initial?.groups ?? []).filter((g) => g.ownSegments && g.ownSegments.length > 0).map((g) => g.color)),
   )
   const [editChip, setEditChip] = useState<PlanChip | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)   // 關閉動畫期間 editChip 仍保留（內容不能先消失）
   const [nameMsg, setNameMsg] = useState<{ kind: 'ok' | 'fail'; text: string } | null>(null)   // 名稱欄解析課表的回饋
 
   // 「有改動」判定：以目前表單簽章對比開啟當下的簽章。名稱未手動改過時是自動帶入（會隨 chips 連動），不列入比較
   const formSig = JSON.stringify([nameTouched ? name : '', segments, cfg, lapMeters, [...forkEdited]])
   const [baseSig] = useState(formSig)
   const dirty = formSig !== baseSig
-
-  // 每組每圈加秒 × 此距離圈數 = 各組之間在「整段距離」上累加的秒數
-  const gapTotal = (it: Item) => (it.gapSec ?? 0) * lapsOf(it.meters, lapMeters)
 
   // 編輯進行中：某組在某段已完成的趟數（趟數不可改到比這少）
   const lapsPerRep = (seg: Segment) => Math.max(1, itemsOf(seg).reduce((a, it) => a + lapsOf(it.meters, lapMeters), 0))
@@ -116,9 +116,12 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
     setSegments((s) => s.map((seg) => ({ ...seg, items: itemsOf(seg).map((it) => ({ ...it, gapSec: g })) })))
   }
 
-  // ← 與向右滑一致：表單有改動才跳確認（避免誤觸丟失），沒改動直接返回清單
-  const goBack = () => { if (!dirty || window.confirm('放棄此課程設定並返回？')) onCancel() }
-  const swipe = useSwipe({ onRight: goBack })
+  // 取消：表單有改動才跳確認（避免誤觸丟失），沒改動直接返回清單
+  const goBack = async () => {
+    if (dirty && !(await confirmDestructive({ title: '放棄此課程設定？', action: '放棄並返回', webText: '放棄此課程設定並返回？' }))) return
+    onCancel()
+  }
+  useEffect(() => { onDirtyChange?.(dirty) }, [dirty, onDirtyChange])
 
   const summaryText = planSummary(segments, lapMeters)
   useEffect(() => {
@@ -139,6 +142,21 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
     }
   }
   const addSegment = () => setSegments((s) => [...s, { id: uid(), reps: 8, items: [newItem(400, 90, lapMeters)] }])
+  // 主畫面的「組合」：加在最後一段（與進階設定 PlanEditor 的 addItem 同預設 200m 44 秒、休 60）
+  const addComboItem = () => setSegments((s) => s.map((seg, i) =>
+    i === s.length - 1 ? { ...seg, items: [...itemsOf(seg), newItem(200, 60, lapMeters, 44)] } : seg))
+
+  // 範本快選：課表被手動改過才確認（以摘要比對，套範本後重設基準）
+  const [planBase, setPlanBase] = useState(() => planSummary(segments))
+  const applyTemplate = async (text: string) => {
+    const segs = parsePlan(text, lapMeters)
+    if (!segs) return
+    if (planSummary(segments) !== planBase
+      && !(await confirmDestructive({ title: '用範本取代目前課表？', message: '目前的課表修改會被取代。', action: '取代課表', webText: '用範本取代目前課表？目前的課表修改會被取代。' }))) return
+    nativeSelection()
+    setSegments(segs)
+    setPlanBase(planSummary(segs))
+  }
 
   // 段落（組合）操作（EditSheet 仍透過 onPatchSeg/onPatchItem 呼叫）
   const patchSegment = (id: string, patch: Partial<Segment>) =>
@@ -161,17 +179,16 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
     setExpanded((p) => ({ ...p, [c]: !p[c] }))
   }
 
+  // 用某組的設定組出暫時的 Group（只為了套用逐組覆寫、算出該組實際課表）
+  const tmpGroup = (c: NRCColor, gc: GroupCfg): Group => ({
+    id: 'tmp', color: c, number: NRC_NUM[c], athletes: [], state: 'idle',
+    runStartTs: null, restStartTs: null, reps: [], targetPaceSec: null,
+    segReps: gc.segReps, segTarget: gc.segTarget, segRest: gc.segRest,
+  })
   const forkGroup = (c: NRCColor) => {
     const currentSegs = segments
     const currentLap = lapMeters
-    setCfg((p) => {
-      const g: Group = {
-        id: 'tmp', color: c, number: NRC_NUM[c], athletes: [], state: 'idle',
-        runStartTs: null, restStartTs: null, reps: [], targetPaceSec: null,
-        segReps: p[c].segReps, segTarget: p[c].segTarget, segRest: p[c].segRest,
-      }
-      return { ...p, [c]: { ...p[c], ownSegments: bakeOwnSegments({ segments: currentSegs, lapMeters: currentLap }, g) } }
-    })
+    setCfg((p) => ({ ...p, [c]: { ...p[c], ownSegments: bakeOwnSegments({ segments: currentSegs, lapMeters: currentLap }, tmpGroup(c, p[c])) } }))
   }
   const unforkGroup = (c: NRCColor) => {
     setForkEdited((p) => { if (!p.has(c)) return p; const n = new Set(p); n.delete(c); return n })
@@ -182,10 +199,13 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
     setCfg((p) => ({ ...p, [c]: { ...p[c], ownSegments: segs } }))
   }
   const isForked = (c: NRCColor) => (cfg[c].ownSegments?.length ?? 0) > 0
+  // 該組實際要跑的課表（獨立課表，或共用課表＋逐組覆寫＋依組號加秒）→ 組別列一覽
+  const groupLines = (c: NRCColor) => groupPlanLines(
+    isForked(c) ? cfg[c].ownSegments! : bakeOwnSegments({ segments, lapMeters }, tmpGroup(c, cfg[c])), lapMeters)
 
   const repsFor = (c: NRCColor, seg: Segment) => cfg[c].segReps[seg.id] ?? seg.reps
   const targetFor = (c: NRCColor, it: Item) =>
-    cfg[c].segTarget[it.id] ?? ((it.targetSec ?? 0) > 0 ? (it.targetSec ?? 0) + gapTotal(it) * (NRC_NUM[c] - 1) : 0)
+    cfg[c].segTarget[it.id] ?? ((it.targetSec ?? 0) > 0 ? (it.targetSec ?? 0) + gapFor(it, lapMeters, NRC_NUM[c]) : 0)
   const restFor = (c: NRCColor, it: Item) => cfg[c].segRest[it.id] ?? it.restSec
   const totalReps = (c: NRCColor) => segments.reduce((s, seg) => s + repsFor(c, seg), 0)
   const totalLaps = (c: NRCColor) =>
@@ -223,30 +243,72 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
   }
 
   return (
-    <div className={`app${enterAnim ? ' enter-' + enterAnim : ''}`} {...swipe}>
-      <div className="topbar">
-        <button className="btn" aria-label="返回" onClick={goBack}>←</button>
-        <h1>{editingActive ? '編輯課程（只改未跑）' : '課程設定'}</h1>
-      </div>
+    <>
+    {/* iOS modal 導覽列：左取消、右主要動作（粗體） */}
+    <IonHeader>
+      <IonToolbar>
+        <IonButtons slot="start"><IonButton onClick={goBack}>取消</IonButton></IonButtons>
+        <IonTitle>{editingActive ? '編輯課表' : '新課程'}</IonTitle>
+        <IonButtons slot="end">
+          <IonButton strong disabled={activeCount === 0} onClick={start}>{editingActive ? '儲存' : '開始上課'}</IonButton>
+        </IonButtons>
+      </IonToolbar>
+    </IonHeader>
+    <IonContent>
+    <div className="page-body setup-body">
+      {editingActive && <div className="ios-foot setup-note">只改尚未跑的部分</div>}
 
-      <div className="sec-block">
-        <div className="label">課程名稱</div>
-        <input className="field wide" value={name}
-          placeholder="可直接打整串課表，如 400m×10 p96s r90s"
-          onChange={(e) => { setName(e.target.value); setNameTouched(true); setNameMsg(null) }}
-          onBlur={(e) => parseNameToPlan(e.target.value)} />
-        <div className="field-hint" style={{ margin: '6px 0 0' }}>自動帶入「日期 課表摘要」，可改成自訂標籤</div>
-        {nameMsg && <div className={`name-msg ${nameMsg.kind}`} role="status">{nameMsg.text}</div>}
-      </div>
+      <div className="ios-head">課程名稱</div>
+      <IonList inset className="ios-list">
+        <IonItem>
+          <input className="item-input" aria-label="課程名稱" value={name}
+            placeholder="可直接打整串課表，如 400m×10 p96s r90s"
+            onChange={(e) => { setName(e.target.value); setNameTouched(true); setNameMsg(null) }}
+            onBlur={(e) => parseNameToPlan(e.target.value)} />
+        </IonItem>
+      </IonList>
+      <div className="ios-foot">自動帶入「日期 課表摘要」，可改成自訂標籤</div>
+      {nameMsg && <div className={`ios-foot name-msg ${nameMsg.kind}`} role="status">{nameMsg.text}</div>}
 
-      <div className="sec-block">
-        <div className="label">課表</div>
-        <div className="field-hint" style={{ margin: '-4px 0 4px' }}>點下方項目修改；可留空＝純碼表</div>
-        <PlanChips segments={segments} lapMeters={lapMeters} onChipTap={setEditChip} />
-        {!editingActive && <button className="btn" onClick={addSegment}>＋ 新增項目</button>}
-      </div>
+      <div className="ios-head">課表</div>
+      <IonList inset className="ios-list">
+        {!editingActive && (
+          <IonItem lines="full">
+            <div className="tpl-row" role="group" aria-label="範本快選">
+              <span className="tpl-label">範本</span>
+              {PLAN_TEMPLATES.map((t) => {
+                const on = planSummary(parsePlan(t.text, lapMeters) ?? []) === planSummary(segments)
+                return (
+                  <button key={t.label} className={`tpl-chip${on ? ' on' : ''}`} aria-pressed={on}
+                    onClick={() => applyTemplate(t.text)}>{t.label}</button>
+                )
+              })}
+            </div>
+          </IonItem>
+        )}
+        <IonItem lines={editingActive ? 'none' : 'full'}>
+          <PlanChips segments={segments} lapMeters={lapMeters} showFlow onChipTap={(c) => { setEditChip(c); setSheetOpen(true) }} />
+        </IonItem>
+        {!editingActive && segments.length > 0 && (
+          <IonItem button detail={false} onClick={addComboItem}>
+            <IonLabel className="ion-text-wrap">
+              <div className="add-title">＋ 加一個距離（組合）</div>
+              <p className="add-hint">{segments.length > 1 && '加在最後一段；'}400 接 200 算一組，<span className="nw">例：(400m + 200m) × 8＝跑 8 組</span></p>
+            </IonLabel>
+          </IonItem>
+        )}
+        {!editingActive && (
+          <IonItem button detail={false} onClick={addSegment}>
+            <IonLabel className="ion-text-wrap">
+              <div className="add-title">＋ 新增項目</div>
+              <p className="add-hint">前面的趟數跑完再換下一段，<span className="nw">例：400m × 6 接 200m × 4</span></p>
+            </IonLabel>
+          </IonItem>
+        )}
+      </IonList>
+      <div className="ios-foot">點上方項目修改；可留空＝純碼表</div>
 
-      <details className="adv">
+      <details className="adv ios-card">
         <summary>進階設定</summary>
         <div className="adv-body">
           <div className="sec-block">
@@ -260,7 +322,7 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
 
           <div className="sec-block">
             <div className="label">共用課表</div>
-            <div className="sublabel">項目可為組合，如 (400m+200m)×8；可逐項設距離、目標（以距離／以每圈）、每組每圈＋、間休，並可刪除、鏡像</div>
+            <div className="sublabel">可逐項設距離、目標（以距離／以每圈）、每組每圈＋、間休，並可刪除、鏡像</div>
             <PlanEditor segments={segments} lapMeters={lapMeters}
               editingActive={editingActive} repFloor={repFloorSeg}
               showGroupTargets onChange={setSegments} />
@@ -268,10 +330,8 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
         </div>
       </details>
 
-      <div className="sec-block">
-        <div className="label">組別</div>
-        <div className="field-hint" style={{ margin: '-4px 0 6px' }}>顏色固定對應組號；可展開逐組自訂組數、目標、休息</div>
-        {editingActive && <div className="field-hint" style={{ margin: '0 0 6px' }}>進行中不可增減組別，僅能調整各組目標/休息/趟數</div>}
+      <div className="ios-head">組別</div>
+      <div className="ios-card grp-card">
         {NRC_ORDER.map((c) => {
           const on = cfg[c].on
           const isOpen = !!expanded[c]
@@ -294,6 +354,9 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
                 )}
                 {!editingActive && <button className={`grp-toggle${on ? ' on' : ''}`} onClick={() => { nativeSelection(); toggleColor(c) }}>{on ? '出場' : '不出場'}</button>}
               </div>
+              {on && !isOpen && (isForked(c) || segments.length > 0) && (
+                <div className="grp-plan">{groupLines(c).map((l, i) => <div key={i}>{l}</div>)}</div>
+              )}
               {on && isOpen && (isForked(c) || segments.length > 0) && (
                 <div className="grp-expand-body">
                   {isForked(c) ? (
@@ -349,14 +412,8 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
           )
         })}
       </div>
-
-      <div className="spacer" />
-      <div className="bottombar setup-bar">
-        <button className="btn primary" style={{ fontSize: 18, padding: 16 }}
-          disabled={activeCount === 0} onClick={start}>
-          {editingActive ? '儲存變更 ✓' : `開始上課 ▶（${activeCount} 組）`}
-        </button>
-      </div>
+      <div className="ios-foot">顏色固定對應組號；可展開逐組自訂組數、目標、休息</div>
+      {editingActive && <div className="ios-foot">進行中不可增減組別，僅能調整各組目標/休息/趟數</div>}
 
       {editChip && (() => {
         const seg = segments.find((s) => s.id === editChip.segId)   // 邊界：sheet 開著時若該段/項被移除 → 收掉 sheet，不崩潰
@@ -370,17 +427,21 @@ export function SessionSetup({ initial, editingActive = false, enterAnim = '', o
           : editChip.field === 'distance' ? '距離' : editChip.field === 'target' ? '目標' : '間休'
         const title = `項目 ${si + 1}${multi && editChip.field !== 'reps' ? ` · 距離 ${ii + 1}` : ''} · ${fieldName}`
         return (
-          <EditSheet key={editChip.key} title={title} field={editChip.field} seg={seg} item={item}
+          <EditSheet key={editChip.key} isOpen={sheetOpen} title={title} field={editChip.field} seg={seg} item={item}
             lapMeters={lapMeters} repMin={editingActive ? repFloorSeg(seg) : 1} distanceLocked={editingActive}
             onPatchItem={(itemId, patch) => patchItem(seg.id, itemId, patch)}
             onPatchSeg={(segId, patch) => patchSegment(segId, patch)}
-            onClose={() => {
+            onClose={() => setSheetOpen(false)}
+            onDidDismiss={() => {
               const key = editChip.key
+              setSheetOpen(false)
               setEditChip(null)
               requestAnimationFrame(() => (document.querySelector(`[data-chipkey="${key}"]`) as HTMLElement | null)?.focus())
             }} />
         )
       })()}
     </div>
+    </IonContent>
+    </>
   )
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { elapsedSec, getLapMeters, lapsOf, itemsOf, buildLapPlan, totalLaps, paceTone } from './timer'
+import { elapsedSec, getLapMeters, lapsOf, itemsOf, buildLapPlan, totalLaps, paceTone, gapFor } from './timer'
 import type { Group, Plan } from '../types'
 
 const baseGroup: Group = {
@@ -59,7 +59,7 @@ describe('buildLapPlan — 組合段落', () => {
   it('各組依 gap 累加（第3組 = +2gap）', () => {
     const g3 = buildLapPlan(plan, { ...baseGroup, number: 3 })
     expect(g3[0].target).toBe(96 + 16)   // 400m: 96 + 8*2
-    expect(g3[1].target).toBe(40 + 8)    // 200m: 40 + 4*2
+    expect(g3[1].target).toBe(40 + 4)    // 200m＝半圈: 40 + 4*0.5*2（gap 依距離比例）
   })
 })
 
@@ -117,5 +117,16 @@ describe('elapsedSec / paceTone', () => {
     expect(paceTone(88, 90, 3)).toBe('warn')
     expect(paceTone(70, 90, 3)).toBeUndefined()
     expect(paceTone(120, null, 3)).toBeUndefined()
+  })
+})
+
+describe('gapFor — 依距離比例加秒（每 100m 1 秒）', () => {
+  it('場地 400、每圈 +4：200m +2、300m +3、1000m +10；第 3 組加倍', () => {
+    const it2 = (meters: number) => ({ id: 'x', meters, restSec: 0, gapSec: 4 })
+    expect(gapFor(it2(200), 400, 2)).toBe(2)
+    expect(gapFor(it2(300), 400, 2)).toBe(3)
+    expect(gapFor(it2(1000), 400, 2)).toBe(10)
+    expect(gapFor(it2(200), 400, 3)).toBe(4)
+    expect(gapFor(it2(400), 400, 1)).toBe(0)
   })
 })
