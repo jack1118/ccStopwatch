@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { IonModal, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent } from '@ionic/react'
 import type { Item, Segment } from '../types'
@@ -74,9 +74,12 @@ export function EditSheet({ title, field, seg, item, lapMeters, repMin, distance
   }
 
   // iOS 半高 sheet：約 260px 高（依視窗換算成 breakpoint），可下滑關閉；右上「完成」
+  // 點數字打字時鍵盤會蓋住半高 sheet → 像原生 sheet 一樣拉到全高，收鍵盤再回半高
   const bp = Math.min(1, Math.round((260 / window.innerHeight) * 100) / 100)
+  const modal = useRef<HTMLIonModalElement>(null)
+  const toBp = (b: number) => { void modal.current?.setCurrentBreakpoint(b) }
   return (
-    <IonModal isOpen={isOpen} breakpoints={[0, bp]} initialBreakpoint={bp} className="edit-sheet"
+    <IonModal ref={modal} isOpen={isOpen} breakpoints={[0, bp, 1]} initialBreakpoint={bp} className="edit-sheet"
       aria-label={title} onDidDismiss={onDidDismiss}>
       <IonHeader>
         <IonToolbar>
@@ -85,7 +88,8 @@ export function EditSheet({ title, field, seg, item, lapMeters, repMin, distance
         </IonToolbar>
       </IonHeader>
       <IonContent scrollY={false}>
-        <div className="sheet">{body}</div>
+        <div className="sheet" onFocus={(e) => { if (e.target.tagName === 'INPUT' && !(e.target as HTMLInputElement).readOnly) toBp(1) }}
+          onBlur={(e) => { if (e.target.tagName === 'INPUT') toBp(bp) }}>{body}</div>
       </IonContent>
     </IonModal>
   )
