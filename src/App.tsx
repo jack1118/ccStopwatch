@@ -105,6 +105,7 @@ function Shell({ resumed }: { resumed: Session | null }) {
       <Route path="/results/group/:id" element={<GroupRoute session={session} backText={groupBackText} onBack={back} onUpdate={updateSession} />} />
     </IonRouterOutlet>
     <IonModal isOpen={setupOpen} presentingElement={presenting ?? undefined} className="setup-modal"
+      htmlAttributes={{ 'aria-label': editSession ? '編輯課表' : '新課程' }}
       canDismiss={async () => closingOk.current || !setupDirty.current ||
         confirmDestructive({ title: '放棄此課程設定？', action: '放棄並返回', webText: '放棄此課程設定並返回？' })}
       onDidDismiss={() => { setSetupOpen(false); setEditSession(null); afterClose.current?.(); afterClose.current = null }}>

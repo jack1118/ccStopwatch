@@ -145,12 +145,12 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
   }
 
   return (
-    <div style={{
+    <div role="dialog" aria-modal="true" aria-labelledby="share-card-title" style={{
       position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,.88)', overflowY: 'auto',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 16, boxSizing: 'border-box',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: 320 }}>
-        <h3 style={{ margin: 0 }}>限動分享卡</h3>
+        <h2 id="share-card-title" style={{ margin: 0, fontSize: '1.17em' }}>限動分享卡</h2>
         <button className="btn" style={{ minWidth: 44, minHeight: 44 }} aria-label="關閉" onClick={onClose}>✕</button>
       </div>
 

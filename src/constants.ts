@@ -19,7 +19,7 @@ export const NRC_HEX: Record<NRCColor, string> = {
 }
 
 // 卡片次要文字（組名/目標/上圈/標籤…）的墨色：白字在黃(1.9:1)、綠(3.1:1)上不夠，這兩色改深字(9.8 / 6.1:1)；
-// 其餘白字皆 ≥4.5:1。計時大數字(.clock)不吃這個，一律白字＋多層陰影
+// 其餘白字皆 ≥4.5:1。計時大數字(.clock)不吃這個：白字＋多層陰影，只有黃卡改深字（.grp-yellow，見 styles.css）
 export const NRC_TEXT: Record<NRCColor, string> = {
   yellow: '#111111', black: '#ffffff', purple: '#ffffff',
   blue: '#ffffff', green: '#111111', red: '#ffffff',

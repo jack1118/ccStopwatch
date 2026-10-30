@@ -45,7 +45,8 @@ export function GroupCard({ group: g, plan, now, big, hint, queued = false, show
   const cardStyle = { background: NRC_HEX[g.color], color: NRC_TEXT[g.color] }
   // 黃/綠卡用深色字：CSS 依 .ink-dark 調整次要元素(直書標籤陰影、進度條)
   // 紅組：紅色警示框/斜紋在紅底上看不見 → CSS 依 .grp-red 改用白色
-  const cardCls = `card${big ? ' big' : ''}${NRC_TEXT[g.color] !== '#ffffff' ? ' ink-dark' : ''}${g.color === 'red' ? ' grp-red' : ''}`
+  // 黃組：白色計時大數字在黃底只有 1.9:1 → CSS 依 .grp-yellow 改深色字
+  const cardCls = `card${big ? ' big' : ''}${NRC_TEXT[g.color] !== '#ffffff' ? ' ink-dark' : ''}${g.color === 'red' ? ' grp-red' : ''}${g.color === 'yellow' ? ' grp-yellow' : ''}`
   const lapPlan = buildLapPlan(plan, g)
   const shape = planShape(effectiveSegments(plan, g))
   const lastRep = g.reps[g.reps.length - 1]
@@ -126,12 +127,13 @@ export function GroupCard({ group: g, plan, now, big, hint, queued = false, show
     setUndoHolding(false)
   }
   const UndoRing = undoHolding ? <span className="undo-ring" /> : null
+  // ↩ 後面接 U+FE0E（文字樣式）：iOS 預設把 ↩ 畫成藍底 emoji
   const Corner = (
     <div className="corner">
       <button className="undo-btn" aria-label="長按復原上一步"
         onPointerDown={startUndo} onPointerUp={cancelUndo}
         onPointerLeave={cancelUndo} onPointerCancel={cancelUndo}>
-        ↩
+        ↩︎
       </button>
     </div>
   )

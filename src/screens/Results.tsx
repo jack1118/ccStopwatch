@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonIcon,
@@ -57,8 +57,8 @@ function ResultsFrame({ session, backText, title, onBack, shotRef, shotName, onS
           <NavBack text={backText} onBack={onBack} />
           <IonTitle>{title}</IonTitle>
           <IonButtons slot="end">
-            <IonButton aria-label="分享卡" onClick={onShareCard}><IonIcon slot="icon-only" icon={shareOutline} /></IonButton>
-            <IonButton aria-label="更多" onClick={more}><IonIcon slot="icon-only" icon={ellipsisHorizontalCircleOutline} /></IonButton>
+            <IonButton aria-label="分享卡" onClick={onShareCard}><IonIcon slot="icon-only" icon={shareOutline} aria-hidden="true" /></IonButton>
+            <IonButton aria-label="更多" onClick={more}><IonIcon slot="icon-only" icon={ellipsisHorizontalCircleOutline} aria-hidden="true" /></IonButton>
           </IonButtons>
         </IonToolbar>
       </IonHeader>
@@ -68,6 +68,20 @@ function ResultsFrame({ session, backText, title, onBack, shotRef, shotName, onS
       {overlay}
     </>
   )
+}
+
+// 窄螢幕（375 等）：分段表 10 趟橫排放不下 → 改直排（列＝趟、欄＝組）
+const NARROW = '(max-width: 400px)'
+function useNarrow(): boolean {
+  const [narrow, setNarrow] = useState(() => typeof matchMedia !== 'undefined' && matchMedia(NARROW).matches)
+  useEffect(() => {
+    if (typeof matchMedia === 'undefined') return
+    const m = matchMedia(NARROW)
+    const onChange = () => setNarrow(m.matches)
+    m.addEventListener('change', onChange)
+    return () => m.removeEventListener('change', onChange)
+  }, [])
+  return narrow
 }
 
 interface Props {
@@ -82,6 +96,7 @@ export function Results({ session, onExit, onOpenGroup }: Props) {
   )
   const [showCard, setShowCard] = useState(false)
   const chartRef = useRef<HTMLDivElement>(null)
+  const narrow = useNarrow()
 
   const toggle = (id: string) =>
     setVisible((v) => {
@@ -106,6 +121,11 @@ export function Results({ session, onExit, onOpenGroup }: Props) {
   }
   const distances = hasPlan ? [...new Set(refLaps.map((l) => l.meters))] : []
   const multiDist = distances.length > 1
+  const bestOf = (g: Group) => (g.reps.length ? Math.min(...g.reps.map((r) => r.runSec)) : -1)
+  const restAvgText = (g: Group) => {
+    const rests = g.reps.filter((r) => r.restSec > 0)
+    return rests.length ? fmtClockStr(Math.round(rests.reduce((s, r) => s + r.restSec, 0) / rests.length)) : '–'
+  }
   const avgText = (g: Group) => {
     const a = groupAvgs(g)
     if (a.length === 0) return '–'
@@ -138,7 +158,53 @@ export function Results({ session, onExit, onOpenGroup }: Props) {
       </div>
 
       <div className="panel">
-        <div className="splits-scroll">
+        <div className="splits-scroll" tabIndex={0} role="region" aria-label="分段表">
+        {narrow ? (
+        <table className="splits splits-t">
+          <thead>
+            <tr>
+              <th>趟</th>
+              {groups.map((g) => (
+                <th key={g.id} style={{ whiteSpace: 'nowrap' }}>
+                  <span className="dot" style={{ background: NRC_CHART[g.color], display: 'inline-block', marginRight: 3, verticalAlign: 'middle' }} />
+                  {NRC_LABEL[g.color]}{g.number}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: maxReps }).map((_, i) => (
+              <tr key={i}>
+                <th>{i + 1}{hasPlan && distAt(i) != null && <div className="th-sub">{distAt(i)}m</div>}</th>
+                {groups.map((g) => {
+                  const r = g.reps[i]
+                  return <td key={g.id} className={r && r.runSec === bestOf(g) ? 'bestcell' : ''}>{r ? fmtClockStr(r.runSec) : '–'}</td>
+                })}
+              </tr>
+            ))}
+            {multiDist
+              ? distances.map((m) => (
+                <tr key={m}>
+                  <th>均時<div className="th-sub">{m}m</div></th>
+                  {groups.map((g) => {
+                    const a = groupAvgs(g).find((x) => x.meters === m)
+                    return <td key={g.id}>{a ? fmtClockStr(a.avg) : '–'}</td>
+                  })}
+                </tr>
+              ))
+              : (
+                <tr>
+                  <th>均時</th>
+                  {groups.map((g) => <td key={g.id}>{groupAvgs(g).length ? fmtClockStr(groupAvgs(g)[0].avg) : '–'}</td>)}
+                </tr>
+              )}
+            <tr>
+              <th>均休</th>
+              {groups.map((g) => <td key={g.id}>{restAvgText(g)}</td>)}
+            </tr>
+          </tbody>
+        </table>
+        ) : (
         <table className="splits">
           <thead>
             <tr>
@@ -159,9 +225,7 @@ export function Results({ session, onExit, onOpenGroup }: Props) {
           </thead>
           <tbody>
             {groups.map((g) => {
-              const best = g.reps.length ? Math.min(...g.reps.map((r) => r.runSec)) : -1
-              const restN = g.reps.filter((r) => r.restSec > 0).length
-              const restAvg = restN ? Math.round(g.reps.reduce((s, r) => s + r.restSec, 0) / restN) : 0
+              const best = bestOf(g)
               return (
                 <tr key={g.id} onClick={() => onOpenGroup(g.id)} style={{ cursor: 'pointer' }}>
                   <td style={{ whiteSpace: 'nowrap' }}>
@@ -178,15 +242,16 @@ export function Results({ session, onExit, onOpenGroup }: Props) {
                       return <td key={m}>{a ? fmtClockStr(a.avg) : '–'}</td>
                     })
                     : <td>{groupAvgs(g).length ? fmtClockStr(groupAvgs(g)[0].avg) : '–'}</td>}
-                  <td>{restN ? fmtClockStr(restAvg) : '–'}</td>
+                  <td>{restAvgText(g)}</td>
                 </tr>
               )
             })}
           </tbody>
         </table>
+        )}
         </div>
         <p className="res-note">
-          點一列看單組詳細　·　<span className="bestcell">綠</span>＝最快一趟　·　時間皆為 分:秒（均時＝平均每趟{multiDist ? '，依距離分開算' : ''}、均休＝平均休息）
+          {narrow ? '單組詳細見下方各組明細' : '點一列看單組詳細'}　·<span className="bestcell">綠</span>＝最快一趟　·　時間皆為 分:秒（均時＝平均每趟{multiDist ? '，依距離分開算' : ''}、均休＝平均休息）
         </p>
       </div>
 

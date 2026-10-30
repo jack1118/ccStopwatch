@@ -179,10 +179,12 @@ it('黃/綠卡用深色墨色(.ink-dark)，紅卡維持白字', () => {
   const { unmount } = render(<GroupCard group={{ ...base, color: 'yellow', number: 1 }} plan={plan} now={0} big
     onStart={vi.fn()} onLap={vi.fn()} onNext={vi.fn()} onUndo={vi.fn()} onStop={vi.fn()} />)
   expect(screen.getByTestId('card').className).toContain('ink-dark')
+  expect(screen.getByTestId('card').className).toContain('grp-yellow')   // 計時大數字也改深字
   unmount()
   render(<GroupCard group={{ ...base, color: 'red', number: 6 }} plan={plan} now={0} big
     onStart={vi.fn()} onLap={vi.fn()} onNext={vi.fn()} onUndo={vi.fn()} onStop={vi.fn()} />)
   expect(screen.getByTestId('card').className).not.toContain('ink-dark')
+  expect(screen.getByTestId('card').className).not.toContain('grp-yellow')
 })
 
 it('跑步中「上圈」顯示跑步＋休息時間', () => {

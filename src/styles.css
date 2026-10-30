@@ -16,7 +16,7 @@
 .session-list { --ion-item-background: #1c1c22; background: transparent; }
 .session-list ion-item { --background: #1c1c22; --border-color: #2c2c32; }
 .session-list .item-name { font-size: 16px; font-weight: 700; line-height: 1.35; white-space: normal; }
-.session-list p { font-size: 13px; color: #9a9aa2; margin-top: 3px; }
+.session-list ion-label p { font-size: 13px; color: #9a9aa2; margin-top: 3px; }   /* 要帶 ion-label：Ionic 的 label p 灰色(#666,2.95:1)同權重會蓋過 */
 .list-footer ion-toolbar { --padding-start: 12px; --padding-end: 12px; --padding-top: 8px; --padding-bottom: 8px; }
 .list-footer .new-session { --border-radius: 12px; height: 50px; font-size: 17px; font-weight: 700; margin: 0; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -351,10 +351,12 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 }
 
 /* ── 讀秒時鐘 ── */
-/* 所有組別一致：白字 + 多層深色陰影(不用描邊→大字不會有鬼影；各色背景仍清晰立體) */
+/* 白字 + 多層深色陰影(不用描邊→大字不會有鬼影；各色背景仍清晰立體) */
 .clock { display: flex; align-items: baseline; font-variant-numeric: tabular-nums;
   font-weight: 900; letter-spacing: -2px; line-height: .9; color: #fff;
   text-shadow: 0 0 2px rgba(0,0,0,.75), 0 2px 5px rgba(0,0,0,.55), 0 0 4px rgba(0,0,0,.5); }
+/* 黃卡例外：白字對黃底 1.9:1，戶外看不清 → 深色字(9.8:1)、不疊陰影；快到/超時進深色膠囊時照舊橘紅字 */
+.card.grp-yellow .stat-pill:not(.on) .clock { color: #111; text-shadow: none; }
 .clock .min { opacity: .82; margin-right: 1px; }
 /* 趟休超時：時鐘維持置中(與倒數同位置)，「+」絕對定位貼在時鐘左側不佔空間 */
 .overclock { position: relative; display: inline-flex; align-items: baseline; }
@@ -398,7 +400,7 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .help { padding: 4px 0 0; }
 .help section { background: var(--ion-item-background); border-radius: 10px;
   padding: 12px 16px; margin: 0 16px 16px; }
-.help-version { display: block; text-align: center; font-size: 13px; margin: -4px 0 24px; }
+.help-version { display: block; text-align: center; font-size: 13px; margin: -4px 0 24px; color: #8e8e93; }   /* IonNote 預設灰在深底只有 2.8:1 */
 .help h2 { font-size: 18px; margin: 0 0 8px; }
 .help p, .help li { font-size: 14px; color: #cfcfd4; line-height: 1.75; margin: 4px 0; }
 .help ol, .help ul { margin: 4px 0; padding-left: 20px; }
@@ -447,13 +449,16 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .field-row:last-child { margin-bottom: 0; }
 .field-row .rl { width: 84px; flex: 0 0 auto; font-size: 14px; color: #cfcfd4; }
 .field-row .ru { flex: 0 0 auto; font-size: 14px; color: #9a9aa0; }
+/* 方框內的列：標籤寬扣掉方框縮排（左線 3＋內距 10），步進器左緣與外層「趟數」列對齊 */
+.item-box .field-row .rl { width: 71px; }
 /* 窄螢幕（375）：標籤＋步進器＋單位要擠得下同一行，單位才不會掉到下一行 */
 @media (max-width: 400px) {
   .field-row { gap: 6px; }
-  .field-row .rl { width: 72px; }
+  .field-row .rl { width: 79px; }
   .stepper input { width: 48px; }   /* 縮輸入框、−／＋ 維持 44 觸控寬 */
   .item-box { padding-left: 6px; }
   .item-box .field-row .btn.danger { padding-left: 10px; padding-right: 10px; }
+  .item-box .field-row .rl { width: 70px; }   /* 扣掉方框縮排 9px，步進器左緣對齊外層；70＝「每組每圈＋」一行放得下 */
 }
 /* 較長的說明：獨立一行小灰字，不與步進器搶寬度 */
 .field-hint { flex-basis: 100%; width: 100%; font-size: 12.5px; line-height: 1.45; color: #a3a3ab; margin: 1px 0 0; }
@@ -526,6 +531,10 @@ table.splits th:first-child, table.splits td:first-child {
 table.splits thead th:first-child { background: #1c1c22; }
 table.splits tbody tr:nth-child(even) td:first-child { background: #1a1a20; }
 table.splits tbody tr:active td:first-child { background: #28324a; }
+/* 窄螢幕直排版（列＝趟、欄＝組）：欄距收窄，6 組也放得下；左欄是趟次表頭 */
+table.splits-t th, table.splits-t td { padding: 7px 4px; }
+table.splits-t tbody th { background: #15151a; font-weight: 700; text-align: center; }
+table.splits-t tbody tr:nth-child(even) th { background: #1a1a20; }
 .bestcell { color: #34c759; font-weight: 700; }
 /* 單組詳細：填色面積圖上的平均/最佳大字 */
 .area-stat { display: flex; gap: 26px; margin: 4px 0 6px; align-items: baseline; }
@@ -568,4 +577,4 @@ table.splits tbody tr:active td:first-child { background: #28324a; }
 .card.big .gplan { font-size: 14px; }
 
 /* 聲音選單：最近語音紀錄逐行顯示 */
-.sound-sheet .action-sheet-sub-title { white-space: pre-line; text-align: left; }
+.sound-sheet .action-sheet-sub-title { white-space: pre-line; }   /* 與標題一樣置中（iOS 動作選單慣例） */

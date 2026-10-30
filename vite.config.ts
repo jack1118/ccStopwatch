@@ -34,6 +34,7 @@ export default defineConfig(({ command, mode }) => ({
       manifest: {
         name: '跑班碼表',
         short_name: '跑班碼表',
+        lang: 'zh-Hant',
         description: '田徑場跑班多組計時碼表',
         start_url: '/ccStopwatch/',
         scope: '/ccStopwatch/',

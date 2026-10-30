@@ -71,7 +71,7 @@ export function PlanEditor({ segments, lapMeters, onChange, editingActive = fals
             </div>
             <div className="field-row">
               <span className="rl">{multi ? '組數' : '趟數'}</span>
-              <Stepper value={seg.reps} step={1} min={floorOf(seg)} onChange={(v) => patchSegment(seg.id, { reps: v })} />
+              <Stepper label="趟數" value={seg.reps} step={1} min={floorOf(seg)} onChange={(v) => patchSegment(seg.id, { reps: v })} />
               <span className="ru">{multi ? '組' : '趟'}</span>
               {editingActive && <span className="field-hint">不可少於已完成 {floorOf(seg)} {multi ? '組' : '趟'}</span>}
             </div>
@@ -79,7 +79,7 @@ export function PlanEditor({ segments, lapMeters, onChange, editingActive = fals
               <div className="item-box" key={it.id}>
                 <div className="field-row">
                   <span className="rl">距離{multi ? ` ${ii + 1}` : ''}</span>
-                  <Stepper value={it.meters} step={100} min={50} onChange={(v) => patchItem(seg.id, it.id, { meters: v })} disabled={editingActive} />
+                  <Stepper label="距離" value={it.meters} step={100} min={50} onChange={(v) => patchItem(seg.id, it.id, { meters: v })} disabled={editingActive} />
                   <span className="ru">m</span>
                   {multi && !editingActive && <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeItem(seg.id, it.id)}>✕</button>}
                   {lapsOf(it.meters, lapMeters) > 1 && <span className="field-hint">＝ {lapsOf(it.meters, lapMeters)} 圈／趟</span>}
@@ -94,7 +94,7 @@ export function PlanEditor({ segments, lapMeters, onChange, editingActive = fals
                 {modeOf(it.id) === 'dist' ? (
                   <div className="field-row">
                     <span className="rl">距離目標</span>
-                    <Stepper value={it.targetSec ?? 0} step={1} min={0} onChange={(v) => patchItem(seg.id, it.id, { targetSec: v })} />
+                    <Stepper label="距離目標" value={it.targetSec ?? 0} step={1} min={0} onChange={(v) => patchItem(seg.id, it.id, { targetSec: v })} />
                     <span className="ru">秒</span>
                     {(it.targetSec ?? 0) > 0 && <span className="pace-pill">{fmtPace(it.targetSec ?? 0, it.meters)}</span>}
                     <span className="field-hint">完成 {it.meters}m；≈ 每圈 {Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} 秒（0＝不設）</span>
@@ -102,7 +102,7 @@ export function PlanEditor({ segments, lapMeters, onChange, editingActive = fals
                 ) : (
                   <div className="field-row">
                     <span className="rl">每圈目標</span>
-                    <Stepper value={Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} step={1} min={0}
+                    <Stepper label="每圈目標" value={Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} step={1} min={0}
                       onChange={(v) => patchItem(seg.id, it.id, { targetSec: Math.round(v * it.meters / lapMeters) })} />
                     <span className="ru">秒/圈</span>
                     {(it.targetSec ?? 0) > 0 && <span className="pace-pill">{fmtPace(it.targetSec ?? 0, it.meters)}</span>}
@@ -112,14 +112,14 @@ export function PlanEditor({ segments, lapMeters, onChange, editingActive = fals
                 {showGroupTargets && (it.targetSec ?? 0) > 0 && (
                   <div className="field-row">
                     <span className="rl">每組每圈＋</span>
-                    <Stepper value={it.gapSec ?? 0} step={1} min={0} onChange={(v) => patchItem(seg.id, it.id, { gapSec: v })} />
+                    <Stepper label="每組每圈加秒" value={it.gapSec ?? 0} step={1} min={0} onChange={(v) => patchItem(seg.id, it.id, { gapSec: v })} />
                     <span className="ru">秒/圈</span>
                     <span className="field-hint">每往後一組、每圈多給幾秒，短於或長於一圈依距離換算。例：設 4 → 黑組比黃組每 100m 慢 1 秒（200m 慢 2 秒）、紫組再加倍（改場地會重算）</span>
                   </div>
                 )}
                 <div className="field-row">
                   <span className="rl">間休</span>
-                  <Stepper value={it.restSec} step={10} min={0} onChange={(v) => patchItem(seg.id, it.id, { restSec: v })} />
+                  <Stepper label="間休" value={it.restSec} step={10} min={0} onChange={(v) => patchItem(seg.id, it.id, { restSec: v })} />
                   <span className="ru">秒</span>
                   <span className="field-hint">
                     {multi && ii === items.length - 1 ? '此距離後＝組與組之間的休息（組休）' : '此距離跑完後的休息'}

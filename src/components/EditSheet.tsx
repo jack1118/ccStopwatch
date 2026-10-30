@@ -40,7 +40,7 @@ export function EditSheet({ title, field, seg, item, lapMeters, repMin, distance
     body = (
       <div className="field-row">
         <span className="rl">距離</span>
-        <Stepper value={item.meters} step={100} min={50} disabled={distanceLocked}
+        <Stepper label="距離" value={item.meters} step={100} min={50} disabled={distanceLocked}
           onChange={(v) => onPatchItem(item.id, { meters: v })} />
         <span className="ru">m</span>
       </div>
@@ -49,14 +49,14 @@ export function EditSheet({ title, field, seg, item, lapMeters, repMin, distance
     body = (
       <div className="field-row">
         <span className="rl">趟數</span>
-        <Stepper value={seg.reps} step={1} min={repMin} onChange={(v) => onPatchSeg(seg.id, { reps: v })} />
+        <Stepper label="趟數" value={seg.reps} step={1} min={repMin} onChange={(v) => onPatchSeg(seg.id, { reps: v })} />
       </div>
     )
   } else if (field === 'rest') {
     body = (
       <div className="field-row">
         <span className="rl">間休</span>
-        <Stepper value={item.restSec} step={10} min={0} onChange={(v) => onPatchItem(item.id, { restSec: v })} />
+        <Stepper label="間休" value={item.restSec} step={10} min={0} onChange={(v) => onPatchItem(item.id, { restSec: v })} />
         <span className="ru">秒</span>
       </div>
     )
@@ -64,7 +64,7 @@ export function EditSheet({ title, field, seg, item, lapMeters, repMin, distance
     body = (
       <div className="field-row">
         <span className="rl">每圈目標</span>
-        <Stepper value={Math.round((target * lapMeters) / item.meters)} step={1} min={0}
+        <Stepper label="每圈目標" value={Math.round((target * lapMeters) / item.meters)} step={1} min={0}
           onChange={(v) => onPatchItem(item.id, { targetSec: Math.round((v * item.meters) / lapMeters), paceSecPerKm: undefined })} />
         <span className="ru">秒/圈</span>
         {target > 0 && <span className="pace-pill">{fmtPace(target, item.meters)}</span>}
@@ -80,7 +80,7 @@ export function EditSheet({ title, field, seg, item, lapMeters, repMin, distance
   const toBp = (b: number) => { void modal.current?.setCurrentBreakpoint(b) }
   return (
     <IonModal ref={modal} isOpen={isOpen} breakpoints={[0, bp, 1]} initialBreakpoint={bp} className="edit-sheet"
-      aria-label={title} onDidDismiss={onDidDismiss}>
+      htmlAttributes={{ 'aria-label': title }} onDidDismiss={onDidDismiss}>   {/* 用 htmlAttributes：直接給 aria-label 傳不到 role=dialog 節點 */}
       <IonHeader>
         <IonToolbar>
           <IonTitle>{title}</IonTitle>

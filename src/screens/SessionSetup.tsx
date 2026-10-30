@@ -314,7 +314,7 @@ export function SessionSetup({ initial, editingActive = false, onStart, onCancel
           <div className="sec-block">
             <div className="label">操作場地一圈</div>
             <div className="field-row">
-              <Stepper value={lapMeters} step={50} min={50} onChange={changeLapMeters} disabled={editingActive} />
+              <Stepper label="場地一圈" value={lapMeters} step={50} min={50} onChange={changeLapMeters} disabled={editingActive} />
               <span className="ru">m</span>
               <span className="field-hint">{editingActive ? '進行中不可改場地' : '預設 400；距離會換算成圈數'}</span>
             </div>
@@ -379,21 +379,21 @@ export function SessionSetup({ initial, editingActive = false, onStart, onCancel
                           <div key={seg.id} style={{ marginBottom: 12 }}>
                             <div className="field-row">
                               <span className="rl" style={{ fontWeight: 700 }}>項目{si + 1} {multi ? '組數' : '趟數'}</span>
-                              <Stepper value={repsFor(c, seg)} step={1} min={editingActive ? repFloorGroup(c, seg) : 0} onChange={(v) => setSegReps(c, seg.id, v)} />
+                              <Stepper label="趟數" value={repsFor(c, seg)} step={1} min={editingActive ? repFloorGroup(c, seg) : 0} onChange={(v) => setSegReps(c, seg.id, v)} />
                             </div>
                             {items.map((it, ii) => (
                               <div key={it.id} className="item-box">
                                 <div className="rl" style={{ width: 'auto', marginBottom: 4 }}>距離{multi ? ` ${ii + 1}` : ''} · {it.meters}m</div>
                                 <div className="field-row">
                                   <span className="rl">每圈目標</span>
-                                  <Stepper value={Math.round(targetFor(c, it) * lapMeters / it.meters)} step={1} min={0}
+                                  <Stepper label="每圈目標" value={Math.round(targetFor(c, it) * lapMeters / it.meters)} step={1} min={0}
                                     onChange={(v) => setItemTarget(c, it.id, Math.round(v * it.meters / lapMeters))} />
                                   <span className="ru">秒/圈</span>
                                   {targetFor(c, it) > 0 && <span className="pace-pill">{fmtPace(targetFor(c, it), it.meters)}</span>}
                                 </div>
                                 <div className="field-row">
                                   <span className="rl">間休</span>
-                                  <Stepper value={restFor(c, it)} step={10} min={0} onChange={(v) => setItemRest(c, it.id, v)} />
+                                  <Stepper label="間休" value={restFor(c, it)} step={10} min={0} onChange={(v) => setItemRest(c, it.id, v)} />
                                   <span className="ru">秒</span>
                                 </div>
                               </div>

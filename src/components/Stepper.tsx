@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { nativeSelection } from '../native'
 
-/** 統一步進器：−、可直接輸入（內部字串、失焦套用）、＋；linked=被連動更新時閃一下；disabled=唯讀鎖定 */
-export function Stepper({ value, step, min, onChange, linked, disabled }: {
-  value: number; step: number; min: number; onChange: (v: number) => void; linked?: boolean; disabled?: boolean
+/** 統一步進器：−、可直接輸入（內部字串、失焦套用）、＋；linked=被連動更新時閃一下；disabled=唯讀鎖定；label=給 VoiceOver 念的欄位名 */
+export function Stepper({ value, step, min, onChange, linked, disabled, label }: {
+  value: number; step: number; min: number; onChange: (v: number) => void; linked?: boolean; disabled?: boolean; label?: string
 }) {
   const [text, setText] = useState(String(value))
   const [flash, setFlash] = useState(false)
@@ -26,13 +26,13 @@ export function Stepper({ value, step, min, onChange, linked, disabled }: {
   }
   return (
     <div className={`stepper${disabled ? ' locked' : ''}`}>
-      <button disabled={disabled} onClick={() => { nativeSelection(); onChange(Math.max(min, value - step)) }}>−</button>
-      <input ref={inputRef} type="text" inputMode="numeric" pattern="[0-9]*" value={text} readOnly={disabled}
+      <button disabled={disabled} aria-label={label ? `${label}減少` : '減少'} onClick={() => { nativeSelection(); onChange(Math.max(min, value - step)) }}>−</button>
+      <input ref={inputRef} type="text" inputMode="numeric" pattern="[0-9]*" value={text} readOnly={disabled} aria-label={label}
         className={flash ? 'flash' : ''}
         onFocus={(e) => e.target.select()}
         onChange={(e) => setText(e.target.value.replace(/[^0-9]/g, ''))}
         onBlur={(e) => commit(e.target.value)} />
-      <button disabled={disabled} onClick={() => { nativeSelection(); onChange(value + step) }}>＋</button>
+      <button disabled={disabled} aria-label={label ? `${label}增加` : '增加'} onClick={() => { nativeSelection(); onChange(value + step) }}>＋</button>
     </div>
   )
 }
