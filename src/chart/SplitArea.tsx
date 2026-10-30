@@ -4,10 +4,10 @@ import { yRange } from './chart'
 import { fmtClockStr } from '../format'
 import { useChartWidth } from './useChartWidth'
 
-const H = 190, padL = 44, padR = 14, padT = 12, padB = 24
+const DEF_H = 190, padL = 44, padR = 14, padT = 12, padB = 24
 
 /** 單組各趟分段填色面積圖（Garmin 風）：快＝上、線下填色漸層、平均參考線、平均/最佳大字 */
-export function SplitArea({ group, hideStat = false }: { group: Group; hideStat?: boolean }) {
+export function SplitArea({ group, hideStat = false, H = DEF_H }: { group: Group; hideStat?: boolean; H?: number }) {
   const { ref, W } = useChartWidth()   // viewBox 寬＝實際像素寬，軸字不被縮小
   const secs = group.reps.map((r) => r.runSec)
   if (secs.length === 0) return null

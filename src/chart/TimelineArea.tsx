@@ -4,10 +4,10 @@ import { yRange, buildTimeline } from './chart'
 import { fmtClockStr } from '../format'
 import { useChartWidth } from './useChartWidth'
 
-const H = 190, padL = 44, padR = 14, padT = 12, padB = 24
+const DEF_H = 190, padL = 44, padR = 14, padT = 12, padB = 24
 
 /** 單組真實時間軸面積圖（Garmin 風）：跑步＝平頂方塊(快在上)、休息＝落到基線的山谷(寬度∝休息秒) */
-export function TimelineArea({ group, hideStat = false }: { group: Group; hideStat?: boolean }) {
+export function TimelineArea({ group, hideStat = false, H = DEF_H }: { group: Group; hideStat?: boolean; H?: number }) {
   const { ref, W } = useChartWidth()   // viewBox 寬＝實際像素寬，軸字不被縮小
   const secs = group.reps.map((r) => r.runSec)
   if (secs.length === 0) return null

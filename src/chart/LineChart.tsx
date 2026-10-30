@@ -7,11 +7,12 @@ import { useChartWidth } from './useChartWidth'
 interface Props {
   groups: Group[]
   visible: Set<string>
+  H?: number   // 圖高（分享卡用矮版）
 }
 
-const H = 300, padL = 42, padR = 16, padT = 16, padB = 28
+const DEF_H = 300, padL = 42, padR = 16, padT = 16, padB = 28
 
-export function LineChart({ groups, visible }: Props) {
+export function LineChart({ groups, visible, H = DEF_H }: Props) {
   const { ref, W } = useChartWidth()   // viewBox 寬＝實際像素寬，軸字 12px 即實際 12px
   const shown = groups.filter((g) => visible.has(g.id) && g.reps.length > 0)
   const allSecs = shown.flatMap((g) => g.reps.map((r) => r.runSec))

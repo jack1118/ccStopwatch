@@ -43,13 +43,15 @@ button { font-family: inherit; color: inherit; }
 /* 碼表導覽列：右側三顆鈕，置中的標題會被蓋住 → 標題改夾在左右鈕之間 */
 .timer-bar ion-title { position: relative; width: auto; padding: 0 4px; }
 /* 導覽列開關(音效/↩)：開＝綠色圖示、關＝灰色圖示(↩ 另加紅斜線)；按下淡出(iOS 導覽列按鈕手感) */
-.nav-tgl { position: relative; width: 40px; height: 44px; padding: 0; border: 0; background: transparent;
+.nav-tgl { position: relative; width: 44px; height: 44px; padding: 0; border: 0; background: transparent;
   display: inline-flex; align-items: center; justify-content: center; font-size: 24px;
   color: var(--ion-color-primary); transition: opacity .1s; }
 .nav-tgl:active { opacity: .35; }
 .nav-tgl[aria-pressed="false"] { color: #8e8e93; }
 .nav-tgl.slash[aria-pressed="false"]::after { content: ''; position: absolute; left: 22%; right: 22%;
   top: calc(50% - 1px); height: 2px; border-radius: 1px; background: #ff6b5e; transform: rotate(-38deg); }
+/* 導覽列文字／圖示鈕：外觀照 iOS，可點範圍撐到 44×44（Apple 觸控目標下限） */
+ion-toolbar ion-buttons ion-button, ion-toolbar ion-back-button { height: 44px; min-width: 44px; }
 /* 分組清單（inset grouped）：組外灰色小標題／說明，與 IonList inset（左右 16px、圓角 10px）對齊 */
 .ios-head { font-size: 13px; color: #8e8e93; padding: 0 32px; margin: 22px 0 -10px; }
 .ios-foot { font-size: 13px; color: #8e8e93; line-height: 1.45; padding: 0 32px; margin: -10px 0 0; }
@@ -288,6 +290,11 @@ button.restwrap { background: transparent; border: 0; color: inherit;
   text-shadow: 0 0 2px rgba(0,0,0,.75), 0 2px 5px rgba(0,0,0,.55), 0 0 4px rgba(0,0,0,.5); }
 /* Ready 與 Go 成對：同字位、同 padding(不跳版)、略小、跟卡片墨色（Go 紅＝爆發） */
 .gobtn .ready-word { color: inherit; font-size: 1.4em; font-weight: 900; padding: 0 6px; }
+/* 375 雙欄小卡：「▶ Ready 第N趟」一行放不下會往左壓到直書「休」→ 字縮一點、間距收緊 */
+@media (max-width: 400px) {
+  .card:not(.big) .gobtn { font-size: 13px; }
+  .card:not(.big) .gobtn .ready-word { padding: 0 2px; }
+}
 /* 該按的組(綠)/趟休到點(紅)：卡片外光暈閃 + ::before 畫高對比框。
    框＝外白線＋色帶＋內黑線，在綠/紅/黃卡上都清楚；形狀也不同 → 不只靠色相：
    .blink＝連續實線、.blink-go＝紅黑斜紋。越超時閃越快：inline animationDuration 由 ::before 繼承 */
@@ -425,7 +432,7 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .seg-toggle { display: inline-flex; border: 1px solid #2a2a32; border-radius: 9px;
   overflow: hidden; flex: 0 0 auto; background: #1c1c22; }
 .seg-toggle button { background: transparent; border: 0; color: #9a9aa0; font-size: 13px;
-  font-weight: 700; padding: 9px 13px; }
+  font-weight: 700; padding: 9px 13px; min-height: 44px; }
 .seg-toggle button.on { background: #3a3a42; color: #fff; }
 .stepper .val { min-width: 48px; text-align: center; font-size: 19px; font-weight: 800; }
 
@@ -444,8 +451,7 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 @media (max-width: 400px) {
   .field-row { gap: 6px; }
   .field-row .rl { width: 72px; }
-  .stepper button { width: 40px; }
-  .stepper input { width: 56px; }
+  .stepper input { width: 48px; }   /* 縮輸入框、−／＋ 維持 44 觸控寬 */
   .item-box { padding-left: 6px; }
   .item-box .field-row .btn.danger { padding-left: 10px; padding-right: 10px; }
 }
@@ -493,9 +499,11 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .res-title { margin: 6px 20px 4px; font-size: inherit; }
 .detail-mode { align-self: flex-start; }
 .ios-list .dot { margin-inline-end: 12px; }
-.legend { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-.chip { display: flex; align-items: center; gap: 5px; font-size: 12px;
+.legend { display: flex; gap: 12px 6px; flex-wrap: wrap; margin-bottom: 10px; }
+/* 圖例 chip：外觀 32 高，可點範圍上下各延伸 6px＝44（列距 12 剛好不重疊） */
+.chip { position: relative; display: flex; align-items: center; gap: 5px; font-size: 12px; min-height: 32px;
   background: #26262e; padding: 4px 9px; border-radius: 14px; border: 0; }
+.chip::before { content: ''; position: absolute; inset: -6px 0; }
 .chip.off { opacity: .35; }
 .dot { width: 10px; height: 10px; border-radius: 50%; }
 /* 趟數多→水平捲動，組別欄凍結在左 */

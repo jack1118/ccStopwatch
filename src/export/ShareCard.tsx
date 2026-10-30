@@ -67,11 +67,13 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
   const planSegs = detail ? effectiveSegments(session.plan, detail) : session.plan.segments
   const planFull = planSegs.length ? planSummary(planSegs, session.plan.lapMeters) : ''
   // 依「目前看的圖」組 chart / stat / 漸層色
+  // 卡片 270×270：圖表固定矮版，才裝得下統計＋課表（有加一行字再矮一點）
+  const chartH = caption ? 110 : 140
   let chart: ReactNode
   let stat: ReactNode
   let colors: string[]
   if (detail) {
-    chart = mode === 'time' ? <TimelineArea group={detail} hideStat /> : <SplitArea group={detail} hideStat />
+    chart = mode === 'time' ? <TimelineArea group={detail} hideStat H={chartH} /> : <SplitArea group={detail} hideStat H={chartH} />
     const secs = detail.reps.map((r) => r.runSec)
     const avg = secs.length ? Math.round(secs.reduce((a, b) => a + b, 0) / secs.length) : 0
     const best = secs.length ? Math.min(...secs) : 0
@@ -83,7 +85,7 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
     )
     colors = [NRC_CHART[detail.color]]
   } else {
-    chart = <LineChart groups={session.groups} visible={visible} />
+    chart = <LineChart groups={session.groups} visible={visible} H={chartH} />
     // 各組生效課表（compact 摘要）+ 該組顏色；全部相同收一行，否則每組一行上色
     const groupPlans = session.groups.map((g) => ({
       color: NRC_CHART[g.color],
@@ -149,7 +151,7 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: 320 }}>
         <h3 style={{ margin: 0 }}>限動分享卡</h3>
-        <button className="btn" onClick={onClose}>✕</button>
+        <button className="btn" style={{ minWidth: 44, minHeight: 44 }} aria-label="關閉" onClick={onClose}>✕</button>
       </div>
 
       {/* 畫面外的真實卡片，作為光柵化來源（不可用 display:none，否則量不到尺寸） */}
@@ -176,7 +178,7 @@ export function ShareCard({ session, detail, mode, visible, onClose }: Props) {
         {photoUrl && (
           <button className="btn" onClick={() => setPhotoUrl((p) => { if (p) URL.revokeObjectURL(p); return null })}>回到預設底圖</button>
         )}
-        <input className="field wide" style={{ textAlign: 'center' }} placeholder="加一行字（選填，如：好濕不好吃）"
+        <input className="field wide" style={{ textAlign: 'center', minHeight: 44 }} placeholder="加一行字（選填，如：好濕不好吃）"
           value={caption} onChange={(e) => setCaption(e.target.value)} />
         <button
           className={`btn primary${shareState === 'shared' || shareState === 'downloaded' ? ' share-done' : ''}`}
