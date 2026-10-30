@@ -6,10 +6,12 @@ import { Help } from './Help'
 import type { Session } from '../types'
 
 it('Help 使用說明正常渲染', () => {
-  render(<Help onBack={vi.fn()} />)
+  const { container } = render(<Help onBack={vi.fn()} />)
   expect(screen.getAllByText('使用說明').length).toBeGreaterThan(0)   // 導覽列標題＋大標題
   expect(screen.getByText('快速開始')).toBeInTheDocument()
-  expect(screen.getByText('計時操作')).toBeInTheDocument()
+  // 各題是 IonAccordion 標題（ion-label 在 jsdom 不吃 getByText），改查頁面文字
+  expect(container.textContent).toContain('計時操作')
+  expect(container.textContent).toContain('閃框和顏色是什麼意思？')
 })
 
 it('SessionSetup 正常渲染（含場地一圈、課表、預設5組）', () => {

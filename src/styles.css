@@ -405,6 +405,14 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .help p, .help li { font-size: 14px; color: #cfcfd4; line-height: 1.75; margin: 4px 0; }
 .help ol, .help ul { margin: 4px 0; padding-left: 20px; }
 .help b { color: #fff; }
+/* 快速開始的四步：字大一點、行距鬆，戶外一眼看完 */
+.help section ol li { font-size: 15px; margin: 6px 0; }
+/* 各題（iOS inset 摺疊清單）：展開內容與標題同底色，條列緊湊 */
+.help-topics { padding: 0; margin-top: 16px; }   /* 上方 .ios-head 以 -10px 貼近清單，這裡要留 inset 的上邊距 */
+.help-body { background: var(--ion-item-background); padding: 4px 16px 12px; }   /* 上內距擋住 li 邊距外溢（否則標題下露出一條黑縫） */
+.help-body ul { margin: 0; }
+.help-body li { line-height: 1.6; margin: 6px 0; }
+.help-body code { font-size: 13px; color: #fff; }
 
 .sec-block { padding: 10px 14px; }
 .sec-block .label { font-size: 14px; color: #b3b3b9; font-weight: 700; margin-bottom: 8px; }
