@@ -180,13 +180,14 @@ export function Help({ onBack }: Props) {
           </ul>
         </section>
       </div>
-      {/* 像「設定 › 一般 › 關於」：可點的一列＋下方灰字版本 */}
-      <IonList inset className="help-update">
+      {/* 像「設定 › 一般 › 關於」：可點的一列＋下方灰字版本。
+          app 版不顯示：程式整包在 app 內，抓到的 version.json 是內建那份（永遠「已是最新」），重載也換不了版，只能重新安裝 */}
+      {!isNative && <IonList inset className="help-update">
         <IonItem button detail={false} disabled={busy} onClick={() => void onCheck()}>
           <IonLabel color="primary">{upd === 'checking' ? '檢查中…' : upd === 'updating' ? '更新中…' : upd === 'latest' ? '已是最新版' : '檢查更新'}</IonLabel>
         </IonItem>
-      </IonList>
-      <IonNote className="help-version">版本 {__BUILD__}</IonNote>
+      </IonList>}
+      <IonNote className="help-version">版本 {__BUILD__}{isNative && <><br />app 版透過重新安裝更新</>}</IonNote>
       </IonContent>
     </IonPage>
   )
