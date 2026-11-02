@@ -164,6 +164,14 @@ it('完成卡：不降透明度、永遠有 ↩ 復原、點卡片開該組明�
   expect(onOpen).toHaveBeenCalledWith('g1')
 })
 
+it('完成卡沒給 onOpen（還有組在跑）：不可點、不寫「點看明細」', () => {
+  const g = { ...base, state: 'done' as const, reps: [{ index: 0, runSec: 88, restSec: 0 }] }
+  render(<GroupCard group={g} plan={plan} now={0} big
+    onStart={vi.fn()} onLap={vi.fn()} onNext={vi.fn()} onUndo={vi.fn()} onStop={vi.fn()} />)
+  expect(screen.getByTestId('done-body')).toBeDisabled()
+  expect(screen.queryByText(/點看明細/)).toBeNull()
+})
+
 it('休息倒數剩 10 秒內：時鐘轉橘並墊上深色狀態膠囊', () => {
   const g = {
     ...base, state: 'resting' as const, restStartTs: 0,

@@ -126,6 +126,23 @@ export function Results({ session, onExit, onOpenGroup }: Props) {
     const rests = g.reps.filter((r) => r.restSec > 0)
     return rests.length ? fmtClockStr(Math.round(rests.reduce((s, r) => s + r.restSec, 0) / rests.length)) : '–'
   }
+  // 對照目標：各組每圈目標不同（每組每圈＋），格內直接標「與目標差」，教練不用自己換算
+  const lapPlans = new Map(groups.map((g) => [g.id, hasPlan ? buildLapPlan(session.plan, g) : []]))
+  const targetAt = (g: Group, i: number) => {
+    const t = lapPlans.get(g.id)?.[i]?.target
+    return t != null && t > 0 ? t : null
+  }
+  const hasTargets = groups.some((g) => g.reps.some((_, i) => targetAt(g, i) != null))
+  const diffOf = (g: Group, i: number) => {
+    const r = g.reps[i], t = targetAt(g, i)
+    if (!r || t == null) return null
+    const d = r.runSec - t
+    return <div className={`diff${d > 0 ? ' miss' : ''}`}>{d > 0 ? `+${d}` : d < 0 ? `−${-d}` : '±0'}</div>
+  }
+  const hitText = (g: Group) => {
+    const judged = g.reps.map((r, i) => [r.runSec, targetAt(g, i)] as const).filter(([, t]) => t != null)
+    return judged.length ? `${judged.filter(([s, t]) => s <= (t as number)).length}/${judged.length}` : '–'
+  }
   const avgText = (g: Group) => {
     const a = groupAvgs(g)
     if (a.length === 0) return '–'
@@ -178,10 +195,16 @@ export function Results({ session, onExit, onOpenGroup }: Props) {
                 <th>{i + 1}{hasPlan && distAt(i) != null && <div className="th-sub">{distAt(i)}m</div>}</th>
                 {groups.map((g) => {
                   const r = g.reps[i]
-                  return <td key={g.id} className={r && r.runSec === bestOf(g) ? 'bestcell' : ''}>{r ? fmtClockStr(r.runSec) : '–'}</td>
+                  return <td key={g.id} className={r && r.runSec === bestOf(g) ? 'bestcell' : ''}>{r ? fmtClockStr(r.runSec) : '–'}{diffOf(g, i)}</td>
                 })}
               </tr>
             ))}
+            {hasTargets && (
+              <tr>
+                <th>達標</th>
+                {groups.map((g) => <td key={g.id}>{hitText(g)}</td>)}
+              </tr>
+            )}
             {multiDist
               ? distances.map((m) => (
                 <tr key={m}>
@@ -221,6 +244,7 @@ export function Results({ session, onExit, onOpenGroup }: Props) {
                 ? distances.map((m) => <th key={m}>均時<div className="th-sub">{m}m</div></th>)
                 : <th className="vhead">均時</th>}
               <th className="vhead">均休</th>
+              {hasTargets && <th className="vhead">達標</th>}
             </tr>
           </thead>
           <tbody>
@@ -234,7 +258,7 @@ export function Results({ session, onExit, onOpenGroup }: Props) {
                   </td>
                   {Array.from({ length: maxReps }).map((_, i) => {
                     const r = g.reps[i]
-                    return <td key={i} className={r && r.runSec === best ? 'bestcell' : ''}>{r ? fmtClockStr(r.runSec) : '–'}</td>
+                    return <td key={i} className={r && r.runSec === best ? 'bestcell' : ''}>{r ? fmtClockStr(r.runSec) : '–'}{diffOf(g, i)}</td>
                   })}
                   {multiDist
                     ? distances.map((m) => {
@@ -243,6 +267,7 @@ export function Results({ session, onExit, onOpenGroup }: Props) {
                     })
                     : <td>{groupAvgs(g).length ? fmtClockStr(groupAvgs(g)[0].avg) : '–'}</td>}
                   <td>{restAvgText(g)}</td>
+                  {hasTargets && <td>{hitText(g)}</td>}
                 </tr>
               )
             })}
@@ -251,7 +276,9 @@ export function Results({ session, onExit, onOpenGroup }: Props) {
         )}
         </div>
         <p className="res-note">
-          {narrow ? '單組詳細見下方各組明細' : '點一列看單組詳細'}　·<span className="bestcell">綠</span>＝最快一趟　·　時間皆為 分:秒（均時＝平均每趟{multiDist ? '，依距離分開算' : ''}、均休＝平均休息）
+          {narrow ? '單組詳細見下方各組明細' : '點一列看單組詳細'}　·　<span className="bestcell">綠</span>＝最快一圈
+          {hasTargets && <>　·　小字＝與該組目標差（<span className="diff-inline miss">橘</span>＝慢於目標）、達標＝不慢於目標的圈數</>}
+          　·　時間皆為 分:秒（均時＝平均每圈{multiDist ? '，依距離分開算' : ''}、均休＝平均休息）
         </p>
       </div>
 

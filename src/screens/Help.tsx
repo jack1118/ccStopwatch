@@ -76,7 +76,7 @@ export function Help({ onBack }: Props) {
           <li>1200m 在 400m 跑道＝按 3 次；跑完整段才進休息</li>
           <li>誤按結束：底部「<b>復原</b>」5 秒內可救回</li>
           <li>右上 <b>{UNDO} 開關</b>打開後，卡片才有 {UNDO}；<b>長按 {UNDO} 0.9 秒</b>退一步</li>
-          <li>右上紅色「<b>結束</b>」＝整堂課結束；點「<b>✓完成</b>」卡片看該組明細</li>
+          <li>右上紅色「<b>結束</b>」＝整堂課結束；全部結束後點「<b>✓完成</b>」卡片看該組明細</li>
         </Topic>
         <Topic value="colors" title="閃框和顏色是什麼意思？">
           <li><b>綠框</b>：建議下一個按這組</li>
@@ -111,6 +111,7 @@ export function Help({ onBack }: Props) {
         </Topic>
         <Topic value="results" title="結果與分享">
           <li>點圖上的組別＝顯示／隱藏；綠字＝該組最快一圈</li>
+          <li>格內小字＝與該組目標差（<b>橘</b>＝慢於目標）；「達標」＝沒慢於目標的圈數</li>
           <li>「<b>各組明細</b>」：單組圖表、補學員名單</li>
           <li>右上分享圖示＝限動分享卡；<b>⋯</b>＝截圖、匯出 CSV</li>
           {!isNative && <li>手機瀏覽器「<b>加入主畫面</b>」＝全螢幕、離線可用</li>}

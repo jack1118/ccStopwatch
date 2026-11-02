@@ -13,6 +13,7 @@ interface Props {
   plan: Plan
   now: number
   big: boolean
+  mid?: boolean         // 3–4 組 2×2：卡片較高 → 計時數字放大一級（big 優先）
   hint?: boolean        // 下一個該按的組 → 外框閃燈提示
   queued?: boolean      // 休息到點但另有更久沒出發的組 → 斜紋框靜止不閃（同時只閃一張）
   showUndo?: boolean    // 是否顯示「復原上一步」角落鈕（預設關，由計時頁開關控制）
@@ -36,9 +37,11 @@ function StatPill({ on, padX, children }: { on: boolean; padX?: number; children
   )
 }
 
-export function GroupCard({ group: g, plan, now, big, hint, queued = false, showUndo = false, onStart, onLap, onNext, onUndo, onStop, onOpen }: Props) {
-  const secSize = big ? 140 : 70
-  const minSize = big ? 54 : 32
+export function GroupCard({ group: g, plan, now, big, mid = false, hint, queued = false, showUndo = false, onStart, onLap, onNext, onUndo, onStop, onOpen }: Props) {
+  const secSize = big ? 140 : mid ? 86 : 70
+  const minSize = big ? 54 : mid ? 36 : 32
+  const restClockSec = big ? 72 : 44   // 休息倒數時鐘字級；mid 不放大（左側有直書趟休，放大會擠到）
+  const restClockMin = big ? 34 : 22
   const Title = (
     <span className="gtitle">{NRC_LABEL[g.color]} 第<b className="num">{g.number}</b>組</span>
   )
@@ -157,11 +160,12 @@ export function GroupCard({ group: g, plan, now, big, hint, queued = false, show
       <div className={`${cardCls} done has-undo`} data-testid="card" style={cardStyle}>
         <div className="ctop">{Title}<span className="tag tag-done">✓完成</span></div>
         {shape && <div className="gplan">{shape}</div>}
-        <button className="donebody" data-testid="done-body" onClick={() => onOpen?.(g.id)}>
+        {/* 沒給 onOpen（還有組在跑）就不可點：避免在跑道邊誤觸被帶離碼表 */}
+        <button className="donebody" data-testid="done-body" disabled={!onOpen} onClick={() => onOpen?.(g.id)}>
           <span className="hero">
             <span style={{ fontSize: big ? 34 : 24, fontWeight: 900 }}>總 {fmtClockStr(total)}</span>
           </span>
-          <span className="cmeta">{g.reps.length} 圈完成 · 點看明細</span>
+          <span className="cmeta">{g.reps.length} 圈完成{onOpen ? " · 點看明細" : ""}</span>
         </button>
         {Corner}{UndoRing}
       </div>
@@ -266,12 +270,12 @@ export function GroupCard({ group: g, plan, now, big, hint, queued = false, show
             {restOver ? (
               <span className="overclock">
                 <span className="over-plus over-text" style={{ fontSize: big ? 40 : 26 }}>+</span>
-                <Clock totalSec={restShown} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone="over" />
+                <Clock totalSec={restShown} secSize={restClockSec} minSize={restClockMin} tone="over" />
               </span>
             ) : goNow ? (
-              <span className="go-count" style={{ fontSize: big ? 72 : 44 }}>{goWord}</span>
+              <span className="go-count" style={{ fontSize: restClockSec }}>{goWord}</span>
             ) : (
-              <Clock totalSec={restShown} secSize={big ? 72 : 44} minSize={big ? 34 : 22} tone={tone} />
+              <Clock totalSec={restShown} secSize={restClockSec} minSize={restClockMin} tone={tone} />
             )}
           </StatPill>
           <span className={`restbar${tone === 'over' ? ' over' : ''}`}><i style={{ width: `${pct}%` }} /></span>

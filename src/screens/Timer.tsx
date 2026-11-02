@@ -144,8 +144,10 @@ export function Timer({ session, onExit, onFinish }: Props) {
   }, [])
 
   const count = state.session.groups.length
-  const cols = count <= 4 ? 1 : 2
-  const big = count <= 4
+  // 6 組內一屏看完：1–2 組單欄大卡、3–4 組 2×2、5–6 組 2×3；列高依可用高度平分（放不下才退回捲動）
+  const cols = count <= 2 ? 1 : 2
+  const big = count <= 2
+  const rows = Math.max(1, Math.ceil(count / cols))
   const allDone = count > 0 && state.session.groups.every((g) => g.state === 'done')
   // 依組序提示下一個該起跑的組（第一個還沒開始的）
   const nextStartId = state.session.groups.find((g) => g.state === 'idle')?.id
@@ -210,10 +212,10 @@ export function Timer({ session, onExit, onFinish }: Props) {
       </IonHeader>
       <IonContent scrollY>
       <div className="page-body" {...swipe}>
-      <div className={`timer-grid cols-${cols}`}>
+      <div className={`timer-grid cols-${cols} rows-${rows}`} style={{ '--rows': rows } as React.CSSProperties}>
         {state.session.groups.map((g) => (
           <GroupCard
-            key={g.id} group={g} plan={state.session.plan} now={now} big={big}
+            key={g.id} group={g} plan={state.session.plan} now={now} big={big} mid={rows === 2 && cols === 2}
             hint={g.id === nextStartId || g.id === nextRunId} queued={g.id !== urgentId} showUndo={showUndo}
             onStart={(id) => { tapFeedback(); dispatch({ type: 'START', groupId: id, now: Date.now() }) }}
             onLap={(id) => {
@@ -235,7 +237,7 @@ export function Timer({ session, onExit, onFinish }: Props) {
               const grp = state.session.groups.find((x) => x.id === id)
               if (grp) setStopToast({ groupId: id, label: `${NRC_LABEL[grp.color]} 第${grp.number}組`, key: Date.now() })
             }}
-            onOpen={(id) => onFinish(state.session, id)}
+            onOpen={anyActive ? undefined : (id) => onFinish(state.session, id)}   // 還有組在跑時不跳頁（誤觸會錯過出發）
           />
         ))}
       </div>

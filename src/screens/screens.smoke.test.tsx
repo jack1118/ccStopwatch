@@ -52,6 +52,22 @@ it('Results 不列 0 圈的組（未開始就結束課程）', () => {
   expect(screen.queryByText(/第2組/)).toBeNull()
 })
 
+it('Results 每格標與目標差、每組顯示達標圈數', () => {
+  const session: Session = {
+    id: 's3', name: '目標', createdAt: 0, status: 'done',
+    plan: { lapMeters: 400, segments: [{ id: '1', meters: 400, reps: 3, restSec: 60, targetSec: 96, gapSec: 0 }] },
+    groups: [{
+      id: 'g1', color: 'yellow', number: 1, repsOverride: null, targetPaceSec: null,
+      athletes: [], state: 'done', runStartTs: null, restStartTs: null,
+      reps: [{ index: 0, runSec: 95, restSec: 60 }, { index: 1, runSec: 96, restSec: 60 }, { index: 2, runSec: 99, restSec: 0 }],
+    }],
+  }
+  const { container } = render(<Results session={session} onExit={vi.fn()} onOpenGroup={vi.fn()} />)
+  expect([...container.querySelectorAll('table.splits .diff')].map((e) => e.textContent)).toEqual(['−1', '±0', '+3'])
+  expect(container.querySelector('table.splits .diff.miss')?.textContent).toBe('+3')
+  expect(screen.getByText('2/3')).toBeInTheDocument()
+})
+
 it('Results 詳細頁預設時間圖,可切換到趟次圖', () => {
   const session: Session = {
     id: 's2', name: '測試2', createdAt: 0, status: 'done',

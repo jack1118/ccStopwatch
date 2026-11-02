@@ -27,9 +27,12 @@ interface Props {
   repFloor?: (seg: Segment) => number
   /** 顯示各組目標預覽（共用課表用；單組獨立課表不需要） */
   showGroupTargets?: boolean
+  /** 精簡版（進階設定的共用課表）：課表 chip 已能改的距離／趟數／每圈目標／間休不重複出現，
+   *  只留 chip 改不到的：整段目標秒數、每組每圈＋、刪除、鏡像。單組獨立課表沒有 chip，要用完整版 */
+  compact?: boolean
 }
 
-export function PlanEditor({ segments, lapMeters, onChange, editingActive = false, repFloor, showGroupTargets = false }: Props) {
+export function PlanEditor({ segments, lapMeters, onChange, editingActive = false, repFloor, showGroupTargets = false, compact = false }: Props) {
   const [targetMode, setTargetMode] = useState<Record<string, 'dist' | 'lap'>>({})
   const modeOf = (id: string) => targetMode[id] ?? 'lap'
   const setMode = (id: string, m: 'dist' | 'lap') => setTargetMode((p) => ({ ...p, [id]: m }))
@@ -69,35 +72,48 @@ export function PlanEditor({ segments, lapMeters, onChange, editingActive = fals
               </span>
               {!editingActive && <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeSegment(seg.id)}>✕ 刪除</button>}
             </div>
-            <div className="field-row">
-              <span className="rl">{multi ? '組數' : '趟數'}</span>
-              <Stepper label="趟數" value={seg.reps} step={1} min={floorOf(seg)} onChange={(v) => patchSegment(seg.id, { reps: v })} />
-              <span className="ru">{multi ? '組' : '趟'}</span>
-              {editingActive && <span className="field-hint">不可少於已完成 {floorOf(seg)} {multi ? '組' : '趟'}</span>}
-            </div>
+            {!compact && (
+              <div className="field-row">
+                <span className="rl">{multi ? '組數' : '趟數'}</span>
+                <Stepper label="趟數" value={seg.reps} step={1} min={floorOf(seg)} onChange={(v) => patchSegment(seg.id, { reps: v })} />
+                <span className="ru">{multi ? '組' : '趟'}</span>
+                {editingActive && <span className="field-hint">不可少於已完成 {floorOf(seg)} {multi ? '組' : '趟'}</span>}
+              </div>
+            )}
             {items.map((it, ii) => (
               <div className="item-box" key={it.id}>
-                <div className="field-row">
-                  <span className="rl">距離{multi ? ` ${ii + 1}` : ''}</span>
-                  <Stepper label="距離" value={it.meters} step={100} min={50} onChange={(v) => patchItem(seg.id, it.id, { meters: v })} disabled={editingActive} />
-                  <span className="ru">m</span>
-                  {multi && !editingActive && <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeItem(seg.id, it.id)}>✕</button>}
-                  {lapsOf(it.meters, lapMeters) > 1 && <span className="field-hint">＝ {lapsOf(it.meters, lapMeters)} 圈／趟</span>}
-                </div>
-                <div className="field-row">
-                  <span className="rl">目標</span>
-                  <div className="seg-toggle">
-                    <button className={modeOf(it.id) === 'dist' ? 'on' : ''} onClick={() => { nativeSelection(); setMode(it.id, 'dist') }}>以距離</button>
-                    <button className={modeOf(it.id) === 'lap' ? 'on' : ''} onClick={() => { nativeSelection(); setMode(it.id, 'lap') }}>以每圈</button>
+                {compact ? (
+                  <div className="field-row">
+                    <span className="rl" style={{ width: 'auto' }}>距離{multi ? ` ${ii + 1}` : ''} · {it.meters}m</span>
+                    {multi && !editingActive && <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeItem(seg.id, it.id)}>✕</button>}
                   </div>
-                </div>
-                {modeOf(it.id) === 'dist' ? (
+                ) : (
+                  <>
+                    <div className="field-row">
+                      <span className="rl">距離{multi ? ` ${ii + 1}` : ''}</span>
+                      <Stepper label="距離" value={it.meters} step={100} min={50} onChange={(v) => patchItem(seg.id, it.id, { meters: v })} disabled={editingActive} />
+                      <span className="ru">m</span>
+                      {multi && !editingActive && <button className="btn danger" style={{ marginLeft: 'auto' }} onClick={() => removeItem(seg.id, it.id)}>✕</button>}
+                      {lapsOf(it.meters, lapMeters) > 1 && <span className="field-hint">＝ {lapsOf(it.meters, lapMeters)} 圈／趟</span>}
+                    </div>
+                    <div className="field-row">
+                      <span className="rl">目標</span>
+                      <div className="seg-toggle">
+                        <button className={modeOf(it.id) === 'dist' ? 'on' : ''} onClick={() => { nativeSelection(); setMode(it.id, 'dist') }}>以距離</button>
+                        <button className={modeOf(it.id) === 'lap' ? 'on' : ''} onClick={() => { nativeSelection(); setMode(it.id, 'lap') }}>以每圈</button>
+                      </div>
+                    </div>
+                  </>
+                )}
+                {compact || modeOf(it.id) === 'dist' ? (
                   <div className="field-row">
                     <span className="rl">距離目標</span>
                     <Stepper label="距離目標" value={it.targetSec ?? 0} step={1} min={0} onChange={(v) => patchItem(seg.id, it.id, { targetSec: v })} />
                     <span className="ru">秒</span>
                     {(it.targetSec ?? 0) > 0 && <span className="pace-pill">{fmtPace(it.targetSec ?? 0, it.meters)}</span>}
-                    <span className="field-hint">完成 {it.meters}m；≈ 每圈 {Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} 秒（0＝不設）</span>
+                    <span className="field-hint">{compact
+                      ? `跑完 ${it.meters}m 的總秒數，與上方課表的每圈秒數（≈ ${Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} 秒）連動；0＝不設`
+                      : `完成 ${it.meters}m；≈ 每圈 ${Math.round((it.targetSec ?? 0) * lapMeters / it.meters)} 秒（0＝不設）`}</span>
                   </div>
                 ) : (
                   <div className="field-row">
@@ -117,14 +133,16 @@ export function PlanEditor({ segments, lapMeters, onChange, editingActive = fals
                     <span className="field-hint">每往後一組、每圈多給幾秒，短於或長於一圈依距離換算。例：設 4 → 黑組比黃組每 100m 慢 1 秒（200m 慢 2 秒）、紫組再加倍（改場地會重算）</span>
                   </div>
                 )}
-                <div className="field-row">
-                  <span className="rl">間休</span>
-                  <Stepper label="間休" value={it.restSec} step={10} min={0} onChange={(v) => patchItem(seg.id, it.id, { restSec: v })} />
-                  <span className="ru">秒</span>
-                  <span className="field-hint">
-                    {multi && ii === items.length - 1 ? '此距離後＝組與組之間的休息（組休）' : '此距離跑完後的休息'}
-                  </span>
-                </div>
+                {!compact && (
+                  <div className="field-row">
+                    <span className="rl">間休</span>
+                    <Stepper label="間休" value={it.restSec} step={10} min={0} onChange={(v) => patchItem(seg.id, it.id, { restSec: v })} />
+                    <span className="ru">秒</span>
+                    <span className="field-hint">
+                      {multi && ii === items.length - 1 ? '此距離後＝組與組之間的休息（組休）' : '此距離跑完後的休息'}
+                    </span>
+                  </div>
+                )}
                 {showGroupTargets && (it.targetSec ?? 0) > 0 && (
                   <div className="target-preview">
                     <b>各組目標（{it.meters}m）</b>
@@ -133,16 +151,16 @@ export function PlanEditor({ segments, lapMeters, onChange, editingActive = fals
                 )}
               </div>
             ))}
-            {!editingActive && <button className="btn" onClick={() => addItem(seg.id)}>＋ 加一個距離（組合）</button>}
+            {!editingActive && !compact && <button className="btn" onClick={() => addItem(seg.id)}>＋ 加一個距離（組合）</button>}
             {!editingActive && items.length >= 2 && (
-              <button className="btn" style={{ marginLeft: 8 }} onClick={() => mirrorSegment(seg.id)}>鏡像(金字塔)</button>
+              <button className="btn" style={{ marginLeft: compact ? 0 : 8 }} onClick={() => mirrorSegment(seg.id)}>鏡像(金字塔)</button>
             )}
-            {!editingActive && <div className="add-hint">400 接 200 算一組，<span className="nw">例：(400m + 200m) × 8＝跑 8 組</span></div>}
+            {!editingActive && !compact && <div className="add-hint">400 接 200 算一組，<span className="nw">例：(400m + 200m) × 8＝跑 8 組</span></div>}
           </div>
         )
       })}
-      {!editingActive && <button className="btn" onClick={addSegment}>＋ 新增項目</button>}
-      {!editingActive && <div className="add-hint">前面的趟數跑完再換下一段，<span className="nw">例：400m × 6 接 200m × 4</span></div>}
+      {!editingActive && !compact && <button className="btn" onClick={addSegment}>＋ 新增項目</button>}
+      {!editingActive && !compact && <div className="add-hint">前面的趟數跑完再換下一段，<span className="nw">例：400m × 6 接 200m × 4</span></div>}
     </>
   )
 }

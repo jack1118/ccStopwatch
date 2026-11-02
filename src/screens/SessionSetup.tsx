@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonList, IonItem, IonLabel } from '@ionic/react'
+import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonList, IonItem, IonLabel, IonToggle } from '@ionic/react'
 import type { Group, Item, NRCColor, Segment, Session } from '../types'
 import { Stepper } from '../components/Stepper'
 import { NRC_ORDER, NRC_NUM, NRC_HEX, NRC_LABEL } from '../constants'
@@ -322,10 +322,10 @@ export function SessionSetup({ initial, editingActive = false, onStart, onCancel
 
           <div className="sec-block">
             <div className="label">共用課表</div>
-            <div className="sublabel">可逐項設距離、目標（以距離／以每圈）、每組每圈＋、間休，並可刪除、鏡像</div>
+            <div className="sublabel">距離、趟數、每圈目標、間休請點上方課表修改；這裡設整段目標秒數、每組每圈＋，並可刪除、鏡像</div>
             <PlanEditor segments={segments} lapMeters={lapMeters}
               editingActive={editingActive} repFloor={repFloorSeg}
-              showGroupTargets onChange={setSegments} />
+              showGroupTargets compact onChange={setSegments} />
           </div>
         </div>
       </details>
@@ -352,7 +352,10 @@ export function SessionSetup({ initial, editingActive = false, onStart, onCancel
                         </span>)}
                   </>
                 )}
-                {!editingActive && <button className={`grp-toggle${on ? ' on' : ''}`} onClick={() => { nativeSelection(); toggleColor(c) }}>{on ? '出場' : '不出場'}</button>}
+                {!editingActive && (
+                  <IonToggle className="grp-switch" checked={on} aria-label={`${NRC_LABEL[c]} 第${NRC_NUM[c]}組出場`}
+                    onIonChange={() => { nativeSelection(); toggleColor(c) }} />
+                )}
               </div>
               {on && !isOpen && (isForked(c) || segments.length > 0) && (
                 <div className="grp-plan">{groupLines(c).map((l, i) => <div key={i}>{l}</div>)}</div>

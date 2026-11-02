@@ -122,16 +122,23 @@ ion-toolbar ion-buttons ion-button, ion-toolbar ion-back-button { height: 44px; 
 }
 
 /* ── 計時網格 ── */
-.timer-grid { display: grid; gap: 8px; padding: 8px; flex: 1; grid-auto-rows: 1fr; }
+/* 列數由 Timer 給 --rows：每列平分可用高度，內容放不下時列高退回內容高（整頁改捲動，不裁字） */
+.timer-grid { display: grid; gap: 8px; padding: 8px; flex: 1;
+  grid-template-rows: repeat(var(--rows, 1), minmax(min-content, 1fr)); }
+/* 矮螢幕（iPhone SE 667 高）5–6 組三列：收緊間距才放得下，不必捲動 */
+@media (max-height: 700px) {
+  .timer-grid.rows-3 { gap: 6px; padding: 6px; }
+  .timer-grid.rows-3 .card { padding-top: 5px; padding-bottom: 5px; }
+}
 .nw { white-space: nowrap; }
 /* 點擊視覺回饋：按下時縮一下＋微亮，給「點到了」的感覺 */
 .lapface, .restwrap, .startbtn { transition: transform .08s ease, filter .08s ease; }
 .lapface:active, .restwrap:active, .startbtn:active,
 .lapface.pressed, .restwrap.pressed, .startbtn.pressed { transform: scale(.96); filter: brightness(1.14); }
-.btn, .stepper button, .seg-toggle button, .corner button, .grp-toggle, .grp-expand, .chip {
+.btn, .stepper button, .seg-toggle button, .corner button, .grp-expand, .chip {
   transition: transform .08s ease; }
 .btn:active, .stepper button:active, .seg-toggle button:active, .corner button:active,
-.grp-toggle:active, .grp-expand:active, .chip:active { transform: scale(.94); }
+.grp-expand:active, .chip:active { transform: scale(.94); }
 .timer-grid.cols-1 { grid-template-columns: 1fr; }
 .timer-grid.cols-2 { grid-template-columns: 1fr 1fr; }
 
@@ -169,6 +176,7 @@ ion-toolbar ion-buttons ion-button, ion-toolbar ion-back-button { height: 44px; 
 .donebody { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: stretch;
   background: transparent; border: 0; color: inherit; cursor: pointer; padding: 0; }
 .donebody .cmeta { margin-top: 0; padding-bottom: 14px; }
+.donebody:disabled { cursor: default; color: inherit; opacity: 1; }   /* 還有組在跑時不可點，但外觀不變淡 */
 .card.big .donebody .cmeta { padding-bottom: 16px; }
 /* 復原長按：白色寬線繞整個碼表卡片 */
 .undo-ring { position: absolute; inset: 0; border-radius: 16px; pointer-events: none; z-index: 5;
@@ -421,7 +429,7 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .stepper.locked button { cursor: not-allowed; }
 .seg-row, .grp-row { background: #1c1c22; border-radius: 12px; padding: 11px 12px;
   display: flex; align-items: center; gap: 9px; margin-bottom: 8px; font-size: 16px; }
-.grp-row.off { opacity: .42; }
+.grp-row.off > :not(.grp-switch) { opacity: .42; }
 .field { background: #15151a; border: 1px solid #2a2a32; border-radius: 8px;
   color: #fff; padding: 10px; font-size: 16px; width: 72px; text-align: center; }
 .field.wide { width: 100%; text-align: left; }
@@ -493,10 +501,8 @@ button.restwrap { background: transparent; border: 0; color: inherit;
 .pace-pill { flex: 0 0 auto; font-size: 12.5px; font-weight: 800; color: #062c33;
   background: #4fd6e8; padding: 1px 9px; border-radius: 999px; white-space: nowrap; margin-left: 4px; }
 
-/* 課程設定：色塊開關 */
-.grp-toggle { margin-left: auto; font-size: 13px; font-weight: 700;
-  padding: 7px 12px; min-height: 44px; border-radius: 9px; border: 0; background: #2c2c2e; color: #fff; }
-.grp-toggle.on { background: #30D158; color: #03260f; }
+/* 課程設定：出場開關（iOS 原生 switch，靠右；關掉時整列變淡但開關本身不淡） */
+.grp-switch { margin-left: auto; flex: 0 0 auto; min-height: 44px; display: flex; align-items: center; }   /* 開關外觀 51×31，可點區撐到 44 高 */
 .grp-expand { font-size: 13px; font-weight: 700; padding: 7px 10px; min-height: 44px; border-radius: 9px;
   border: 0; background: #2c2c2e; color: #cfcfd4; }
 .grp-sum { font-size: 13px; color: #9a9aa0; }
@@ -544,6 +550,9 @@ table.splits-t th, table.splits-t td { padding: 7px 4px; }
 table.splits-t tbody th { background: #15151a; font-weight: 700; text-align: center; }
 table.splits-t tbody tr:nth-child(even) th { background: #1a1a20; }
 .bestcell { color: #34c759; font-weight: 700; }
+/* 與目標差：達標灰小字、慢於目標橘字（不靠顏色單獨表意：前面有 +／− 號） */
+.diff { font-size: 11px; font-weight: 600; color: #a3a3ab; line-height: 1.1; margin-top: 1px; }
+.diff.miss, .diff-inline.miss { color: #ff9f0a; }
 /* 單組詳細：填色面積圖上的平均/最佳大字 */
 .area-stat { display: flex; gap: 26px; margin: 4px 0 6px; align-items: baseline; }
 .area-stat b { font-size: 22px; font-weight: 900; }
